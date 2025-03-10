@@ -1,101 +1,340 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { Toaster } from 'react-hot-toast';
+import Header from '@/components/Header';
+import FileUploader from '@/components/FileUploader';
+import EventList from '@/components/EventList';
+import { Event } from '@/lib/openai';
+import LiveCalendarView from '@/components/LiveCalendarView';
+import GoogleAuthWrapper from '@/components/GoogleAuthWrapper';
+import EmbeddedCalendarView from '@/components/EmbeddedCalendarView';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleEventsExtracted = (extractedEvents: Event[]) => {
+    setEvents(extractedEvents);
+    setActiveTab('events');
+  };
+
+  const handleClearEvents = () => {
+    setEvents([]);
+    setActiveTab('upload');
+  };
+
+  return (
+    <div className="app-wrapper">
+      <Header />
+      
+      <main className="main-content">
+        <div className="container">
+          <div className="header-section animate-fade-in">
+            <div className="logo-badge">
+              <span className="logo-icon">📅</span>
+            </div>
+            <h1 className="app-title">SyllaScan</h1>
+            <p className="app-description">
+              Upload your syllabus or document and automatically add events to your Google Calendar
+            </p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="tabs-container">
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`tab ${activeTab === 'upload' ? 'active' : ''}`}
+            >
+              <div className="tab-content">
+                <div className="tab-icon-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </div>
+                <span>Upload</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('events')}
+              className={`tab ${activeTab === 'events' ? 'active' : ''}`}
+              disabled={events.length === 0}
+            >
+              <div className="tab-content">
+                <div className="tab-icon-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                    <path d="M8 14h.01" />
+                    <path d="M12 14h.01" />
+                    <path d="M16 14h.01" />
+                    <path d="M8 18h.01" />
+                    <path d="M12 18h.01" />
+                    <path d="M16 18h.01" />
+                  </svg>
+                </div>
+                <span>Events</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('live-calendar')}
+              className={`tab ${activeTab === 'live-calendar' ? 'active' : ''}`}
+            >
+              <div className="tab-content">
+                <div className="tab-icon-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+                <span>Live Calendar</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('embedded-calendar')}
+              className={`tab ${activeTab === 'embedded-calendar' ? 'active' : ''}`}
+            >
+              <div className="tab-content">
+                <div className="tab-icon-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="3" y1="9" x2="21" y2="9" />
+                    <rect x="6" y="14" width="12" height="5" rx="1" />
+                  </svg>
+                </div>
+                <span>Embedded Calendar</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="content-panel animate-slide-up">
+            {activeTab === 'upload' && (
+              <FileUploader 
+                onEventsExtracted={handleEventsExtracted} 
+                isProcessing={isProcessing}
+                setIsProcessing={setIsProcessing}
+              />
+            )}
+            
+            {activeTab === 'events' && (
+              <EventList 
+                events={events} 
+                onClearEvents={handleClearEvents} 
+              />
+            )}
+            
+            {activeTab === 'live-calendar' && (
+              <GoogleAuthWrapper>
+                <LiveCalendarView />
+              </GoogleAuthWrapper>
+            )}
+            
+            {activeTab === 'embedded-calendar' && (
+              <GoogleAuthWrapper>
+                <EmbeddedCalendarView />
+              </GoogleAuthWrapper>
+            )}
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      <footer className="app-footer">
+        <div className="container">
+          <p className="footer-text">
+            &copy; {new Date().getFullYear()} SyllaScan. All rights reserved.
+          </p>
+        </div>
       </footer>
+      
+      <style jsx>{`
+        .app-wrapper {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .main-content {
+          flex: 1;
+          padding: 2rem 0;
+        }
+        
+        .header-section {
+          text-align: center;
+          margin-bottom: 2.5rem;
+        }
+        
+        .logo-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 5rem;
+          height: 5rem;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--primary), var(--secondary));
+          margin-bottom: 1.5rem;
+          box-shadow: 0 10px 25px -5px rgba(var(--primary-rgb, 79, 70, 229), 0.5);
+        }
+        
+        .logo-icon {
+          font-size: 2.5rem;
+        }
+        
+        .app-title {
+          font-size: 3rem;
+          font-weight: 900;
+          background: linear-gradient(to right, var(--primary), var(--secondary));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          margin-bottom: 1rem;
+          letter-spacing: -0.025em;
+          font-family: 'Montserrat', 'Arial', sans-serif;
+          text-transform: none;
+        }
+        
+        .app-description {
+          font-size: 1.25rem;
+          color: var(--foreground);
+          opacity: 0.9;
+          max-width: 36rem;
+          margin: 0 auto;
+          font-weight: 500;
+          font-family: 'Inter', 'Helvetica', sans-serif;
+        }
+        
+        .tabs-container {
+          display: flex;
+          justify-content: center;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          padding: 0 0.5rem;
+        }
+        
+        .tab {
+          display: flex;
+          align-items: center;
+          padding: 0.75rem 1rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: var(--foreground);
+          opacity: 0.7;
+          background: none;
+          border: none;
+          border-bottom: 2px solid transparent;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .tab-content {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .tab-icon-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 1.75rem;
+          height: 1.75rem;
+          border-radius: 0.375rem;
+          background-color: rgba(var(--primary-rgb), 0.1);
+          transition: all 0.2s ease;
+        }
+        
+        .tab-icon {
+          width: 1.25rem;
+          height: 1.25rem;
+          color: var(--primary);
+        }
+        
+        .tab:hover:not(:disabled) {
+          opacity: 0.9;
+        }
+        
+        .tab:hover:not(:disabled) .tab-icon-container {
+          background-color: rgba(var(--primary-rgb), 0.2);
+        }
+        
+        .tab.active {
+          color: var(--primary);
+          opacity: 1;
+          border-bottom-color: var(--primary);
+        }
+        
+        .tab.active .tab-icon-container {
+          background-color: var(--primary);
+        }
+        
+        .tab.active .tab-icon {
+          color: white;
+        }
+        
+        .tab:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        
+        .content-panel {
+          background-color: var(--card);
+          border-radius: var(--radius);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          padding: 1.5rem;
+        }
+        
+        .app-footer {
+          background-color: var(--card);
+          padding: 2rem 0;
+          margin-top: 3rem;
+          border-top: 1px solid var(--border);
+        }
+        
+        .footer-text {
+          text-align: center;
+          color: var(--foreground);
+          opacity: 0.6;
+          font-size: 0.875rem;
+        }
+        
+        @media (max-width: 640px) {
+          .app-title {
+            font-size: 2.25rem;
+          }
+          
+          .app-description {
+            font-size: 1rem;
+          }
+          
+          .tabs-container {
+            overflow-x: auto;
+            justify-content: flex-start;
+            padding-bottom: 0.5rem;
+          }
+          
+          .tab {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+          }
+          
+          .tab-icon {
+            font-size: 1rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

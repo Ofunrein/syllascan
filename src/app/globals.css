@@ -1,24 +1,245 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
+  --primary: #4f46e5;
+  --primary-dark: #4338ca;
+  --primary-light: #818cf8;
+  --secondary: #06b6d4;
+  --secondary-dark: #0891b2;
+  --accent: #f97316;
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #e5e7eb;
+  --radius: 0.5rem;
+  
+  /* RGB values for gradients and opacity */
+  --primary-rgb: 79, 70, 229;
+  --secondary-rgb: 6, 182, 212;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --primary-light: #a5b4fc;
+  --secondary: #22d3ee;
+  --secondary-dark: #06b6d4;
+  --accent: #fb923c;
+  --background: #111827;
+  --foreground: #f9fafb;
+  --card: #1f2937;
+  --card-foreground: #f9fafb;
+  --border: #374151;
+  --input: #374151;
+  --ring: #1f2937;
+  
+  /* RGB values for gradients and opacity */
+  --primary-rgb: 129, 140, 248;
+  --secondary-rgb: 34, 211, 238;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--background);
   color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background-image: 
+    radial-gradient(at 100% 0%, rgba(var(--primary-rgb, 79, 70, 229), 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(var(--secondary-rgb, 6, 182, 212), 0.1) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+.dark body {
+  background-image: 
+    radial-gradient(at 100% 0%, rgba(var(--primary-rgb, 129, 140, 248), 0.2) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(var(--secondary-rgb, 34, 211, 238), 0.2) 0px, transparent 50%);
+}
+
+/* Basic layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-dark);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.btn-outline:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Cards */
+.card {
+  background-color: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out;
+}
+
+/* Hide any unwanted SVGs */
+svg:not([class]) {
+  display: none !important;
+}
+
+/* SyllaScan Logo Styling */
+.syllascan-logo {
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.025em;
+  font-family: 'Montserrat', 'Arial', sans-serif;
+  text-transform: none;
+  text-decoration: none;
+}
+
+/* Navigation Text Styling */
+.nav-text {
+  font-family: 'Montserrat', 'Arial', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+/* Remove underlines from all links */
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+.desktop-nav {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.desktop-nav .nav-link {
+  position: relative;
+  padding: 0.5rem 1rem;
+  margin: 0 0.75rem;
+  transition: all 0.2s ease;
+  opacity: 0.85;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.dark .desktop-nav .nav-link {
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.desktop-nav .nav-link:hover {
+  opacity: 1;
+  text-decoration: none;
+}
+
+.dark .desktop-nav .nav-link:hover {
+  color: rgba(255, 255, 255, 1);
+}
+
+.desktop-nav .nav-link.active {
+  position: relative;
+  background-color: rgba(var(--primary-rgb), 0.08);
+  opacity: 1;
+  height: 100%;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.desktop-nav .nav-link.active .nav-text {
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .desktop-nav .nav-link.active {
+  background-color: rgba(var(--primary-rgb), 0.15);
+  color: white;
+  box-shadow: none;
+}
+
+.dark .desktop-nav .nav-link.active .nav-text {
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
