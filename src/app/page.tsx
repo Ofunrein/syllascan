@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import Header from '@/components/Header';
 import FileUploader from '@/components/FileUploader';
@@ -9,11 +9,13 @@ import { Event } from '@/lib/openai';
 import LiveCalendarView from '@/components/LiveCalendarView';
 import GoogleAuthWrapper from '@/components/GoogleAuthWrapper';
 import EmbeddedCalendarView from '@/components/EmbeddedCalendarView';
+import CalendarAuthBanner from '@/components/CalendarAuthBanner';
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
+  const [isCalendarExpired, setIsCalendarExpired] = useState(false);
 
   const handleEventsExtracted = (extractedEvents: Event[]) => {
     setEvents(extractedEvents);
@@ -25,8 +27,57 @@ export default function Home() {
     setActiveTab('upload');
   };
 
+  // Listen for URL hash changes to update the active tab
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'live-calendar') {
+        setActiveTab('live-calendar');
+      } else if (hash === 'embedded-calendar') {
+        setActiveTab('embedded-calendar');
+      } else if (hash === 'events' && events.length > 0) {
+        setActiveTab('events');
+      } else if (hash === 'upload') {
+        setActiveTab('upload');
+      }
+    };
+
+    // Check hash on initial load
+    handleHashChange();
+
+    // Add event listener for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Clean up the event listener
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [events]);
+
+  useEffect(() => {
+    const checkCalendarAuth = () => {
+      const unauthorizedError = document.querySelector('.text-red-500')?.textContent?.includes('Unauthorized');
+      const expiredText = document.body.textContent?.includes('Google Calendar authorization expired');
+      
+      if (unauthorizedError || expiredText) {
+        setIsCalendarExpired(true);
+      }
+    };
+    
+    const timeoutId = setTimeout(checkCalendarAuth, 1000);
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Function to handle tab click and update URL hash
+  const handleTabClick = (tab: 'upload' | 'events' | 'live-calendar' | 'embedded-calendar') => {
+    setActiveTab(tab);
+    // Update URL hash without causing page reload
+    window.history.pushState(null, '', `#${tab}`);
+  };
+
   return (
     <div className="app-wrapper">
+      {isCalendarExpired && <CalendarAuthBanner />}
+      
       <Header />
       
       <main className="main-content">
@@ -44,8 +95,9 @@ export default function Home() {
           {/* Tab Navigation */}
           <div className="tabs-container">
             <button
-              onClick={() => setActiveTab('upload')}
+              onClick={() => handleTabClick('upload')}
               className={`tab ${activeTab === 'upload' ? 'active' : ''}`}
+              aria-label="Upload"
             >
               <div className="tab-content">
                 <div className="tab-icon-container">
@@ -60,9 +112,10 @@ export default function Home() {
             </button>
             
             <button
-              onClick={() => setActiveTab('events')}
+              onClick={() => handleTabClick('events')}
               className={`tab ${activeTab === 'events' ? 'active' : ''}`}
               disabled={events.length === 0}
+              aria-label="Events"
             >
               <div className="tab-content">
                 <div className="tab-icon-container">
@@ -84,8 +137,9 @@ export default function Home() {
             </button>
             
             <button
-              onClick={() => setActiveTab('live-calendar')}
+              onClick={() => handleTabClick('live-calendar')}
               className={`tab ${activeTab === 'live-calendar' ? 'active' : ''}`}
+              aria-label="Live Calendar"
             >
               <div className="tab-content">
                 <div className="tab-icon-container">
@@ -101,8 +155,9 @@ export default function Home() {
             </button>
             
             <button
-              onClick={() => setActiveTab('embedded-calendar')}
+              onClick={() => handleTabClick('embedded-calendar')}
               className={`tab ${activeTab === 'embedded-calendar' ? 'active' : ''}`}
+              aria-label="Embedded Calendar"
             >
               <div className="tab-content">
                 <div className="tab-icon-container">

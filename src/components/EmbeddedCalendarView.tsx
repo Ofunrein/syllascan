@@ -1,29 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '@/lib/UserContext';
 
 export default function EmbeddedCalendarView() {
   const { user } = useUser();
   const [viewMode] = useState<'WEEK' | 'MONTH' | 'AGENDA'>('WEEK');
   const [timezone] = useState('America/Chicago');
+  const [calendarUrl, setCalendarUrl] = useState('');
 
-  // Simple function to get a calendar URL that will work
-  const getCalendarUrl = () => {
-    return 'https://calendar.google.com/calendar/embed?' + 
-      'src=primary' +
-      `&ctz=${timezone}` +
-      `&mode=${viewMode.toLowerCase()}` +
-      '&showTitle=0' +
-      '&showNav=1' +
-      '&showDate=1' +
-      '&showPrint=0' +
-      '&showTabs=1' +
-      '&showCalendars=0' +
-      '&showTz=1' +
-      '&height=600' +
-      '&wkst=1';
-  };
+  // Update the calendar URL when user changes
+  useEffect(() => {
+    if (user && user.email) {
+      // Create a calendar URL that includes the user's email to show their events
+      const url = 'https://calendar.google.com/calendar/embed?' + 
+        `src=${encodeURIComponent(user.email)}` +
+        `&ctz=${timezone}` +
+        `&mode=${viewMode.toLowerCase()}` +
+        '&showTitle=0' +
+        '&showNav=1' +
+        '&showDate=1' +
+        '&showPrint=0' +
+        '&showTabs=1' +
+        '&showCalendars=0' +
+        '&showTz=1' +
+        '&height=600' +
+        '&wkst=1';
+      setCalendarUrl(url);
+    }
+  }, [user, viewMode, timezone]);
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -38,13 +43,19 @@ export default function EmbeddedCalendarView() {
         </div>
         
         <div className="relative pb-[75%] h-0 overflow-hidden">
-          <iframe 
-            src={getCalendarUrl()}
-            className="absolute top-0 left-0 w-full h-full border-0"
-            frameBorder="0"
-            scrolling="no"
-            title="Google Calendar"
-          ></iframe>
+          {user && calendarUrl ? (
+            <iframe 
+              src={calendarUrl}
+              className="absolute top-0 left-0 w-full h-full border-0"
+              frameBorder="0"
+              scrolling="no"
+              title="Google Calendar"
+            ></iframe>
+          ) : (
+            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+              <p className="text-gray-500 dark:text-gray-400">Please sign in to view your calendar</p>
+            </div>
+          )}
         </div>
         
         <div className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">

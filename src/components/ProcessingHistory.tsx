@@ -22,8 +22,8 @@ type ProcessingRecord = {
   status: 'success' | 'failed' | 'partial';
 };
 
-// Mock data for development
-const mockHistory: ProcessingRecord[] = [
+// Sample data for fallback
+const sampleHistory: ProcessingRecord[] = [
   {
     id: '1',
     fileName: 'syllabus_spring2023.pdf',
@@ -53,26 +53,27 @@ const mockHistory: ProcessingRecord[] = [
 export default function ProcessingHistory() {
   const [history, setHistory] = useState<ProcessingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user, accessToken } = useUser();
+  const [usingSampleData, setUsingSampleData] = useState(false);
+  const { user } = useUser();
 
   const fetchHistory = async () => {
     setIsLoading(true);
     
     try {
-      // For development, use mock data instead of making an API call
-      // This ensures we don't show a loading spinner forever
-      setTimeout(() => {
-        setHistory(mockHistory);
-        setIsLoading(false);
-      }, 1000);
+      // Only make API call if user is logged in
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
       
-      // Commented out actual API call for now
-      /*
-      if (!accessToken) return;
+      // Get the user's ID token
+      const idToken = await user.getIdToken();
       
+      // Make a real API call to fetch processing history
       const response = await fetch('/api/history', {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
         }
       });
 
@@ -82,33 +83,46 @@ export default function ProcessingHistory() {
 
       const data = await response.json();
       setHistory(data.records || []);
-      */
+      setUsingSampleData(false);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching history:', error);
-      toast.error('Failed to load processing history');
+      // Fall back to sample data
+      setHistory(sampleHistory);
+      setUsingSampleData(true);
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    // Fetch history on component mount, regardless of accessToken
+    // Fetch history on component mount
     fetchHistory();
-  }, []);
+    
+    // Set up a refresh interval (every 30 seconds)
+    const intervalId = setInterval(fetchHistory, 30000);
+    
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [user]);
 
   const handleDelete = async (id: string) => {
-    // For development, just update the local state
-    setHistory(history.filter(record => record.id !== id));
-    toast.success('Record deleted successfully');
-    
-    // Commented out actual API call for now
-    /*
-    if (!accessToken) return;
-    
     try {
+      // If using sample data, just update the local state
+      if (usingSampleData) {
+        setHistory(history.filter(record => record.id !== id));
+        toast.success('Record deleted successfully');
+        return;
+      }
+      
+      // Get the user's ID token
+      const idToken = await user.getIdToken();
+      
+      // Otherwise, make a real API call
       const response = await fetch(`/api/history/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
         }
       });
 
@@ -116,14 +130,13 @@ export default function ProcessingHistory() {
         throw new Error('Failed to delete record');
       }
 
-      // Update the local state
+      // Update local state after successful deletion
       setHistory(history.filter(record => record.id !== id));
       toast.success('Record deleted successfully');
     } catch (error) {
       console.error('Error deleting record:', error);
       toast.error('Failed to delete record');
     }
-    */
   };
 
   const getFileIcon = (fileType: string, fileName: string) => {
@@ -163,21 +176,22 @@ export default function ProcessingHistory() {
           </svg>
         </div>
       );
+    } else {
+      return (
+        <div className="file-icon-wrapper default">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="file-icon">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+        </div>
+      );
     }
-    
-    return (
-      <div className="file-icon-wrapper default">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="file-icon">
-          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-          <polyline points="13 2 13 9 20 9"></polyline>
-        </svg>
-      </div>
-    );
   };
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM d, yyyy h:mm a');
+      const date = new Date(dateString);
+      return format(date, 'MMM d, yyyy h:mm a');
     } catch (error) {
       return dateString;
     }
@@ -196,8 +210,8 @@ export default function ProcessingHistory() {
         return (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="status-icon failed">
             <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
           </svg>
         );
       case 'partial':
@@ -233,10 +247,27 @@ export default function ProcessingHistory() {
     );
   }
 
+  if (usingSampleData) {
+    return (
+      <div className="space-y-4">
+        <div className="p-3 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-md">
+          <p>Using sample data - could not load processing history</p>
+        </div>
+        {renderHistoryItems()}
+      </div>
+    );
+  }
+
   if (history.length === 0) {
     return (
-      <div className="px-4 py-5 sm:px-6 text-center">
-        <p className="text-gray-500">No processing history found</p>
+      <div className="space-y-4">
+        <div className="p-6 flex flex-col items-center justify-center border border-dashed border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
+          <CalendarIcon className="w-12 h-12 text-gray-400 mb-2" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No processing history yet</h3>
+          <p className="text-gray-500 dark:text-gray-400 text-center mt-1">
+            Upload a document on the home page to add items to your processing history
+          </p>
+        </div>
       </div>
     );
   }
@@ -279,6 +310,18 @@ export default function ProcessingHistory() {
             </div>
             <div className="item-events">
               <span className="events-count">{record.eventCount} events</span>
+              <button 
+                onClick={() => handleDelete(record.id)} 
+                className="delete-button" 
+                title="Delete record"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="delete-icon">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
             </div>
           </li>
         ))}
@@ -408,8 +451,7 @@ export default function ProcessingHistory() {
         
         .item-events {
           display: flex;
-          flex-direction: column;
-          align-items: flex-end;
+          align-items: center;
           margin-left: 1rem;
         }
         
@@ -417,15 +459,30 @@ export default function ProcessingHistory() {
           font-size: 0.875rem;
           font-weight: 500;
           color: var(--foreground);
-          margin-bottom: 0.25rem;
+          margin-right: 1rem;
         }
         
-        .primary-badge {
-          font-size: 0.75rem;
-          padding: 0.125rem 0.5rem;
-          background-color: #e0e7ff;
-          color: #4f46e5;
-          border-radius: 1rem;
+        .delete-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0.25rem;
+          border-radius: 0.25rem;
+          transition: background-color 0.2s;
+        }
+        
+        .delete-button:hover {
+          background-color: rgba(239, 68, 68, 0.1);
+        }
+        
+        .delete-icon {
+          width: 1.25rem;
+          height: 1.25rem;
+          color: #9ca3af;
+        }
+        
+        .delete-button:hover .delete-icon {
+          color: #ef4444;
         }
         
         :global(.dark) .header-icon {
@@ -446,6 +503,18 @@ export default function ProcessingHistory() {
         
         :global(.dark) .history-item:hover {
           background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :global(.dark) .delete-icon {
+          color: #6b7280;
+        }
+        
+        :global(.dark) .delete-button:hover {
+          background-color: rgba(239, 68, 68, 0.2);
+        }
+        
+        :global(.dark) .delete-button:hover .delete-icon {
+          color: #f87171;
         }
       `}</style>
     </div>

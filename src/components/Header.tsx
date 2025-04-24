@@ -362,61 +362,68 @@ export default function Header() {
           position: absolute;
           top: 100%;
           right: 0;
-          margin-top: 0.5rem;
-          width: 14rem;
+          width: 240px;
           background-color: var(--card);
-          border-radius: var(--radius);
+          border-radius: 0.5rem;
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          padding: 0.5rem 0;
+          z-index: 100;
+          margin-top: 0.5rem;
+          border: 1px solid var(--border);
           overflow: hidden;
-          z-index: 20;
-          animation: slideDown 0.2s ease-out;
-        }
-        
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
         }
         
         .user-info {
-          padding: 1rem;
+          padding: 0.75rem 1rem;
           border-bottom: 1px solid var(--border);
+          margin-bottom: 0.5rem;
         }
         
         .user-name {
-          font-size: 0.875rem;
           font-weight: 600;
           color: var(--foreground);
           margin-bottom: 0.25rem;
+          font-size: 0.9rem;
         }
         
         .user-email {
-          font-size: 0.75rem;
-          color: var(--foreground);
-          opacity: 0.7;
+          color: var(--muted);
+          font-size: 0.8rem;
         }
         
         .menu-item {
           display: flex;
           align-items: center;
-          width: 100%;
-          padding: 0.75rem 1rem;
-          text-align: left;
-          font-size: 0.875rem;
+          padding: 0.5rem 1rem;
           color: var(--foreground);
+          font-size: 0.875rem;
+          transition: background-color 0.2s;
+          text-decoration: none;
+          width: 100%;
+          text-align: left;
           background: none;
           border: none;
           cursor: pointer;
-          text-decoration: none;
-          transition: background-color 0.2s;
-        }
-        
-        .menu-icon {
-          margin-right: 0.75rem;
-          font-size: 1rem;
+          font-weight: 500;
         }
         
         .menu-item:hover {
-          background-color: rgba(0, 0, 0, 0.05);
+          background-color: var(--accent);
+        }
+        
+        /* Dark mode style for menu items */
+        :global(.dark) .menu-item {
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        :global(.dark) .menu-item:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .menu-icon {
+          margin-right: 0.5rem;
+          font-size: 1rem;
+          opacity: 0.7;
         }
         
         .sign-in-button {

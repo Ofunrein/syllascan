@@ -20,19 +20,30 @@ export async function GET(request: NextRequest) {
 
     // Get the user's processing history from Firestore
     const db = getFirebaseAdminDb();
-    const historySnapshot = await db
-      .collection('processingHistory')
-      .where('userId', '==', uid)
-      .orderBy('processedAt', 'desc')
-      .limit(20)
-      .get();
+    
+    try {
+      const historySnapshot = await db
+        .collection('processingHistory')
+        .where('userId', '==', uid)
+        .orderBy('processedAt', 'desc')
+        .limit(20)
+        .get();
 
-    const records = historySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+      const records = historySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
 
-    return NextResponse.json({ records });
+      return NextResponse.json({ records });
+    } catch (dbError: any) {
+      // Handle NOT_FOUND error (code 5) which occurs when collection doesn't exist yet
+      if (dbError.code === 5 || dbError.message?.includes('NOT_FOUND')) {
+        console.log('Processing history collection not found, returning empty array');
+        return NextResponse.json({ records: [] });
+      }
+      // Re-throw other errors
+      throw dbError;
+    }
   } catch (error) {
     console.error('Error getting processing history:', error);
     return NextResponse.json(

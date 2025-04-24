@@ -49,3 +49,13 @@ next-env.d.ts
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Credentials and sensitive files
+*-firebase-adminsdk-*.json
+*-*-*.json
+gcalocr-*.json
+firebase-*.json
+serviceAccount*.json
+
+# Local scripts
+start-app.sh

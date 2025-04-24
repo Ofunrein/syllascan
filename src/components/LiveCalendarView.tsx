@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@/lib/UserContext';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, View, NavigateAction } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import toast from 'react-hot-toast';
@@ -31,6 +31,8 @@ export default function LiveCalendarView() {
     start: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     end: new Date(new Date().setMonth(new Date().getMonth() + 2))
   });
+
+  const calendarRef = useRef(null);
 
   // Function to fetch events from Google Calendar API
   const fetchGoogleCalendarEvents = async () => {
@@ -144,33 +146,72 @@ export default function LiveCalendarView() {
     }
   }, [googleAuthenticated, timeRange]);
 
+  // Add this useEffect right after the other useEffect hooks
+  useEffect(() => {
+    // Check if error includes Unauthorized and update the error message
+    if (error && (error.includes('Unauthorized') || error.includes('Authentication failed'))) {
+      // Update the error state to include information about the authorization
+      setError('Google Calendar authorization expired. Please reconnect to continue.');
+    }
+  }, [error]);
+
   // Handle view change in the calendar
   const handleRangeChange = (
     range: Date[] | { start: Date; end: Date }
   ) => {
-    // Only update time range for month view to avoid too many requests
+    console.log('Range changed:', range);
+    
+    // Handle different view types
+    let newStart: Date;
+    let newEnd: Date;
+    
+    if (Array.isArray(range)) {
+      // For week/day view, use the first and last date
+      newStart = range[0];
+      newEnd = range[range.length - 1];
+    } else if (range.start && range.end) {
+      // For month view, use the provided start and end
+      newStart = range.start;
+      newEnd = range.end;
+    } else {
+      // If we can't determine the range, don't update
+      return;
+    }
+    
+    // Only update if the range has actually changed
     if (
-      typeof range !== 'object' || 
-      Array.isArray(range) || 
-      !range.start || 
-      !range.end || 
-      range.start === timeRange.start || 
-      range.end === timeRange.end
+      newStart.getTime() === timeRange.start.getTime() && 
+      newEnd.getTime() === timeRange.end.getTime()
     ) {
       return;
     }
     
     // Expand the range a bit to ensure we get all events
-    const expandedStart = new Date(range.start);
+    const expandedStart = new Date(newStart);
     expandedStart.setMonth(expandedStart.getMonth() - 1);
     
-    const expandedEnd = new Date(range.end);
+    const expandedEnd = new Date(newEnd);
     expandedEnd.setMonth(expandedEnd.getMonth() + 1);
+    
+    console.log('Setting new time range:', {
+      start: expandedStart,
+      end: expandedEnd
+    });
     
     setTimeRange({
       start: expandedStart,
       end: expandedEnd
     });
+  };
+
+  // Update the handleNavigate function with the correct types
+  const handleNavigate = (newDate: Date, view: View, action: NavigateAction) => {
+    console.log('Navigation action:', action, 'to date:', newDate, 'view:', view);
+    
+    // Force refresh events when navigation happens
+    setTimeout(() => {
+      fetchGoogleCalendarEvents();
+    }, 100);
   };
 
   // Custom event styling
@@ -255,12 +296,30 @@ export default function LiveCalendarView() {
       <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4 text-red-500">Error</h2>
         <p className="mb-4">{error}</p>
-        <button
-          onClick={fetchGoogleCalendarEvents}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition mr-2"
-        >
-          Try Again
-        </button>
+        
+        {error.includes('authorization expired') || error.includes('reconnect') ? (
+          <div className="flex space-x-2">
+            <button
+              onClick={handleConnectGoogleCalendar}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            >
+              Reconnect to Google Calendar
+            </button>
+            <button
+              onClick={fetchGoogleCalendarEvents}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={fetchGoogleCalendarEvents}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          >
+            Try Again
+          </button>
+        )}
       </div>
     );
   }
@@ -667,8 +726,10 @@ export default function LiveCalendarView() {
             views={['month', 'week', 'day', 'agenda']}
             defaultView="month"
             onRangeChange={handleRangeChange}
+            onNavigate={handleNavigate}
             tooltipAccessor={(event) => event.description || event.title}
             eventPropGetter={eventStyleGetter}
+            ref={calendarRef}
             popup
             selectable
           />

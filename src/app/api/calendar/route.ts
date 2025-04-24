@@ -2,32 +2,64 @@ import { NextRequest, NextResponse } from 'next/server';
 import { addEventsToCalendar } from '@/lib/googleCalendar';
 import { Event } from '@/lib/openai';
 import { google } from 'googleapis';
+import { getFirebaseAdminAuth } from '@/lib/firebase-admin';
+import { recordProcessingHistory } from '@/lib/processingHistory';
 
 export async function POST(request: NextRequest) {
   try {
     // Try to get the access token from the Authorization header or cookies
     let accessToken = null;
     let refreshToken = null;
+    let userId = null;
     const authHeader = request.headers.get('Authorization');
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       accessToken = authHeader.split('Bearer ')[1];
-    } else {
-      // Try to get the access token from cookies
+      
+      // If we have a token in the Authorization header, try to get the user ID
+      try {
+        const auth = getFirebaseAdminAuth();
+        const decodedToken = await auth.verifyIdToken(accessToken);
+        userId = decodedToken.uid;
+      } catch (authError) {
+        console.error('Error verifying ID token:', authError);
+        // Continue without user ID, we'll try to get it from cookies
+      }
+    }
+    
+    // Try to get tokens from cookies if not in Authorization header
+    if (!accessToken) {
       const cookieToken = request.cookies.get('access_token');
       if (cookieToken) {
         accessToken = cookieToken.value;
       }
-      
-      // Try to get the refresh token from cookies
+    }
+    
+    if (!refreshToken) {
       const cookieRefreshToken = request.cookies.get('refresh_token');
       if (cookieRefreshToken) {
         refreshToken = cookieRefreshToken.value;
       }
     }
     
+    // Try to get userId from session cookie if not from token
+    if (!userId) {
+      const sessionCookie = request.cookies.get('session');
+      if (sessionCookie) {
+        try {
+          const auth = getFirebaseAdminAuth();
+          const decodedClaims = await auth.verifySessionCookie(sessionCookie.value);
+          userId = decodedClaims.uid;
+        } catch (sessionError) {
+          console.error('Error verifying session cookie:', sessionError);
+          // Continue without user ID
+        }
+      }
+    }
+    
     console.log('Access token found:', !!accessToken);
     console.log('Refresh token found:', !!refreshToken);
+    console.log('User ID found:', !!userId);
     
     if (!accessToken) {
       return NextResponse.json(
@@ -49,6 +81,34 @@ export async function POST(request: NextRequest) {
     try {
       // Use the addEventsToCalendar function from our utility
       const eventIds = await addEventsToCalendar(accessToken, events, refreshToken);
+      
+      // Record processing history if we have a user ID
+      if (userId) {
+        // Group events by source file if available
+        const fileGroups = new Map<string, Event[]>();
+        
+        for (const event of events) {
+          const sourceFile = event.sourceFile || 'Unknown File';
+          if (!fileGroups.has(sourceFile)) {
+            fileGroups.set(sourceFile, []);
+          }
+          fileGroups.get(sourceFile).push(event);
+        }
+        
+        // Record processing history for each file
+        for (const [fileName, fileEvents] of fileGroups.entries()) {
+          // Get file type from first event if available
+          const fileType = fileEvents[0].sourceFileType || 'application/octet-stream';
+          
+          await recordProcessingHistory({
+            userId,
+            fileName,
+            fileType,
+            eventCount: fileEvents.length,
+            status: 'success',
+          });
+        }
+      }
       
       return NextResponse.json({ 
         success: true, 
@@ -85,6 +145,34 @@ export async function POST(request: NextRequest) {
           
           // Retry adding events with new token
           const eventIds = await addEventsToCalendar(newAccessToken, events);
+          
+          // Record processing history if we have a user ID
+          if (userId) {
+            // Group events by source file if available
+            const fileGroups = new Map<string, Event[]>();
+            
+            for (const event of events) {
+              const sourceFile = event.sourceFile || 'Unknown File';
+              if (!fileGroups.has(sourceFile)) {
+                fileGroups.set(sourceFile, []);
+              }
+              fileGroups.get(sourceFile).push(event);
+            }
+            
+            // Record processing history for each file
+            for (const [fileName, fileEvents] of fileGroups.entries()) {
+              // Get file type from first event if available
+              const fileType = fileEvents[0].sourceFileType || 'application/octet-stream';
+              
+              await recordProcessingHistory({
+                userId,
+                fileName,
+                fileType,
+                eventCount: fileEvents.length,
+                status: 'success',
+              });
+            }
+          }
           
           // Set the new access token in a cookie
           const response = NextResponse.json({ 

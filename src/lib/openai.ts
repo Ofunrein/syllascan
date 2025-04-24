@@ -5,12 +5,15 @@ const openai = new OpenAI({
 });
 
 export interface Event {
+  id?: string;
   title: string;
   description?: string;
   startDate: string; // ISO date string
   endDate?: string; // ISO date string
   location?: string;
   isAllDay?: boolean;
+  sourceFile?: string; // Name of the file the event was extracted from
+  sourceFileType?: string; // MIME type of the source file
 }
 
 export async function extractEventsFromImage(base64Image: string): Promise<Event[]> {

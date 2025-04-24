@@ -322,7 +322,30 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
       const data = await response.json();
       toast.success(`Successfully added ${data.eventIds.length} events to your calendar!`, { id: toastId });
+      
+      // Clear events and redirect to live calendar tab instead of upload tab
       onClearEvents();
+      
+      // Use window location to redirect to the live calendar tab
+      const currentUrl = window.location.href.split('#')[0];
+      window.location.href = `${currentUrl}#live-calendar`;
+      
+      // Find and click the live calendar tab button to activate it
+      setTimeout(() => {
+        const liveCalendarButton = document.querySelector('button.tab[aria-label="Live Calendar"]') as HTMLButtonElement;
+        if (liveCalendarButton) {
+          liveCalendarButton.click();
+        } else {
+          // Fallback: Try to find the button by text content
+          const allButtons = document.querySelectorAll('button.tab');
+          for (const button of allButtons) {
+            if (button.textContent?.includes('Live Calendar')) {
+              (button as HTMLButtonElement).click();
+              break;
+            }
+          }
+        }
+      }, 100);
     } catch (error: any) {
       console.error('Error adding events to calendar:', error);
       toast.error(error.message || 'Failed to add events to your calendar', { id: toastId });
@@ -458,7 +481,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         </div>
       ) : (
         <div className="calendar-container">
-          <CalendarView events={localEvents} />
+          <CalendarView 
+            events={localEvents} 
+            onEditEvent={(event, index) => handleEditEvent(event, index, null)}
+            selectedEvents={selectedEvents}
+            onToggleSelection={toggleEventSelection}
+          />
             </div>
       )}
       

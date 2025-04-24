@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
         // Add file info to each event
         const eventsWithSource = events.map(event => ({
           ...event,
-          sourceFile: fileName
+          sourceFile: fileName,
+          sourceFileType: fileType
         }));
         
         allEvents.push(...eventsWithSource);
