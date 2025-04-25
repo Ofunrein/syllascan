@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'API usage limit reached', 
-          message: 'You have used your free limit of 5 extractions. Please provide your own OpenAI API key to continue using this service.' 
+          message: 'You have used your free limit of 5 extractions. Please provide your own OpenAI API key to continue using this service.',
+          requiresKey: true
         },
         { status: 403 }
       );
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     
     // Process each file and collect all events
     const allEvents = [];
+    const errors = [];
     
     for (const [_, file] of fileEntries) {
       if (!(file instanceof File)) {
@@ -101,10 +103,18 @@ export async function POST(request: NextRequest) {
           console.log('Processed PDF file, base64 length:', base64Image.length);
         } catch (pdfError) {
           console.error('Error processing PDF:', pdfError);
+          errors.push({
+            file: fileName,
+            error: 'Failed to process PDF file'
+          });
           continue; // Skip this file but continue with others
         }
       } else {
         console.warn('Skipping unsupported file type:', fileType);
+        errors.push({
+          file: fileName,
+          error: `Unsupported file type: ${fileType}`
+        });
         continue; // Skip this file but continue with others
       }
 
@@ -124,7 +134,29 @@ export async function POST(request: NextRequest) {
         allEvents.push(...eventsWithSource);
       } catch (extractError) {
         console.error(`Error extracting events from ${fileName}:`, extractError);
-        // Continue with other files
+        
+        // Check for specific OpenAI API errors
+        let errorMessage = 'Failed to extract events';
+        let requiresKey = false;
+        
+        if (extractError.response?.status === 429) {
+          errorMessage = 'OpenAI API rate limit exceeded. Please try again later.';
+          if (!session?.user?.email || !canUseDefault) {
+            errorMessage = 'OpenAI API rate limit exceeded. Please provide your own API key to continue.';
+            requiresKey = true;
+          }
+        } else if (extractError.response?.status === 401) {
+          errorMessage = 'OpenAI API key is invalid. Please provide a valid API key.';
+          requiresKey = true;
+        } else if (extractError.response?.status === 400) {
+          errorMessage = 'Bad request to OpenAI API. Please check your input and try again.';
+        }
+        
+        errors.push({
+          file: fileName,
+          error: errorMessage,
+          requiresKey
+        });
       }
     }
     
@@ -136,15 +168,22 @@ export async function POST(request: NextRequest) {
     console.log(`Total events extracted: ${allEvents.length}`);
     
     if (allEvents.length === 0) {
+      const requiresKey = errors.some(e => e.requiresKey);
+      
       return NextResponse.json(
-        { message: 'No events could be extracted from the provided files' },
+        { 
+          message: 'No events could be extracted from the provided files',
+          errors,
+          requiresKey
+        },
         { status: 200 }
       );
     }
     
     return NextResponse.json({ 
       events: allEvents,
-      count: allEvents.length
+      count: allEvents.length,
+      errors: errors.length > 0 ? errors : undefined
     });
   } catch (error) {
     console.error('Error processing files:', error);
