@@ -1,6 +1,7 @@
 import GoogleAuthTest from '@/components/GoogleAuthTest';
 import GoogleAuthWrapper from '@/components/GoogleAuthWrapper';
 import LiveCalendarView from '@/components/LiveCalendarView';
+import { Suspense } from 'react';
 
 export default function TestGoogleAuthPage() {
   return (
@@ -19,15 +20,17 @@ export default function TestGoogleAuthPage() {
             This component will automatically check if you're authenticated with Google
             and prompt you to connect if needed.
           </p>
-          <GoogleAuthWrapper>
-            <div className="p-4 border rounded-lg bg-white shadow-sm">
-              <h3 className="text-lg font-medium mb-2">Calendar Data</h3>
-              <p>You are successfully authenticated with Google Calendar!</p>
-              <div className="mt-4">
-                <LiveCalendarView />
+          <Suspense fallback={<div>Loading authentication status...</div>}>
+            <GoogleAuthWrapper>
+              <div className="p-4 border rounded-lg bg-white shadow-sm">
+                <h3 className="text-lg font-medium mb-2">Calendar Data</h3>
+                <p>You are successfully authenticated with Google Calendar!</p>
+                <div className="mt-4">
+                  <LiveCalendarView />
+                </div>
               </div>
-            </div>
-          </GoogleAuthWrapper>
+            </GoogleAuthWrapper>
+          </Suspense>
         </div>
       </div>
     </div>

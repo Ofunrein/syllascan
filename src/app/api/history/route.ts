@@ -22,19 +22,19 @@ export async function GET(request: NextRequest) {
     const db = getFirebaseAdminDb();
     
     try {
-      const historySnapshot = await db
-        .collection('processingHistory')
-        .where('userId', '==', uid)
-        .orderBy('processedAt', 'desc')
-        .limit(20)
-        .get();
+    const historySnapshot = await db
+      .collection('processingHistory')
+      .where('userId', '==', uid)
+      .orderBy('processedAt', 'desc')
+      .limit(20)
+      .get();
 
-      const records = historySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    const records = historySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
 
-      return NextResponse.json({ records });
+    return NextResponse.json({ records });
     } catch (dbError: any) {
       // Handle NOT_FOUND error (code 5) which occurs when collection doesn't exist yet
       if (dbError.code === 5 || dbError.message?.includes('NOT_FOUND')) {

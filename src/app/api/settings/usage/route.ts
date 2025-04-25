@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { initAdmin } from '@/lib/firebase';
+import { initAdmin } from '@/lib/firebase-admin';
 
 // Initialize Firebase Admin
 initAdmin();

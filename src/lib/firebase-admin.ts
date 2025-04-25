@@ -1,4 +1,6 @@
 import * as admin from 'firebase-admin';
+import path from 'path';
+import fs from 'fs';
 
 // Check if the private key is properly formatted
 const formatPrivateKey = (key: string | undefined) => {
@@ -13,12 +15,42 @@ const formatPrivateKey = (key: string | undefined) => {
   return key.replace(/\\n/g, '\n');
 };
 
-// Server-side Firebase config
-const serviceAccount = {
-  projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-  privateKey: formatPrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY),
-};
+// Load service account from JSON file if environment variables are not set
+let serviceAccount: any;
+
+try {
+  // Try to use environment variables first
+  if (process.env.FIREBASE_ADMIN_PROJECT_ID && 
+      process.env.FIREBASE_ADMIN_CLIENT_EMAIL && 
+      process.env.FIREBASE_ADMIN_PRIVATE_KEY) {
+    serviceAccount = {
+      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      privateKey: formatPrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY),
+    };
+    console.log('Using Firebase Admin SDK credentials from environment variables');
+  } else {
+    // Fallback to JSON file if environment variables are not set
+    const jsonPath = path.resolve(process.cwd(), 'gcalocr2-firebase-adminsdk-fbsvc-abe7cba762.json');
+    const serviceAccountRaw = fs.readFileSync(jsonPath, 'utf8');
+    const serviceAccountJson = JSON.parse(serviceAccountRaw);
+    
+    serviceAccount = {
+      projectId: serviceAccountJson.project_id,
+      clientEmail: serviceAccountJson.client_email,
+      privateKey: serviceAccountJson.private_key
+    };
+    console.log('Using Firebase Admin SDK credentials from service account JSON file');
+  }
+} catch (error) {
+  console.error('Error loading Firebase Admin SDK credentials:', error);
+  // Set default values for initialization to still work
+  serviceAccount = {
+    projectId: 'gcalocr2',
+    clientEmail: 'firebase-adminsdk-fbsvc@gcalocr2.iam.gserviceaccount.com',
+    privateKey: ''
+  };
+}
 
 // Log the service account details (without the full private key for security)
 console.log('Firebase Admin SDK Service Account:', {
@@ -35,24 +67,24 @@ let adminApp: admin.app.App | undefined;
 export const getFirebaseAdminApp = () => {
   if (!adminApp) {
     try {
-      console.log('Initializing Firebase Admin with project:', process.env.FIREBASE_ADMIN_PROJECT_ID);
+      console.log('Initializing Firebase Admin with project:', serviceAccount.projectId);
       
-      // Check if required environment variables are set
-      if (!process.env.FIREBASE_ADMIN_PROJECT_ID) {
-        throw new Error('Missing FIREBASE_ADMIN_PROJECT_ID in environment variables');
+      // Check if required service account properties are available
+      if (!serviceAccount.projectId) {
+        throw new Error('Missing projectId in Firebase Admin service account');
       }
       
-      if (!process.env.FIREBASE_ADMIN_CLIENT_EMAIL) {
-        throw new Error('Missing FIREBASE_ADMIN_CLIENT_EMAIL in environment variables');
+      if (!serviceAccount.clientEmail) {
+        throw new Error('Missing clientEmail in Firebase Admin service account');
       }
       
-      if (!process.env.FIREBASE_ADMIN_PRIVATE_KEY) {
-        throw new Error('Missing FIREBASE_ADMIN_PRIVATE_KEY in environment variables');
+      if (!serviceAccount.privateKey) {
+        throw new Error('Missing privateKey in Firebase Admin service account');
       }
       
       // Check if the private key is properly formatted
       if (!serviceAccount.privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        throw new Error('FIREBASE_ADMIN_PRIVATE_KEY is not properly formatted');
+        throw new Error('Firebase Admin privateKey is not properly formatted');
       }
       
       if (admin.apps.length === 0) {
@@ -95,3 +127,10 @@ export const getFirebaseAdminDb = () => {
     throw error;
   }
 }; 
+
+/**
+ * Initialize Firebase Admin SDK
+ */
+export function initAdmin() {
+  return getFirebaseAdminApp();
+} 

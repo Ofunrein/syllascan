@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
       if (cookieToken) {
         accessToken = cookieToken.value;
       }
-    }
-    
+      }
+      
     if (!refreshToken) {
       const cookieRefreshToken = request.cookies.get('refresh_token');
       if (cookieRefreshToken) {

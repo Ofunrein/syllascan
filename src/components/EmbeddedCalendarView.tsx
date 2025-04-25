@@ -15,17 +15,17 @@ export default function EmbeddedCalendarView() {
       // Create a calendar URL that includes the user's email to show their events
       const url = 'https://calendar.google.com/calendar/embed?' + 
         `src=${encodeURIComponent(user.email)}` +
-        `&ctz=${timezone}` +
-        `&mode=${viewMode.toLowerCase()}` +
-        '&showTitle=0' +
-        '&showNav=1' +
-        '&showDate=1' +
-        '&showPrint=0' +
-        '&showTabs=1' +
-        '&showCalendars=0' +
-        '&showTz=1' +
-        '&height=600' +
-        '&wkst=1';
+      `&ctz=${timezone}` +
+      `&mode=${viewMode.toLowerCase()}` +
+      '&showTitle=0' +
+      '&showNav=1' +
+      '&showDate=1' +
+      '&showPrint=0' +
+      '&showTabs=1' +
+      '&showCalendars=0' +
+      '&showTz=1' +
+      '&height=600' +
+      '&wkst=1';
       setCalendarUrl(url);
     }
   }, [user, viewMode, timezone]);
@@ -44,13 +44,13 @@ export default function EmbeddedCalendarView() {
         
         <div className="relative pb-[75%] h-0 overflow-hidden">
           {user && calendarUrl ? (
-            <iframe 
+          <iframe 
               src={calendarUrl}
-              className="absolute top-0 left-0 w-full h-full border-0"
-              frameBorder="0"
-              scrolling="no"
-              title="Google Calendar"
-            ></iframe>
+            className="absolute top-0 left-0 w-full h-full border-0"
+            frameBorder="0"
+            scrolling="no"
+            title="Google Calendar"
+          ></iframe>
           ) : (
             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
               <p className="text-gray-500 dark:text-gray-400">Please sign in to view your calendar</p>
