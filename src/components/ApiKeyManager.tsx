@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +19,6 @@ export default function ApiKeyManager({
   freeLimit = 5,
   hasCustomKey = false 
 }: ApiKeyManagerProps) {
-  const { data: session, status } = useSession();
   const [apiKey, setApiKey] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -62,11 +60,6 @@ export default function ApiKeyManager({
       setIsSubmitting(false);
     }
   };
-  
-  // Don't show the component if not logged in
-  if (status !== 'authenticated') {
-    return null;
-  }
   
   return (
     <Card className="w-full">
