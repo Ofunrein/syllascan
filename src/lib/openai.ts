@@ -1,8 +1,7 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Don't create the client immediately, we'll create it per-request
+// based on the API key to use
 
 export interface Event {
   id?: string;
@@ -16,9 +15,14 @@ export interface Event {
   sourceFileType?: string; // MIME type of the source file
 }
 
-export async function extractEventsFromImage(base64Image: string): Promise<Event[]> {
+export async function extractEventsFromImage(base64Image: string, apiKey?: string): Promise<Event[]> {
   try {
     console.log("Calling OpenAI API with image...");
+    
+    // Create a client with the provided API key or fall back to env variable
+    const openai = new OpenAI({
+      apiKey: apiKey || process.env.OPENAI_API_KEY,
+    });
     
     // Use the latest GPT-4 Vision model
     const response = await openai.chat.completions.create({
@@ -60,4 +64,9 @@ export async function extractEventsFromImage(base64Image: string): Promise<Event
   }
 }
 
-export default openai; 
+// Function to create an OpenAI client with a specific API key
+export function createOpenAIClient(apiKey: string): OpenAI {
+  return new OpenAI({
+    apiKey: apiKey,
+  });
+} 

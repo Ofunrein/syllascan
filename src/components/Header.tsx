@@ -87,6 +87,10 @@ export default function Header() {
                       <span className="menu-icon">📊</span>
                               Dashboard
                             </Link>
+                    <Link href="/settings" className="menu-item">
+                      <span className="menu-icon">⚙️</span>
+                              Settings
+                            </Link>
                     <button onClick={signOut} className="menu-item">
                       <span className="menu-icon">🚪</span>
                               Sign out
@@ -128,6 +132,10 @@ export default function Header() {
             <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
               <span className="nav-icon">📊</span>
                 Dashboard
+            </Link>
+            <Link href="/settings" className={`mobile-nav-link ${isActive('/settings') ? 'active' : ''}`}>
+              <span className="nav-icon">⚙️</span>
+                Settings
             </Link>
             
             {!user && (

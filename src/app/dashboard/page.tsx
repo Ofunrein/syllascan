@@ -6,6 +6,7 @@ import { useUser } from '@/lib/UserContext';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import ApiKeyBanner from '@/components/ApiKeyBanner';
 
 // Use dynamic import with no SSR for components that need client-only features
 const DynamicProcessingHistory = dynamic(
@@ -19,6 +20,8 @@ export default function Dashboard() {
   const [calendars, setCalendars] = useState<any[]>([]);
   const [isLoadingCalendars, setIsLoadingCalendars] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<string>('calendar');
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
 
   // Set mounted state to true when component mounts on client
   useEffect(() => {
@@ -83,6 +86,8 @@ export default function Dashboard() {
       
       <main className="main-content">
         <div className="container">
+          <ApiKeyBanner />
+          
           <div className="dashboard-header animate-fade-in">
             <div className="welcome-card">
               <div className="welcome-avatar">

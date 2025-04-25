@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractEventsFromImage } from '@/lib/openai';
 import * as pdfjs from 'pdfjs-dist';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { canUseDefaultApiKey, getApiKey, incrementApiUsage } from '@/lib/apiKeyManager';
 
 // Initialize PDF.js worker
 if (typeof window === 'undefined') {
@@ -10,6 +13,34 @@ if (typeof window === 'undefined') {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get user session
+    const session = await getServerSession(authOptions);
+    
+    // Check if user can use the default API key
+    const canUseDefault = await canUseDefaultApiKey(session);
+    
+    // Get the API key to use (custom or default)
+    const apiKey = await getApiKey(session);
+    
+    // If user has exceeded their free limit and hasn't provided a key
+    if (!canUseDefault && !apiKey) {
+      return NextResponse.json(
+        { 
+          error: 'API usage limit reached', 
+          message: 'You have used your free limit of 5 extractions. Please provide your own OpenAI API key to continue using this service.' 
+        },
+        { status: 403 }
+      );
+    }
+    
+    // If we don't have an API key at all (should not happen with proper configuration)
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'API key not available' },
+        { status: 500 }
+      );
+    }
+    
     const formData = await request.formData();
     const fileEntries = Array.from(formData.entries()).filter(([key]) => key.startsWith('file'));
     
@@ -80,7 +111,7 @@ export async function POST(request: NextRequest) {
       // Extract events using OpenAI Vision API
       try {
         console.log(`Extracting events from ${fileName}...`);
-        const events = await extractEventsFromImage(base64Image);
+        const events = await extractEventsFromImage(base64Image, apiKey);
         console.log(`Extracted ${events.length} events from ${fileName}`);
         
         // Add file info to each event
@@ -95,6 +126,11 @@ export async function POST(request: NextRequest) {
         console.error(`Error extracting events from ${fileName}:`, extractError);
         // Continue with other files
       }
+    }
+    
+    // Increment the API usage count if using default key
+    if (canUseDefault) {
+      await incrementApiUsage(session);
     }
     
     console.log(`Total events extracted: ${allEvents.length}`);
