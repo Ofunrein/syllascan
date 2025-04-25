@@ -15,98 +15,78 @@ const formatPrivateKey = (key: string | undefined) => {
   return key.replace(/\\n/g, '\n');
 };
 
-// Load service account from JSON file if environment variables are not set
-let serviceAccount: any;
-
-try {
-  // Try to use environment variables first
-  if (process.env.FIREBASE_ADMIN_PROJECT_ID && 
-      process.env.FIREBASE_ADMIN_CLIENT_EMAIL && 
-      process.env.FIREBASE_ADMIN_PRIVATE_KEY) {
-    serviceAccount = {
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-      privateKey: formatPrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY),
-    };
-    console.log('Using Firebase Admin SDK credentials from environment variables');
-  } else {
-    // Fallback to JSON file if environment variables are not set
-    const jsonPath = path.resolve(process.cwd(), 'gcalocr2-firebase-adminsdk-fbsvc-abe7cba762.json');
-    const serviceAccountRaw = fs.readFileSync(jsonPath, 'utf8');
-    const serviceAccountJson = JSON.parse(serviceAccountRaw);
-    
-    serviceAccount = {
-      projectId: serviceAccountJson.project_id,
-      clientEmail: serviceAccountJson.client_email,
-      privateKey: serviceAccountJson.private_key
-    };
-    console.log('Using Firebase Admin SDK credentials from service account JSON file');
-  }
-} catch (error) {
-  console.error('Error loading Firebase Admin SDK credentials:', error);
-  // Set default values for initialization to still work
-  serviceAccount = {
-    projectId: 'gcalocr2',
-    clientEmail: 'firebase-adminsdk-fbsvc@gcalocr2.iam.gserviceaccount.com',
-    privateKey: ''
-  };
-}
-
-// Log the service account details (without the full private key for security)
-console.log('Firebase Admin SDK Service Account:', {
-  projectId: serviceAccount.projectId,
-  clientEmail: serviceAccount.clientEmail,
-  privateKeyProvided: !!serviceAccount.privateKey,
-  privateKeyLength: serviceAccount.privateKey ? serviceAccount.privateKey.length : 0,
-  privateKeyStart: serviceAccount.privateKey ? serviceAccount.privateKey.substring(0, 30) + '...' : 'N/A',
-});
-
 // Initialize Firebase Admin SDK (server-side)
-let adminApp: admin.app.App | undefined;
+export function getFirebaseAdminApp() {
+  if (admin.apps.length > 0) {
+    console.log('Using existing Firebase Admin SDK app');
+    return admin.apps[0];
+  }
 
-export const getFirebaseAdminApp = () => {
-  if (!adminApp) {
-    try {
-      console.log('Initializing Firebase Admin with project:', serviceAccount.projectId);
+  try {
+    // Try to use environment variables first
+    if (process.env.FIREBASE_ADMIN_PROJECT_ID && 
+        process.env.FIREBASE_ADMIN_CLIENT_EMAIL && 
+        process.env.FIREBASE_ADMIN_PRIVATE_KEY) {
       
-      // Check if required service account properties are available
-      if (!serviceAccount.projectId) {
-        throw new Error('Missing projectId in Firebase Admin service account');
-      }
+      const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+      const privateKey = formatPrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
       
-      if (!serviceAccount.clientEmail) {
-        throw new Error('Missing clientEmail in Firebase Admin service account');
-      }
+      console.log('Using Firebase Admin SDK credentials from environment variables');
+      console.log('Firebase Admin SDK Service Account:', {
+        projectId,
+        clientEmail,
+        privateKeyProvided: !!privateKey,
+        privateKeyLength: privateKey.length,
+        privateKeyStart: privateKey.substring(0, 25) + '...'
+      });
+
+      console.log('Initializing Firebase Admin with project:', projectId);
       
-      if (!serviceAccount.privateKey) {
-        throw new Error('Missing privateKey in Firebase Admin service account');
-      }
-      
-      // Check if the private key is properly formatted
-      if (!serviceAccount.privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        throw new Error('Firebase Admin privateKey is not properly formatted');
-      }
-      
-      if (admin.apps.length === 0) {
-        // Initialize with credential only first
-        adminApp = admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)
+      return admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+    } else {
+      // Fallback to JSON file if environment variables are not set
+      try {
+        const jsonPath = path.resolve(process.cwd(), 'gcalocr2-firebase-adminsdk-fbsvc-abe7cba762.json');
+        const serviceAccountRaw = fs.readFileSync(jsonPath, 'utf8');
+        const serviceAccountJson = JSON.parse(serviceAccountRaw);
+        
+        const serviceAccount = {
+          projectId: serviceAccountJson.project_id,
+          clientEmail: serviceAccountJson.client_email,
+          privateKey: serviceAccountJson.private_key
+        };
+        
+        console.log('Using Firebase Admin SDK credentials from service account JSON file');
+        console.log('Firebase Admin SDK Service Account:', {
+          projectId: serviceAccount.projectId,
+          clientEmail: serviceAccount.clientEmail,
+          privateKeyProvided: !!serviceAccount.privateKey,
+          privateKeyLength: serviceAccount.privateKey.length,
+          privateKeyStart: serviceAccount.privateKey.substring(0, 25) + '...'
         });
         
-        console.log('Firebase Admin SDK initialized successfully');
-      } else {
-        adminApp = admin.app();
-        console.log('Using existing Firebase Admin SDK app');
+        console.log('Initializing Firebase Admin with project:', serviceAccount.projectId);
+        
+        return admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+        });
+      } catch (fileError) {
+        console.error('Error loading Firebase Admin SDK credentials from file:', fileError);
+        throw new Error('Failed to initialize Firebase Admin: No credentials available');
       }
-      
-      return adminApp;
-    } catch (error) {
-      console.error('Firebase Admin initialization error:', error);
-      throw error;
     }
+  } catch (error) {
+    console.error('Firebase Admin initialization error:', error);
+    throw error;
   }
-  return adminApp;
-};
+}
 
 export const getFirebaseAdminAuth = () => {
   try {
