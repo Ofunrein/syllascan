@@ -10,6 +10,7 @@ interface UserContextType {
   googleAuthenticated: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  dismissErrors: () => void;
 }
 
 const UserContext = createContext<UserContextType>({
@@ -19,6 +20,7 @@ const UserContext = createContext<UserContextType>({
   googleAuthenticated: false,
   signIn: async () => {},
   signOut: async () => {},
+  dismissErrors: () => {},
 });
 
 export const useUser = () => useContext(UserContext);
@@ -33,11 +35,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [googleAuthenticated, setGoogleAuthenticated] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   // Set mounted state to true when component mounts on client
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Dismiss all error toasts
+  const dismissErrors = () => {
+    toast.dismiss();
+    setLastError(null);
+  };
 
   // Check if user has Google Calendar access token
   useEffect(() => {
@@ -108,21 +117,30 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     } catch (error: any) {
       console.error('Error signing in:', error);
       
+      let errorMessage = 'Failed to sign in. Please try again later.';
+      
       // Show a more user-friendly error message
       if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign-in was cancelled. Please try again.');
+        errorMessage = 'Sign-in was cancelled. Please try again.';
       } else if (error.code === 'auth/popup-blocked') {
-        toast.error('Sign-in popup was blocked. Please allow popups for this site.');
+        errorMessage = 'Sign-in popup was blocked. Please allow popups for this site.';
       } else if (error.code === 'auth/cancelled-popup-request') {
-        toast.error('Sign-in request was cancelled. Please try again.');
+        errorMessage = 'Sign-in request was cancelled. Please try again.';
       } else if (error.code === 'auth/network-request-failed') {
-        toast.error('Network error. Please check your connection and try again.');
+        errorMessage = 'Network error. Please check your connection and try again.';
       } else if (error.code === 'auth/invalid-api-key') {
-        toast.error('Invalid API key. Please check your Firebase configuration.');
+        errorMessage = 'Invalid API key. Please check your Firebase configuration.';
         console.error('Firebase API key error:', error);
-      } else {
-        toast.error('Failed to sign in. Please try again later.');
       }
+      
+      setLastError(errorMessage);
+      
+      // Use a toastId to allow for programmatic dismissal
+      toast.error(errorMessage, {
+        id: 'auth-error',
+        duration: 8000,
+        icon: '❌',
+      });
     }
   };
 
@@ -146,14 +164,27 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         toast.success('Signed out successfully');
       } catch (error) {
         console.error('Error signing out:', error);
-        toast.error('Failed to sign out. Please try again.');
+        const errorMessage = 'Failed to sign out. Please try again.';
+        setLastError(errorMessage);
+        toast.error(errorMessage, {
+          id: 'signout-error',
+          duration: 5000,
+        });
       }
     }
   };
 
   // Render a consistent UI on both server and client
   return (
-    <UserContext.Provider value={{ user, loading, authenticated, googleAuthenticated, signIn, signOut }}>
+    <UserContext.Provider value={{ 
+      user, 
+      loading, 
+      authenticated, 
+      googleAuthenticated, 
+      signIn, 
+      signOut,
+      dismissErrors 
+    }}>
       {children}
     </UserContext.Provider>
   );

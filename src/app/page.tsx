@@ -207,7 +207,11 @@ export default function Home() {
       <footer className="app-footer">
         <div className="container">
           <p className="footer-text">
-            &copy; {new Date().getFullYear()} SyllaScan. All rights reserved.
+            &copy; {new Date().getFullYear()} SyllaScan. All rights reserved. Built by Martin
+            {' | '}
+            <a href="/privacy-policy" className="footer-link hover:underline">Privacy Policy</a>
+            {' | '}
+            <a href="/terms-of-service" className="footer-link hover:underline">Terms of Service</a>
           </p>
         </div>
       </footer>
@@ -363,6 +367,17 @@ export default function Home() {
           color: var(--foreground);
           opacity: 0.6;
           font-size: 0.875rem;
+        }
+        
+        .footer-link {
+          color: var(--primary);
+          font-weight: 500;
+        }
+        
+        /* For dark mode */
+        :global(.dark) .footer-link {
+          color: var(--primary-light);
+          opacity: 0.9;
         }
         
         @media (max-width: 640px) {

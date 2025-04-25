@@ -4,6 +4,7 @@ import { UserProvider } from '@/lib/UserContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import CalendarAuthBanner from '@/components/CalendarAuthBanner';
+import ToastDismissButton from '@/components/ToastDismissButton';
 import { useEffect, useState } from 'react';
 
 export default function ClientLayout({
@@ -12,6 +13,7 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const [showAuthBanner, setShowAuthBanner] = useState(false);
+  const [showToastButton, setShowToastButton] = useState(false);
 
   // Check if Google Calendar auth has expired
   useEffect(() => {
@@ -29,6 +31,29 @@ export default function ClientLayout({
     const timeoutId = setTimeout(checkAuth, 2000);
     
     return () => clearTimeout(timeoutId);
+  }, []);
+  
+  // Watch for toast notifications to show the dismiss button
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          const toasts = document.querySelectorAll('[role="status"]');
+          if (toasts.length > 0) {
+            setShowToastButton(true);
+          } else {
+            setShowToastButton(false);
+          }
+        }
+      }
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    return () => observer.disconnect();
   }, []);
   
   // Remove any unwanted SVG elements on mount
@@ -51,6 +76,7 @@ export default function ClientLayout({
         <UserProvider>
           <div className="app-container">
             {showAuthBanner && <CalendarAuthBanner />}
+            {showToastButton && <ToastDismissButton />}
             {children}
           </div>
           <style jsx global>{`
