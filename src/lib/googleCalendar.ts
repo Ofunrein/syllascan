@@ -67,28 +67,52 @@ export async function addEventsToCalendar(accessToken: string, events: Event[], 
           continue;
         }
         
-        if (!event.startDate) {
+        // Get the event date from startDate or date field
+        const eventDate = event.startDate || event.date;
+        
+        if (!eventDate) {
           errors.push(`Event missing start date: ${event.title}`);
           continue;
+        }
+        
+        // Determine if it's an all-day event or has a specific time
+        const isAllDay = event.isAllDay || (!eventDate.includes('T'));
+        
+        // Set up start and end dates/times
+        let startObj, endObj;
+        
+        if (isAllDay) {
+          // All-day event
+          const dateStr = eventDate.split('T')[0]; // Get just the date part if it has a time
+          startObj = { date: dateStr };
+          
+          // End date for all-day events - use the same day or the end date if available
+          const endDateStr = (event.endDate || eventDate).split('T')[0];
+          endObj = { date: endDateStr };
+        } else {
+          // Event with specific time
+          startObj = { dateTime: eventDate, timeZone: 'America/Chicago' };
+          
+          // End time - either use specified end or add 1 hour to start
+          if (event.endDate) {
+            endObj = { dateTime: event.endDate, timeZone: 'America/Chicago' };
+          } else {
+            // If no end date, add one hour to start
+            const endDateTime = new Date(eventDate);
+            endDateTime.setHours(endDateTime.getHours() + 1);
+            endObj = { dateTime: endDateTime.toISOString(), timeZone: 'America/Chicago' };
+          }
         }
         
         const calendarEvent = {
           summary: event.title,
           description: event.description || '',
-          start: event.isAllDay 
-            ? { date: event.startDate.split('T')[0] } 
-            : { dateTime: event.startDate },
-          end: event.endDate 
-            ? (event.isAllDay 
-              ? { date: event.endDate.split('T')[0] } 
-              : { dateTime: event.endDate })
-            : (event.isAllDay 
-              ? { date: event.startDate.split('T')[0] } 
-              : { dateTime: event.startDate }),
+          start: startObj,
+          end: endObj,
           location: event.location || '',
         };
         
-        console.log(`Adding event to calendar: ${event.title}`);
+        console.log(`Adding event to calendar: ${event.title}`, calendarEvent);
         
         const response = await calendar.events.insert({
           calendarId: 'primary',

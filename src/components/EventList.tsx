@@ -4,7 +4,6 @@ import { format, parseISO } from 'date-fns';
 import { useUser } from '@/lib/UserContext';
 import toast from 'react-hot-toast';
 import EventEditor from './EventEditor';
-import CalendarView from './CalendarView';
 import { PencilIcon, PlusIcon, TrashIcon, CheckIcon, CalendarIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 // Enum for resize directions
@@ -32,7 +31,6 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ event: Event; index: number } | null>(null);
   const [localEvents, setLocalEvents] = useState<Event[]>([]);
-  const [activeView, setActiveView] = useState<'list' | 'calendar'>('list');
   const [editorPosition, setEditorPosition] = useState<{ 
     top: number; 
     left: number;
@@ -196,12 +194,16 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'Not specified';
     try {
       const date = parseISO(dateString);
-      return format(date, 'MMM d, yyyy h:mm a');
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      return format(date, 'MMM d, yyyy');
     } catch (error) {
-      return dateString;
+      console.warn('Error formatting date:', dateString, error);
+      return dateString || 'Not specified';
     }
   };
 
@@ -393,108 +395,92 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             Clear All
           </button>
         </div>
-        
-        <div className="view-toggle">
+      </div>
+
+      <div className="event-list">
+        {localEvents.map((event, index) => (
+          <div key={index} className="event-item">
+            <div className="event-checkbox">
+              <input
+                type="checkbox"
+                checked={selectedEvents.has(index)}
+                onChange={() => toggleEventSelection(index)}
+                id={`event-${index}`}
+                className="hidden-checkbox"
+              />
+              <label 
+                htmlFor={`event-${index}`} 
+                className="custom-checkbox"
+                aria-label={selectedEvents.has(index) ? "Selected event" : "Unselected event"}
+              >
+                {selectedEvents.has(index) && (
+                  <CheckIcon className="checkbox-icon" />
+                )}
+              </label>
+            </div>
+            
+            <div className="event-content">
+              <label htmlFor={`event-${index}`} className="event-title">
+                {event.title || 'Untitled Event'}
+              </label>
+              
+              <div className="event-details">
+                <div className="event-time">
+                  <span className="detail-label">Date:</span> {formatDate(event.date || event.startDate)}
+                </div>
+                
+                {event.startTime && (
+                  <div className="event-time">
+                    <span className="detail-label">Start:</span> {event.startTime}
+                  </div>
+                )}
+                
+                {event.endTime && (
+                  <div className="event-time">
+                    <span className="detail-label">End:</span> {event.endTime}
+                  </div>
+                )}
+                
+                {event.isAllDay && (
+                  <div className="event-badge">All day event</div>
+                )}
+                
+                {event.location && (
+                  <div className="event-location">
+                    <span className="detail-label">Location:</span> {event.location}
+                  </div>
+                )}
+                
+                {event.description && (
+                  <div className="event-description">
+                    <span className="detail-label">Description:</span> {event.description}
+                  </div>
+                )}
+                
+                {event.type && (
+                  <div className="event-type">
+                    <span className={`event-type-badge event-type-${event.type}`}>{event.type}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             <button
-              type="button"
-              onClick={() => setActiveView('list')}
-            className={`view-toggle-button ${activeView === 'list' ? 'active' : ''}`}
-          >
-            List View
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView('calendar')}
-            className={`view-toggle-button ${activeView === 'calendar' ? 'active' : ''}`}
+              className="event-edit-button"
+              onClick={(e) => handleEditEvent(event, index, e)}
+              aria-label="Edit event"
             >
-              Calendar View
+              <PencilIcon className="edit-icon" />
             </button>
           </div>
-        </div>
-
-      {activeView === 'list' ? (
-        <div className="event-list">
-                {localEvents.map((event, index) => (
-            <div key={index} className="event-item">
-              <div className="event-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={selectedEvents.has(index)}
-                            onChange={() => toggleEventSelection(index)}
-                  id={`event-${index}`}
-                  className="hidden-checkbox"
-                />
-                <label 
-                  htmlFor={`event-${index}`} 
-                  className="custom-checkbox"
-                  aria-label={selectedEvents.has(index) ? "Selected event" : "Unselected event"}
-                >
-                  {selectedEvents.has(index) && (
-                    <CheckIcon className="checkbox-icon" />
-                  )}
-                </label>
-              </div>
-              
-              <div className="event-content">
-                <label htmlFor={`event-${index}`} className="event-title">
-                  {event.title || 'Untitled Event'}
-                </label>
-                
-                <div className="event-details">
-                  <div className="event-time">
-                    <span className="detail-label">Start:</span> {formatDate(event.startDate)}
-                        </div>
-                  
-                            {event.endDate && (
-                    <div className="event-time">
-                      <span className="detail-label">End:</span> {formatDate(event.endDate)}
-                    </div>
-                            )}
-                  
-                            {event.isAllDay && (
-                    <div className="event-badge">All day event</div>
-                            )}
-                  
-                  {event.location && (
-                    <div className="event-location">
-                      <span className="detail-label">Location:</span> {event.location}
-                          </div>
-                            )}
-                  
-                            {event.description && (
-                    <div className="event-description">
-                      <span className="detail-label">Description:</span> {event.description}
-                    </div>
-                            )}
-                          </div>
-                        </div>
-              
-                      <button
-                className="event-edit-button"
-                        onClick={(e) => handleEditEvent(event, index, e)}
-                        aria-label="Edit event"
-                      >
-                <PencilIcon className="edit-icon" />
-                      </button>
-                    </div>
-                ))}
-        </div>
-      ) : (
-        <div className="calendar-container">
-          <CalendarView 
-            events={localEvents} 
-            onEditEvent={(event, index) => handleEditEvent(event, index, null)}
-            selectedEvents={selectedEvents}
-            onToggleSelection={toggleEventSelection}
-          />
-            </div>
-      )}
+        ))}
+      </div>
       
       <div className="event-list-footer">
-              <button
+        <button
           type="button"
-                onClick={handleAddToCalendar}
-                disabled={selectedEvents.size === 0 || isAddingToCalendar || !authenticated || !googleAuthenticated}
+          onClick={handleAddToCalendar}
+          disabled={selectedEvents.size === 0 || isAddingToCalendar || !authenticated || !googleAuthenticated}
           className="add-to-calendar-button"
         >
           {isAddingToCalendar ? (
@@ -508,12 +494,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
               Add {selectedEvents.size} Events to Calendar
             </>
           )}
-              </button>
+        </button>
         
         {!authenticated && (
           <div className="auth-message">
             Please sign in to add events to your calendar
-            </div>
+          </div>
         )}
         
         {authenticated && !googleAuthenticated && (
@@ -697,42 +683,6 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           background-color: rgba(255, 255, 255, 0.1);
         }
         
-        .view-toggle {
-          display: flex;
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
-          overflow: hidden;
-        }
-        
-        :global(.dark) .view-toggle {
-          border-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .view-toggle-button {
-          flex: 1;
-          padding: 0.5rem 1rem;
-          font-size: 0.875rem;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-          color: var(--foreground);
-        }
-        
-        :global(.dark) .view-toggle-button {
-          color: rgba(255, 255, 255, 0.8);
-        }
-        
-        .view-toggle-button.active {
-          background-color: var(--primary);
-          color: white;
-        }
-        
-        :global(.dark) .view-toggle-button.active {
-          background-color: var(--primary-light);
-          color: var(--background);
-        }
-        
         .event-list {
           max-height: 500px;
           overflow-y: auto;
@@ -854,6 +804,60 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         
         :global(.dark) .event-badge {
           background-color: var(--primary-light);
+        }
+        
+        .event-type-badge {
+          display: inline-block;
+          font-size: 0.75rem;
+          padding: 0.125rem 0.375rem;
+          border-radius: 9999px;
+          margin-bottom: 0.25rem;
+          background-color: #e5e7eb;
+          color: #374151;
+        }
+        
+        .event-type-class {
+          background-color: #dbeafe;
+          color: #1e40af;
+        }
+        
+        .event-type-assignment {
+          background-color: #fef3c7;
+          color: #92400e;
+        }
+        
+        .event-type-exam {
+          background-color: #fee2e2;
+          color: #b91c1c;
+        }
+        
+        .event-type-discussion {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
+        
+        :global(.dark) .event-type-badge {
+          opacity: 0.9;
+        }
+        
+        :global(.dark) .event-type-class {
+          background-color: rgba(30, 64, 175, 0.3);
+          color: #93c5fd;
+        }
+        
+        :global(.dark) .event-type-assignment {
+          background-color: rgba(146, 64, 14, 0.3);
+          color: #fcd34d;
+        }
+        
+        :global(.dark) .event-type-exam {
+          background-color: rgba(185, 28, 28, 0.3);
+          color: #fca5a5;
+        }
+        
+        :global(.dark) .event-type-discussion {
+          background-color: rgba(6, 95, 70, 0.3);
+          color: #6ee7b7;
         }
         
         .event-edit-button {

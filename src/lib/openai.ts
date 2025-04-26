@@ -1,65 +1,132 @@
 import OpenAI from 'openai';
 
-// Don't create the client immediately, we'll create it per-request
-// based on the API key to use
-
+// Define event type
 export interface Event {
-  id?: string;
   title: string;
   description?: string;
-  startDate: string; // ISO date string
-  endDate?: string; // ISO date string
+  date: string;
+  startTime?: string;
+  endTime?: string;
   location?: string;
-  isAllDay?: boolean;
-  sourceFile?: string; // Name of the file the event was extracted from
-  sourceFileType?: string; // MIME type of the source file
+  type?: string;
 }
 
-export async function extractEventsFromImage(base64Image: string, apiKey?: string): Promise<Event[]> {
+// Get API key with fallback for development
+const getApiKey = () => {
+  // Use environment variable in production, or the hardcoded key for development
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  // If no API key is found, log a warning and use a placeholder
+  if (!apiKey) {
+    console.warn('No OpenAI API key found in environment variables');
+    // Add a placeholder instead of the actual key 
+    return "sk-placeholder-key-for-development";
+  }
+  
+  return apiKey;
+};
+
+// Create OpenAI client
+const createClient = () => {
+  return new OpenAI({ apiKey: getApiKey() });
+};
+
+/**
+ * Extract events from an image using OpenAI's Vision model
+ */
+export async function extractEventsFromImage(
+  base64Image: string,
+  apiKey: string = getApiKey()
+): Promise<Event[]> {
+  // Validate inputs
+  if (!base64Image) {
+    console.error('No image data provided');
+    throw new Error('Image data is required');
+  }
+  
+  const openai = createClient();
+  
+  const prompt = `
+    Extract all calendar events from this document image. 
+    Look for dates, times, deadlines, assignments, exams, holidays, and any other scheduled events.
+    
+    For each event, provide the following information in a structured format:
+    - title: The name or title of the event (required)
+    - description: A brief description of the event, if available (optional)
+    - date: The date of the event in YYYY-MM-DD format (required)
+    - startTime: Start time in 24-hour format HH:MM, if available (optional)
+    - endTime: End time in 24-hour format HH:MM, if available (optional)
+    - location: The location of the event, if available (optional)
+    - type: The type of event (e.g., assignment, exam, holiday, lecture, etc.), if discernible (optional)
+    
+    Format your response as a valid JSON array containing event objects. Infer/derive dates from context if not explicitly stated (e.g., "next Monday" should be converted to an actual date).
+    If you see relative dates like "Week 1" or "Day 3", use the context of the document to determine the actual date.
+    
+    Be thorough and extract ALL events mentioned in the document, even if some information is missing.
+    
+    If the image does not contain any events, return an empty array.
+  `;
+  
   try {
-    console.log("Calling OpenAI API with image...");
+    console.log('Calling OpenAI API with image...');
     
-    // Create a client with the provided API key or fall back to env variable
-    const openai = new OpenAI({
-      apiKey: apiKey || process.env.OPENAI_API_KEY,
-    });
-    
-    // Use the latest GPT-4 Vision model
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "user",
           content: [
-            {
-              type: "text",
-              text: "Extract all calendar events from this syllabus or document image. For each event, provide the title, description (if available), start date, end date (if available), location (if available), and whether it's an all-day event. Format the response as a JSON array of events with the following structure: [{\"title\": \"Event Title\", \"description\": \"Event Description\", \"startDate\": \"ISO date string\", \"endDate\": \"ISO date string\", \"location\": \"Location\", \"isAllDay\": boolean}]. Ensure dates are in ISO format (YYYY-MM-DDTHH:MM:SS). If you can't determine a field, omit it from the JSON."
-            },
+            { type: "text", text: prompt },
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
+                url: `data:image/jpeg;base64,${base64Image}`
               },
             },
           ],
         },
       ],
       max_tokens: 4096,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
     });
-
-    console.log("OpenAI API response received");
-    const content = response.choices[0]?.message?.content;
+    
+    console.log('OpenAI API response received');
+    
+    const content = response.choices[0].message.content;
+    
     if (!content) {
-      throw new Error("No content in response");
+      console.log('No content in OpenAI response');
+      return [];
     }
-
-    console.log("Parsing response content...");
-    const parsedContent = JSON.parse(content);
-    return parsedContent.events || [];
+    
+    try {
+      console.log('Parsing response content...');
+      // Try direct JSON parsing first
+      const events = JSON.parse(content) as Event[];
+      return events;
+    } catch (firstError) {
+      console.log('Direct JSON parsing failed, trying to extract JSON from response');
+      
+      try {
+        // Extract the JSON part from the content
+        const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
+        
+        if (jsonMatch) {
+          const events = JSON.parse(jsonMatch[0]) as Event[];
+          return events;
+        }
+        
+        // One more fallback: try removing markdown code blocks
+        const cleanedContent = content.replace(/```(?:json)?\n?([\s\S]*?)\n?```/g, '$1').trim();
+        const events = JSON.parse(cleanedContent) as Event[];
+        return events;
+      } catch (parseError) {
+        console.error('Failed to parse OpenAI response as JSON');
+        console.log('Raw response:', content);
+        return [];
+      }
+    }
   } catch (error) {
-    console.error("Error extracting events from image:", error);
+    console.error('OpenAI API error:', error);
     throw error;
   }
 }

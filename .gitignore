@@ -59,3 +59,4 @@ serviceAccount*.json
 
 # Local scripts
 start-app.sh
+.env.local
