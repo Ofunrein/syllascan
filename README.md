@@ -3,11 +3,16 @@
 <div align="center">
   <img src="public/logo.png" alt="SyllaScan Logo" width="150" />
   <h3>Transform your syllabi into calendar events with AI</h3>
+  <p><em>Developed by Martin Ofunrein</em></p>
 </div>
 
 ## 🌟 Overview
 
 SyllaScan is an innovative application that leverages artificial intelligence to automatically extract events, assignments, and deadlines from syllabi, schedules, and academic documents. With a single upload, students can transform dense academic documents into organized calendar events, helping them stay on top of their academic responsibilities.
+
+## 👨‍💻 Developer
+
+SyllaScan was created and developed by **Martin Ofunrein** as a solution to help students better manage their academic schedules. The project demonstrates expertise in modern web development, AI integration, and user experience design.
 
 ## ✨ Key Features
 
