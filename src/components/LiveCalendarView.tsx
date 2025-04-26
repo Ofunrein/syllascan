@@ -247,6 +247,16 @@ export default function LiveCalendarView() {
     };
   };
 
+  // Custom day cell styling
+  const dayPropGetter = (date: Date) => {
+    // Check if this is the currently selected day
+    const isSelected = date.toDateString() === currentDate.toDateString();
+    
+    return {
+      className: isSelected ? 'rbc-selected-day' : ''
+    };
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -712,16 +722,30 @@ export default function LiveCalendarView() {
             }
             
             /* Enhanced current day highlighting in week view */
+            .rbc-time-view .rbc-day-slot.rbc-today {
+              background-color: rgba(37, 99, 235, 0.05);
+            }
+            
             .dark .rbc-time-view .rbc-day-slot.rbc-today {
               background-color: rgba(37, 99, 235, 0.08);
             }
             
             /* Enhanced current day highlighting in day view */
+            .rbc-time-view.rbc-day-view .rbc-day-slot.rbc-today {
+              background-color: rgba(37, 99, 235, 0.05);
+            }
+            
             .dark .rbc-time-view.rbc-day-view .rbc-day-slot.rbc-today {
               background-color: rgba(37, 99, 235, 0.08);
             }
             
             /* Enhanced current day header in all views */
+            .rbc-header.rbc-today {
+              background-color: rgba(37, 99, 235, 0.1);
+              color: #2563eb;
+              font-weight: bold;
+            }
+            
             .dark .rbc-header.rbc-today {
               background-color: rgba(37, 99, 235, 0.2);
               color: #93c5fd;
@@ -769,6 +793,15 @@ export default function LiveCalendarView() {
             /* SPECIFIC VIEW STYLES */
             
             /* Week view - Add subtle highlights */
+            .rbc-time-view.rbc-week-view {
+              border: 1px solid #bfdbfe;
+              box-shadow: 0 0 8px rgba(37, 99, 235, 0.05);
+            }
+            
+            .rbc-time-view.rbc-week-view .rbc-time-header {
+              background-color: rgba(37, 99, 235, 0.02);
+            }
+            
             .dark .rbc-time-view.rbc-week-view {
               border: 1px solid #60a5fa;
               box-shadow: 0 0 8px rgba(37, 99, 235, 0.1);
@@ -779,11 +812,35 @@ export default function LiveCalendarView() {
             }
             
             /* Highlight the current day column in week view */
+            .rbc-time-view.rbc-week-view .rbc-day-slot.rbc-today {
+              background-color: rgba(37, 99, 235, 0.05);
+            }
+            
             .dark .rbc-time-view.rbc-week-view .rbc-day-slot.rbc-today {
               background-color: rgba(37, 99, 235, 0.08);
             }
             
+            /* Selected day in week view */
+            .rbc-time-view.rbc-week-view .rbc-day-slot.rbc-selected-day {
+              background-color: rgba(0, 0, 0, 0.02);
+              box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+            }
+            
+            .dark .rbc-time-view.rbc-week-view .rbc-day-slot.rbc-selected-day {
+              background-color: rgba(255, 255, 255, 0.07);
+              box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+            }
+            
             /* Day view - Add subtle highlights */
+            .rbc-time-view.rbc-day-view {
+              border: 1px solid #c7d2fe;
+              box-shadow: 0 0 8px rgba(129, 140, 248, 0.05);
+            }
+            
+            .rbc-time-view.rbc-day-view .rbc-time-header {
+              background-color: rgba(129, 140, 248, 0.02);
+            }
+            
             .dark .rbc-time-view.rbc-day-view {
               border: 1px solid #818cf8;
               box-shadow: 0 0 8px rgba(129, 140, 248, 0.1);
@@ -793,7 +850,33 @@ export default function LiveCalendarView() {
               background-color: rgba(129, 140, 248, 0.05);
             }
             
+            /* Selected day in day view */
+            .rbc-time-view.rbc-day-view .rbc-day-slot.rbc-selected-day {
+              background-color: rgba(0, 0, 0, 0.02);
+              box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+            }
+            
+            .dark .rbc-time-view.rbc-day-view .rbc-day-slot.rbc-selected-day {
+              background-color: rgba(255, 255, 255, 0.07);
+              box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+            }
+            
             /* Agenda view - Add subtle highlights */
+            .rbc-agenda-view {
+              border: none;
+              box-shadow: none;
+            }
+            
+            .rbc-agenda-view table.rbc-agenda-table {
+              border: none;
+              background-color: white;
+            }
+            
+            .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+              background-color: rgba(167, 139, 250, 0.05);
+              color: #4b5563;
+            }
+            
             .dark .rbc-agenda-view {
               border: none;
               box-shadow: none;
@@ -814,6 +897,14 @@ export default function LiveCalendarView() {
             }
             
             /* Alternating rows in agenda view with subtle highlights */
+            .rbc-agenda-view table.rbc-agenda-table tbody > tr:nth-child(odd) > td {
+              background-color: rgba(167, 139, 250, 0.02);
+            }
+            
+            .rbc-agenda-view table.rbc-agenda-table tbody > tr:nth-child(even) > td {
+              background-color: rgba(167, 139, 250, 0.04);
+            }
+            
             .dark .rbc-agenda-view table.rbc-agenda-table tbody > tr:nth-child(odd) > td {
               background-color: rgba(167, 139, 250, 0.03);
             }
@@ -823,8 +914,16 @@ export default function LiveCalendarView() {
             }
             
             /* Highlight today's row in agenda view */
+            .rbc-agenda-view table.rbc-agenda-table .rbc-today {
+              background-color: rgba(37, 99, 235, 0.08);
+            }
+            
             .dark .rbc-agenda-view table.rbc-agenda-table .rbc-today {
               background-color: rgba(37, 99, 235, 0.15);
+            }
+            
+            .rbc-agenda-view table.rbc-agenda-table tbody > tr:hover > td {
+              background-color: rgba(79, 70, 229, 0.05);
             }
             
             .dark .rbc-agenda-view table.rbc-agenda-table tbody > tr:hover > td {
@@ -832,12 +931,30 @@ export default function LiveCalendarView() {
             }
             
             /* Add header styles for each view */
+            .rbc-toolbar button.rbc-active[value="week"]::after {
+              content: "";
+              display: block;
+              width: 100%;
+              height: 2px;
+              background-color: #3b82f6;
+              margin-top: 2px;
+            }
+            
             .dark .rbc-toolbar button.rbc-active[value="week"]::after {
               content: "";
               display: block;
               width: 100%;
               height: 2px;
               background-color: #60a5fa;
+              margin-top: 2px;
+            }
+            
+            .rbc-toolbar button.rbc-active[value="day"]::after {
+              content: "";
+              display: block;
+              width: 100%;
+              height: 2px;
+              background-color: #6366f1;
               margin-top: 2px;
             }
             
@@ -850,6 +967,15 @@ export default function LiveCalendarView() {
               margin-top: 2px;
             }
             
+            .rbc-toolbar button.rbc-active[value="agenda"]::after {
+              content: "";
+              display: block;
+              width: 100%;
+              height: 2px;
+              background-color: #8b5cf6;
+              margin-top: 2px;
+            }
+            
             .dark .rbc-toolbar button.rbc-active[value="agenda"]::after {
               content: "";
               display: block;
@@ -857,6 +983,10 @@ export default function LiveCalendarView() {
               height: 2px;
               background-color: #a78bfa;
               margin-top: 2px;
+            }
+            
+            .rbc-agenda-time-cell {
+              background-color: rgba(243, 244, 246, 0.7);
             }
             
             .dark .rbc-agenda-time-cell {
@@ -878,6 +1008,7 @@ export default function LiveCalendarView() {
             onNavigate={handleNavigate}
             tooltipAccessor={(event) => event.description || event.title}
             eventPropGetter={eventStyleGetter}
+            dayPropGetter={dayPropGetter}
             ref={calendarRef}
             popup
             selectable

@@ -2,6 +2,7 @@
 
 import { UserProvider } from '@/lib/UserContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
+import { ToastProvider } from '@/components/ui/use-toast';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import CalendarAuthBanner from '@/components/CalendarAuthBanner';
 import ToastDismissButton from '@/components/ToastDismissButton';
@@ -74,11 +75,13 @@ export default function ClientLayout({
     <ErrorBoundary>
       <ThemeProvider>
         <UserProvider>
-          <div className="app-container">
-            {showAuthBanner && <CalendarAuthBanner />}
-            {showToastButton && <ToastDismissButton />}
-            {children}
-          </div>
+          <ToastProvider>
+            <div className="app-container">
+              {showAuthBanner && <CalendarAuthBanner />}
+              {showToastButton && <ToastDismissButton />}
+              {children}
+            </div>
+          </ToastProvider>
           <style jsx global>{`
             /* Fix for dropdown menus to ensure they appear on top */
             .user-menu {
