@@ -87,7 +87,7 @@ SyllaScan was created and developed by **Martin Ofunrein** as a solution to help
 ## 🚀 Getting Started
 
 ### For Users
-1. Visit [syllascan-martin.vercel.app]([https://syllascan-martin.vercel.app])) or your deployed instance
+1. Visit [syllascan.app](https://syllascan-martin.vercel.app) or your deployed instance
 2. Sign in with your Google account
 3. Upload your syllabus or academic document
 4. Review the automatically detected events
