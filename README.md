@@ -1,141 +1,107 @@
 # SyllaScan
 
 <div align="center">
-  <img src="public/logo.png" alt="SyllaScan Logo" width="150" />
-  <h3>Transform your syllabi into calendar events with AI</h3>
-  <p><em>Developed by Martin Ofunrein</em></p>
+  <img src="public/logo.png" alt="SyllaScan Logo" width="120" />
+  
+  <p><em>by Martin Ofunrein</em></p>
+  
+  ### 🌐 [Try it live at syllascan-martin.vercel.app](https://syllascan-martin.vercel.app/)
 </div>
 
-## 🌟 Overview
+## What is this?
 
-SyllaScan is an innovative application that leverages artificial intelligence to automatically extract events, assignments, and deadlines from syllabi, schedules, and academic documents. With a single upload, students can transform dense academic documents into organized calendar events, helping them stay on top of their academic responsibilities.
+I built SyllaScan because I was tired of manually copying dates from syllabi into my calendar every semester. It uses AI (OpenAI's Vision API) to read your syllabus and automatically detect assignments, exams, and important dates, then lets you add them to Google Calendar.
 
-## 👨‍💻 Developer
+Upload a PDF or image of your syllabus, and it'll extract all the events for you. That's pretty much it.
 
-SyllaScan was created and developed by **Martin Ofunrein** as a solution to help students better manage their academic schedules. The project demonstrates expertise in modern web development, AI integration, and user experience design.
+## Features
 
-## ✨ Key Features
+- Upload syllabi as PDF, JPG, or PNG
+- AI automatically finds dates, assignments, and exams
+- Edit events before adding them to your calendar
+- Connect with Google Calendar to add events directly
+- Works on mobile
+- Dark mode because it's 2025
+- History of everything you've processed
 
-### For Students & Educators
-- **📝 One-Click Document Scanning**: Upload syllabi, assignment sheets, or schedules in PDF, JPG, or PNG format
-- **🔍 AI-Powered Event Detection**: Intelligent extraction of due dates, exams, project deadlines, and class schedules
-- **📅 Seamless Google Calendar Integration**: Add events directly to your personal or academic calendar
-- **📱 Mobile-Friendly Interface**: Access and manage your academic schedule on any device
-- **🔄 Batch Processing**: Upload multiple documents at once to process an entire semester's worth of schedules
-- **🔒 Secure Document Handling**: Your academic information remains private and is not stored after processing
+## Tech Stack
 
-### For Technical Users
-- **🧠 Advanced NLP Processing**: Fine-tuned OpenAI Vision models extract complex academic event patterns
-- **⚡ Real-time Event Editing**: Modify detected events before committing to calendar
-- **🔄 Processing History**: Track document uploads and extraction success rates
-- **🌓 Dark/Light Mode Support**: Optimized UI for all environments and accessibility needs
-- **🔌 Extensible API Architecture**: Well-structured endpoints for potential integration with LMS platforms
+**Frontend:**
+- Next.js 15 (React 19)
+- TypeScript
+- Tailwind CSS
+- React Big Calendar for the calendar view
 
-## 🛠️ Technology Stack
+**Backend:**
+- Firebase (Auth + Firestore)
+- OpenAI Vision API for the actual document reading
+- Google Calendar API
+- Hosted on Vercel
 
-### Frontend Technologies
-- **Next.js 15**: Leveraging the latest React framework with server components for optimal performance
-- **React 19**: Utilizing modern React patterns including hooks, context, and composition
-- **Tailwind CSS 4**: Implementing responsive design with utility-first CSS framework
-- **React Big Calendar**: Interactive calendar visualization with day, week, and month views
-- **TypeScript**: Static typing for enhanced code quality and developer experience
+**Other stuff:**
+- PDF.js for rendering PDFs
+- NextAuth for handling OAuth
 
-### Backend & Services
-- **Firebase Authentication**: Secure OAuth 2.0 integration with Google accounts
-- **Firebase Firestore**: NoSQL document database for user data and processing history
-- **Firebase Admin SDK**: Server-side authentication and authorization
-- **NextAuth.js**: Advanced authentication patterns with JWT session handling
+## Getting Started
 
-### AI & Data Processing
-- **OpenAI Vision API**: Advanced document understanding and entity extraction
-- **PDF.js**: Client-side PDF rendering and processing
-- **Google Calendar API**: Seamless integration with Google's calendar services
-- **Custom OCR Pipeline**: Enhanced text extraction from image-based documents
+### If you just want to use it:
+1. Go to [syllascan-martin.vercel.app](https://syllascan-martin.vercel.app/)
+2. Sign in with Google
+3. Upload your syllabus
+4. Review and edit the detected events
+5. Add them to your calendar
 
-### DevOps & Deployment
-- **Vercel**: Edge-optimized hosting with global CDN
-- **GitHub Actions**: Automated CI/CD workflows
-- **Jest & React Testing Library**: Comprehensive test coverage
-- **ESLint & Prettier**: Code quality enforcement
+### If you want to run it locally:
 
-## 📊 Performance Optimizations
+```bash
+git clone https://github.com/yourusername/syllascan.git
+cd syllascan
+npm install
+```
 
-- Server-side rendering for critical pages
-- Edge functions for API routes
-- Incremental Static Regeneration for dashboard views
-- Image optimization with Next.js Image component
-- Route prefetching for instant navigation
-- AI processing optimized for speed and accuracy
+Copy `.env.example` to `.env` and add your API keys:
+- Firebase config
+- OpenAI API key
+- Google OAuth credentials
 
-## 📱 Real-World Applications
+Then run:
+```bash
+npm run dev
+```
 
-### Academic Success
-- Students can visualize their entire semester at a glance
-- Reduced missed assignments and improved time management
-- More effective study scheduling and deadline awareness
+Visit `http://localhost:3000`
 
-### Academic Advisors & Educators
-- Help students with learning disabilities organize their academic responsibilities
-- Create unified calendars for departmental events and deadlines
-- Monitor academic workload distribution across the semester
+## How it works
 
-### Administrative Efficiency
-- Standardize event extraction from institutional documents
-- Automate calendar population for orientation and special events
-- Ensure consistent formatting across departmental calendars
+1. You upload a document
+2. The backend sends it to OpenAI's Vision API with a prompt asking it to find academic events
+3. OpenAI returns structured data with dates, titles, and descriptions
+4. You can edit these events on the frontend
+5. When you're happy with them, click to add them to Google Calendar via their API
+6. Everything gets saved to Firestore so you can see your processing history
 
-## 🚀 Getting Started
+## Limitations
 
-### For Users
-1. Visit [syllascan-martin.vercel.app](https://syllascan-martin.vercel.app) or your deployed instance
-2. Sign in with your Google account
-3. Upload your syllabus or academic document
-4. Review the automatically detected events
-5. Add events to your Google Calendar with one click
+- OpenAI isn't perfect, so double-check the dates it finds
+- Works best with clearly formatted syllabi (the messier the document, the more manual editing you'll need)
+- Only supports Google Calendar right now
 
-### For Developers
-1. Clone the repository
-   ```bash
-   git clone https://github.com/yourusername/syllascan.git
-   ```
+## What's next
 
-2. Install dependencies
-   ```bash
-   cd syllascan
-   npm install
-   ```
+Things I might add:
+- Support for other calendar apps (Outlook, iCal)
+- Better handling of recurring events
+- Integration with Canvas/Blackboard
+- Improved AI accuracy with better prompts or fine-tuning
 
-3. Set up environment variables (see `.env.example`)
+## Contributing
 
-4. Start the development server
-   ```bash
-   npm run dev
-   ```
+If you find bugs or want to add features, feel free to open an issue or PR.
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+## License
 
-## 📈 Future Roadmap
+MIT License - do whatever you want with this.
 
-- **Enhanced AI Models**: Training on academic-specific datasets for improved accuracy
-- **Canvas/Blackboard Integration**: Direct import from learning management systems
-- **Collaborative Calendars**: Shared calendars for study groups and team projects
-- **Smart Notifications**: AI-powered reminders based on event importance and workload
-- **Export Options**: Additional calendar formats including iCal and Outlook
-- **Workload Visualization**: Heatmaps showing busy periods and potential conflicts
+## Credits
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgements
-
-- [OpenAI](https://openai.com/) for the Vision API
-- [Google Calendar API](https://developers.google.com/calendar) for calendar integration
-- [Firebase](https://firebase.google.com/) for authentication and database
-- [Next.js](https://nextjs.org/) for the framework
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- All the students who provided feedback during development
+Thanks to OpenAI for the Vision API, Google for the Calendar API, and the Next.js team for making React development not terrible.
