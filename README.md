@@ -1,11 +1,17 @@
 # SyllaScan
 
 <div align="center">
-  <img src="public/logo.png" alt="SyllaScan Logo" width="120" />
-  
   <p><em>by Martin Ofunrein</em></p>
   
   ### 🌐 [Try it live at syllascan-martin.vercel.app](https://syllascan-martin.vercel.app/)
+  
+  <br/>
+  
+  [![SyllaScan Demo](https://img.youtube.com/vi/rgZdCt-NPOg/maxresdefault.jpg)](https://www.youtube.com/watch?v=rgZdCt-NPOg)
+  
+  **📺 [Watch Demo Video](https://www.youtube.com/watch?v=rgZdCt-NPOg)**
+  
+  <img src="public/logo.png" alt="SyllaScan Logo" width="100" />
 </div>
 
 ## What is this?
