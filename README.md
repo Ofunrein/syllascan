@@ -12,7 +12,7 @@
   [![SyllaScan Demo](https://img.youtube.com/vi/rgZdCt-NPOg/maxresdefault.jpg)](https://www.youtube.com/watch?v=rgZdCt-NPOg)
   
   
-  <img src="public/logo.png" alt="SyllaScan Logo" width="50" />
+  <img src="public/logo.png" alt="SyllaScan Logo" width="100" />
 </div>
 
 ## What is this?
