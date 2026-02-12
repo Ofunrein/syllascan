@@ -26,7 +26,7 @@ After the scan, if a revision is needed, you can edit events manually or use the
 
 ## Features
 
-- Upload syllabi as PDF, JPG, or PNG
+- Upload events or syllabi as PDF, JPG, or PNG
 - AI automatically finds dates, assignments, and exams
 - Edit events before adding them to your calendar
 - Connect with Google Calendar to add events directly
@@ -57,7 +57,7 @@ After the scan, if a revision is needed, you can edit events manually or use the
 ### If you just want to use it:
 1. Go to [syllascan-martin.vercel.app](https://syllascan-martin.vercel.app/)
 2. Sign in with Google
-3. Upload your syllabus
+3. Upload your pictures, syllabus, or events (png, jpg, pdf)
 4. Review and edit the detected events
 5. Add them to your calendar
 
