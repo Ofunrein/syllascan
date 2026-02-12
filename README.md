@@ -19,9 +19,9 @@
 
 I built SyllaScan because I was tired of manually copying dates from syllabi into my calendar every semester. It uses AI (OpenAI's Vision API) to scan your dates, events, syllabus, and automatically detect assignments, exams, and important dates with details, then lets you add them to Google Calendar.
 
-Upload multiple images or PDFs of all your events, dates, syllabus, and it'll extract all the events for you. That's pretty much it.
+Upload multiple images or PDFs of all your events, dates, and syllabi, and it'll extract all the events for you. That's pretty much it.
 
-After the scan, if revision is necessary, you can edit events manually or with the AI assistant by sending a simple chat for efficiency.
+After the scan, if a revision is needed, you can edit events manually or use the AI assistant by sending a simple chat for efficiency.
 
 
 ## Features
