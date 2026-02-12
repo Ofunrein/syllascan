@@ -5,7 +5,7 @@
   
   ### 🌐 [Try it live at syllascan-martin.vercel.app](https://syllascan-martin.vercel.app/)
 
-  ### **📺 [Watch Demo Video](https://www.youtube.com/watch?v=rgZdCt-NPOg)**
+  #### **📺 [Watch Demo Video](https://www.youtube.com/watch?v=rgZdCt-NPOg)**
   
   <br/>
   
