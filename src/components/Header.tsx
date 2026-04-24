@@ -366,7 +366,7 @@ export default function Header() {
           display: block;
           width: 100%;
           height: 1.5px;
-          background-color: var(--foreground);
+          background-color: rgba(255, 255, 255, 0.85);
           border-radius: 9999px;
           transition: all 0.25s ease;
         }
