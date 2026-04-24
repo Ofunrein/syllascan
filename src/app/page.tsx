@@ -13,6 +13,8 @@ export default function Home() {
     const video = videoRef.current;
     if (!video) return;
 
+    let restartTimer: ReturnType<typeof setTimeout> | null = null;
+
     function cancelRaf() {
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
@@ -58,24 +60,30 @@ export default function Home() {
       if (remaining <= 0.55 && !fadingOutRef.current) fadeOut();
     }
 
+    function handleCanPlay() {
+      fadeIn(0);
+    }
+
     function handleEnded() {
       if (!video) return;
       video.style.opacity = '0';
       fadingOutRef.current = false;
-      setTimeout(() => {
+      restartTimer = setTimeout(() => {
         if (!video) return;
         video.currentTime = 0;
-        video.play().then(() => fadeIn(0));
+        video.play().then(() => fadeIn(0)).catch(() => {});
       }, 100);
     }
 
     video.style.opacity = '0';
-    video.addEventListener('canplay', () => fadeIn(0), { once: true });
+    video.addEventListener('canplay', handleCanPlay, { once: true });
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleEnded);
 
     return () => {
       cancelRaf();
+      if (restartTimer !== null) clearTimeout(restartTimer);
+      video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
     };
