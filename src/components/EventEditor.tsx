@@ -443,7 +443,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         .editor-tabs {
           display: flex;
           border-bottom: 1px solid var(--border);
-          background: linear-gradient(to right, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.1));
+          background-color: rgba(var(--primary-rgb), 0.06);
           flex-shrink: 0;
           padding: 0.5rem 0.5rem 0;
         }

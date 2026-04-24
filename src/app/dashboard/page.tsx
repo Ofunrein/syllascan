@@ -111,7 +111,14 @@ export default function Dashboard() {
           <div className="dashboard-grid">
             <div className="dashboard-panel animate-slide-up" style={{ animationDelay: '0.1s' }}>
               <div className="panel-header">
-                <div className="panel-icon">🗓️</div>
+                <div className="panel-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="panel-icon-svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
                 <div>
                   <h2 className="panel-title">Your Google Calendars</h2>
                   <p className="panel-description">
@@ -145,7 +152,14 @@ export default function Dashboard() {
                   </ul>
                 ) : (
                   <div className="empty-state">
-                    <div className="empty-icon">📅</div>
+                    <div className="empty-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="empty-icon-svg">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                    </div>
                     <p className="empty-message">No calendars found</p>
                     <button
                       onClick={() => router.push('/')}
@@ -160,7 +174,14 @@ export default function Dashboard() {
 
             <div className="dashboard-panel animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <div className="panel-header">
-                <div className="panel-icon">📋</div>
+                <div className="panel-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="panel-icon-svg">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="3" y1="9" x2="21" y2="9" />
+                    <line x1="9" y1="16" x2="9" y2="16.01" />
+                    <line x1="13" y1="16" x2="15" y2="16.01" />
+                  </svg>
+                </div>
                 <div>
                   <h2 className="panel-title">Processing History</h2>
                   <p className="panel-description">
@@ -195,7 +216,7 @@ export default function Dashboard() {
         .welcome-card {
           display: flex;
           align-items: center;
-          background: linear-gradient(to right, var(--primary), var(--secondary));
+          background-color: var(--cal-blue, var(--primary));
           border-radius: var(--radius);
           padding: 2rem;
           color: white;
@@ -268,7 +289,6 @@ export default function Dashboard() {
         }
         
         .panel-icon {
-          font-size: 1.75rem;
           margin-right: 1rem;
           background-color: rgba(var(--primary-rgb, 79, 70, 229), 0.1);
           width: 3rem;
@@ -278,6 +298,12 @@ export default function Dashboard() {
           justify-content: center;
           border-radius: 0.75rem;
           color: var(--primary);
+        }
+
+        .panel-icon-svg, .empty-icon-svg {
+          width: 1.5rem;
+          height: 1.5rem;
+          color: inherit;
         }
         
         /* Ensure dark mode compatibility for panel icons */
@@ -380,9 +406,14 @@ export default function Dashboard() {
         }
         
         .empty-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
+          width: 3rem;
+          height: 3rem;
+          margin: 0 auto 1rem;
           opacity: 0.5;
+          color: var(--foreground);
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .empty-message {

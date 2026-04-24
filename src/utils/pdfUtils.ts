@@ -2,8 +2,8 @@ import * as pdfjs from 'pdfjs-dist';
 
 // Initialize PDF.js worker
 if (typeof window !== 'undefined') {
-  // Client-side only
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  // Client-side only - use a more reliable CDN
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 }
 
 /**
@@ -41,9 +41,9 @@ export async function convertPdfToImage(file: File, pageNum: number = 1): Promis
       viewport: viewport
     }).promise;
     
-    // Convert the canvas to a base64-encoded image
-    const base64Image = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
-    return base64Image;
+    // Convert the canvas to a data URL
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    return dataUrl;
   } catch (error) {
     console.error('Error converting PDF to image:', error);
     throw error;

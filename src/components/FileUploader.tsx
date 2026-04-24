@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { convertPdfToImage, getPdfPageCount } from '@/utils/pdfUtils';
 import { useUser } from '@/lib/UserContext';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import dynamic from 'next/dynamic';
 
 interface FileUploaderProps {
   onEventsExtracted: (events: Event[]) => void;
@@ -28,7 +29,13 @@ export default function FileUploader({
 }: FileUploaderProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
+  const [mounted, setMounted] = useState(false);
   const { user, authenticated } = useUser();
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const createPreview = useCallback(async (selectedFile: File): Promise<FileWithPreview> => {
     try {
@@ -118,6 +125,8 @@ export default function FileUploader({
     },
     maxFiles: 10,
     maxSize: 10485760, // 10MB
+    noClick: !mounted, // Prevent click handling during SSR
+    noDrag: !mounted,  // Prevent drag handling during SSR
   });
 
   const handlePdfPageChange = useCallback(async (fileIndex: number, newPage: number) => {
@@ -234,6 +243,22 @@ export default function FileUploader({
   }, [files]);
 
   const activeFile = files[activeFileIndex];
+
+  // Show loading state during SSR to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="w-full max-w-2xl mx-auto">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Upload Your Documents</h2>
+          </div>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -460,7 +485,8 @@ export default function FileUploader({
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.2));
+            background-color: rgba(var(--primary-rgb), 0.08);
+            border: 1px solid rgba(var(--primary-rgb), 0.15);
             display: flex;
             align-items: center;
             justify-content: center;

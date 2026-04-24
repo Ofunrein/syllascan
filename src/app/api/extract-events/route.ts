@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Initialize PDF.js worker
 if (typeof window === 'undefined') {
-  // Server-side only
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  // Server-side only - use a more reliable CDN
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 }
 
 // Robust event processing function

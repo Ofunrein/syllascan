@@ -4,8 +4,8 @@ import * as pdfjs from 'pdfjs-dist';
 
 // Initialize PDF.js worker
 if (typeof window === 'undefined') {
-  // Server-side only
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  // Server-side only - use a more reliable CDN
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 }
 
 export async function POST(request: NextRequest) {

@@ -1,62 +1,22 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
-/node_modules
-/.pnp
-.pnp.js
+node_modules/
 
-# testing
-/coverage
-
-# next.js
+# next.js build output
 /.next/
 /out/
+next-env.d.ts
 
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
+# env files
 .env*.local
 .env
 
 # vercel
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# firebase service account credentials
+gcalocr-95d9b90b0563.json
+gcalocr2-firebase-adminsdk-fbsvc-abe7cba762.json
 
-# IDE files
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS generated files
+# misc
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Credentials and sensitive files
-*-firebase-adminsdk-*.json
-*-*-*.json
-gcalocr-*.json
-firebase-*.json
-serviceAccount*.json
-
-# Local scripts
-start-app.sh
-.env.local
+*.pem

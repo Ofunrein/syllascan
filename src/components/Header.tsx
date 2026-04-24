@@ -5,28 +5,22 @@ import { usePathname } from 'next/navigation';
 import { useUser } from '@/lib/UserContext';
 import { useState, useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
+import { Calendar, LayoutDashboard, Settings, LogOut, LogIn } from 'lucide-react';
 
 export default function Header() {
   const { user, loading, signIn, signOut } = useUser();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  
-  // Handle scroll effect
+
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    
+    const handleScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
-  // Determine if a link is active based on the current path
+
   const isActive = (path: string) => {
-    if (path === '/') {
-      return pathname === '/';
-    }
+    if (path === '/') return pathname === '/';
     return pathname?.startsWith(path);
   };
 
@@ -34,300 +28,204 @@ export default function Header() {
     <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
       <div className="container">
         <div className="header-content">
+          {/* Logo */}
           <div className="logo-container">
             <Link href="/" className="logo">
-              <span className="logo-icon">📅</span>
-              <span className="logo-text syllascan-logo">SyllaScan</span>
-                  </Link>
-                </div>
-          
+              <Calendar size={18} strokeWidth={2} className="logo-icon-svg" />
+              <span className="syllascan-logo">SyllaScan</span>
+            </Link>
+          </div>
+
+          {/* Desktop nav */}
           <nav className="desktop-nav">
             <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
-              <span className="nav-icon">🏠</span>
               <span className="nav-text">Home</span>
-                  </Link>
+            </Link>
             <Link href="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
-              <span className="nav-icon">📊</span>
+              <LayoutDashboard size={14} strokeWidth={2} />
               <span className="nav-text">Dashboard</span>
-                  </Link>
+            </Link>
           </nav>
-          
+
+          {/* Actions */}
           <div className="header-actions">
-                <ThemeToggle />
-                
-                {loading ? (
-              <div className="user-placeholder"></div>
-                ) : user ? (
+            <ThemeToggle />
+
+            {loading ? (
+              <div className="user-placeholder" />
+            ) : user ? (
               <div className="user-menu">
-                <button 
+                <button
                   className="user-button"
                   onClick={() => setMenuOpen(!menuOpen)}
                   aria-label="User menu"
                 >
-                        {user.photoURL ? (
-                          <img
-                            src={user.photoURL}
-                            alt={user.displayName || 'User profile'}
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || 'User profile'}
                       className="user-avatar"
-                          />
-                        ) : (
+                    />
+                  ) : (
                     <div className="user-initial">
-                            {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
-                          </div>
-                        )}
+                      {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                    </div>
+                  )}
                 </button>
-                
+
                 {menuOpen && (
                   <div className="dropdown-menu">
                     <div className="user-info">
                       <div className="user-name">{user.displayName || 'User'}</div>
-                      <div className="user-email">{user.email || 'Anonymous User'}</div>
+                      <div className="user-email">{user.email || ''}</div>
                     </div>
-                    <Link href="/dashboard" className="menu-item">
-                      <span className="menu-icon">📊</span>
-                              Dashboard
-                            </Link>
-                    <Link href="/settings" className="menu-item">
-                      <span className="menu-icon">⚙️</span>
-                              Settings
-                            </Link>
-                    <button onClick={signOut} className="menu-item">
-                      <span className="menu-icon">🚪</span>
-                              Sign out
-                            </button>
+                    <Link href="/dashboard" className="menu-item" onClick={() => setMenuOpen(false)}>
+                      <LayoutDashboard size={15} strokeWidth={2} />
+                      Dashboard
+                    </Link>
+                    <Link href="/settings" className="menu-item" onClick={() => setMenuOpen(false)}>
+                      <Settings size={15} strokeWidth={2} />
+                      Settings
+                    </Link>
+                    <button onClick={signOut} className="menu-item menu-item--danger">
+                      <LogOut size={15} strokeWidth={2} />
+                      Sign out
+                    </button>
                   </div>
                 )}
               </div>
             ) : (
               <button onClick={signIn} className="sign-in-button">
-                <span className="button-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor"/>
-                  </svg>
-                </span>
-                Sign in with Google
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="google-icon">
+                  <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />
+                </svg>
+                Sign in
               </button>
             )}
-            
-            <button 
+
+            {/* Mobile hamburger */}
+            <button
               className="mobile-menu-button"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
             >
-              <div className={`menu-icon ${menuOpen ? 'open' : ''}`}>
-                <span></span>
-                <span></span>
-                <span></span>
+              <div className={`hamburger ${menuOpen ? 'open' : ''}`}>
+                <span />
+                <span />
+                <span />
               </div>
             </button>
-            </div>
           </div>
+        </div>
 
+        {/* Mobile menu */}
         {menuOpen && (
           <div className="mobile-menu">
-            <Link href="/" className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`}>
-              <span className="nav-icon">🏠</span>
+            <Link href="/" className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Home
             </Link>
-            <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
-              <span className="nav-icon">📊</span>
-                Dashboard
+            <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              Dashboard
             </Link>
-            <Link href="/settings" className={`mobile-nav-link ${isActive('/settings') ? 'active' : ''}`}>
-              <span className="nav-icon">⚙️</span>
-                Settings
+            <Link href="/settings" className={`mobile-nav-link ${isActive('/settings') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              Settings
             </Link>
-            
+
             {!user && (
               <button onClick={signIn} className="mobile-sign-in">
-                <span className="button-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor"/>
-                    </svg>
-                </span>
-                    Sign in with Google
-                  </button>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="google-icon">
+                  <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />
+                </svg>
+                Sign in with Google
+              </button>
             )}
-            
+
             {user && (
               <button onClick={signOut} className="mobile-sign-out">
-                <span className="button-icon">🚪</span>
+                <LogOut size={15} strokeWidth={2} />
                 Sign out
               </button>
             )}
-                </div>
-              )}
-            </div>
-      
+          </div>
+        )}
+      </div>
+
       <style jsx>{`
         .site-header {
           background-color: var(--card);
-          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+          border-bottom: 1px solid var(--border);
           position: sticky;
           top: 0;
           z-index: 50;
-          transition: all 0.3s ease;
+          transition: box-shadow 0.3s ease, background-color 0.3s ease;
         }
-        
+
         .site-header.scrolled {
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          backdrop-filter: blur(8px);
-          background-color: rgba(var(--card-rgb, 255, 255, 255), 0.8);
+          box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+          backdrop-filter: blur(10px);
+          background-color: rgba(255, 255, 255, 0.92);
         }
-        
-        /* Add dark mode support for scrolled header */
+
         :global(.dark) .site-header.scrolled {
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-          background-color: rgba(var(--card-rgb, 17, 24, 39), 0.8);
+          background-color: rgba(31, 41, 55, 0.92);
+          box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
         }
-        
+
         .header-content {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          height: 4.5rem;
+          height: 4rem;
         }
-        
+
         .logo-container {
           display: flex;
           align-items: center;
         }
-        
+
         .logo {
           display: flex;
           align-items: center;
-          font-size: 1.25rem;
-          font-weight: 800;
-          color: var(--primary);
+          gap: 0.5rem;
           text-decoration: none;
-          transition: transform 0.2s;
-          font-family: 'Montserrat', 'Arial', sans-serif;
+          transition: opacity 0.2s;
         }
-        
+
         .logo:hover {
-          transform: scale(1.05);
+          opacity: 0.8;
           text-decoration: none;
         }
-        
-        .logo-icon {
-          margin-right: 0.5rem;
-          font-size: 1.5rem;
+
+        .logo-icon-svg {
+          color: var(--cal-blue);
+          flex-shrink: 0;
         }
-        
-        .logo-text {
-          background: linear-gradient(to right, var(--primary), var(--secondary));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          text-transform: none;
-          letter-spacing: 0.02em;
-          text-decoration: none;
-        }
-        
-        .desktop-nav {
-          height: 100%;
-          display: none;
-        }
-        
-        @media (min-width: 640px) {
-          .desktop-nav {
-            display: flex;
-            margin-left: 2rem;
-            align-items: center;
-          }
-        }
-        
-        .nav-link {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.5rem 1rem;
-          margin: 0 0.75rem;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--foreground);
-          opacity: 0.7;
-          text-decoration: none;
-          border-radius: 0.375rem;
-          transition: all 0.2s ease;
-          position: relative;
-          height: 100%;
-        }
-        
-        .nav-icon {
-          margin-right: 0.5rem;
-          font-size: 1rem;
-        }
-        
-        .nav-link:hover {
-          text-decoration: none;
-          opacity: 0.9;
-          background-color: rgba(var(--primary-rgb), 0.05);
-        }
-        
-        .nav-link.active {
-          color: var(--foreground);
-          opacity: 1;
-          background-color: rgba(var(--primary-rgb), 0.08);
-          font-weight: 700;
-          border: none;
-          box-shadow: none;
-        }
-        
-        .nav-link.active .nav-text {
-          background: linear-gradient(to right, var(--primary), var(--secondary));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        
-        /* Dark mode specific styles */
-        :global(.dark) .nav-link {
-          color: rgba(255, 255, 255, 0.9);
-          opacity: 0.9;
-        }
-        
-        :global(.dark) .nav-link:hover {
-          color: white;
-          opacity: 1;
-        }
-        
-        :global(.dark) .nav-link.active {
-          color: white;
-          opacity: 1;
-          background-color: rgba(var(--primary-rgb), 0.15);
-          font-weight: 700;
-          border: none;
-          box-shadow: none;
-        }
-        
-        :global(.dark) .nav-link.active .nav-text {
-          background: linear-gradient(to right, var(--primary), var(--secondary));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        
+
+        /* desktop-nav handled by globals.css */
+
         .header-actions {
           display: flex;
           align-items: center;
+          gap: 0.5rem;
         }
-        
+
         .user-placeholder {
           width: 2.25rem;
           height: 2.25rem;
           border-radius: 9999px;
-          background-color: var(--input);
-          margin-left: 0.75rem;
+          background-color: var(--border);
           animation: pulse 1.5s infinite;
         }
-        
+
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
         }
-        
+
         .user-menu {
           position: relative;
-          margin-left: 0.75rem;
         }
-        
+
         .user-button {
           display: flex;
           align-items: center;
@@ -339,20 +237,21 @@ export default function Header() {
           border: none;
           cursor: pointer;
           transition: transform 0.2s;
+          border-radius: 9999px;
         }
-        
+
         .user-button:hover {
           transform: scale(1.05);
         }
-        
+
         .user-avatar {
           width: 2.25rem;
           height: 2.25rem;
           border-radius: 9999px;
           object-fit: cover;
-          border: 2px solid var(--primary);
+          border: 2px solid var(--border);
         }
-        
+
         .user-initial {
           display: flex;
           align-items: center;
@@ -360,52 +259,54 @@ export default function Header() {
           width: 2.25rem;
           height: 2.25rem;
           border-radius: 9999px;
-          background: linear-gradient(135deg, var(--primary), var(--secondary));
-          color: white;
+          background-color: var(--cal-blue);
+          color: #fff;
           font-weight: 600;
-          border: 2px solid transparent;
+          font-size: 0.875rem;
+          font-family: var(--font-heading);
         }
-        
+
         .dropdown-menu {
           position: absolute;
-          top: 100%;
+          top: calc(100% + 0.5rem);
           right: 0;
-          width: 240px;
+          width: 220px;
           background-color: var(--card);
-          border-radius: 0.5rem;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-          padding: 0.5rem 0;
+          border-radius: 0.625rem;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+          padding: 0.375rem 0;
           z-index: 100;
-          margin-top: 0.5rem;
           border: 1px solid var(--border);
           overflow: hidden;
         }
-        
+
         .user-info {
           padding: 0.75rem 1rem;
           border-bottom: 1px solid var(--border);
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
         }
-        
+
         .user-name {
           font-weight: 600;
           color: var(--foreground);
-          margin-bottom: 0.25rem;
-          font-size: 0.9rem;
+          font-size: 0.875rem;
+          font-family: var(--font-heading);
         }
-        
+
         .user-email {
           color: var(--muted);
-          font-size: 0.8rem;
+          font-size: 0.75rem;
+          margin-top: 0.125rem;
         }
-        
+
         .menu-item {
           display: flex;
           align-items: center;
+          gap: 0.5rem;
           padding: 0.5rem 1rem;
           color: var(--foreground);
           font-size: 0.875rem;
-          transition: background-color 0.2s;
+          transition: background-color 0.15s;
           text-decoration: none;
           width: 100%;
           text-align: left;
@@ -413,169 +314,172 @@ export default function Header() {
           border: none;
           cursor: pointer;
           font-weight: 500;
+          font-family: var(--font-body);
         }
-        
+
         .menu-item:hover {
-          background-color: var(--accent);
+          background-color: rgba(0, 0, 0, 0.04);
         }
-        
-        /* Dark mode style for menu items */
-        :global(.dark) .menu-item {
-          color: rgba(255, 255, 255, 0.9);
-        }
-        
+
         :global(.dark) .menu-item:hover {
-          background-color: rgba(255, 255, 255, 0.1);
+          background-color: rgba(255, 255, 255, 0.06);
         }
-        
-        .menu-icon {
-          margin-right: 0.5rem;
-          font-size: 1rem;
-          opacity: 0.7;
+
+        .menu-item--danger {
+          color: var(--deadline);
         }
-        
+
         .sign-in-button {
           display: none;
         }
-        
+
         @media (min-width: 640px) {
           .sign-in-button {
             display: inline-flex;
             align-items: center;
-            margin-left: 0.75rem;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-            font-size: 0.875rem;
+            gap: 0.4rem;
+            padding: 0.45rem 0.875rem;
+            background-color: var(--cal-blue);
+            color: #fff;
+            font-size: 0.8125rem;
             font-weight: 500;
-            border-radius: 9999px;
+            border-radius: 0.5rem;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            font-family: var(--font-heading);
           }
-          
+
           .sign-in-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          }
-          
-          .button-icon {
-            display: flex;
-            margin-right: 0.5rem;
+            background-color: var(--primary-dark);
+            transform: scale(1.03);
           }
         }
-        
+
+        .google-icon {
+          display: block;
+          flex-shrink: 0;
+        }
+
         .mobile-menu-button {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 2.5rem;
-          height: 2.5rem;
-          margin-left: 0.5rem;
+          width: 2.25rem;
+          height: 2.25rem;
           background: none;
           border: none;
           cursor: pointer;
+          border-radius: 0.375rem;
+          transition: background-color 0.2s;
         }
-        
+
+        .mobile-menu-button:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+
         @media (min-width: 640px) {
           .mobile-menu-button {
             display: none;
           }
         }
-        
-        .menu-icon {
+
+        .hamburger {
           position: relative;
-          width: 1.5rem;
-          height: 1.25rem;
+          width: 1.25rem;
+          height: 1rem;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
         }
-        
-        .menu-icon span {
+
+        .hamburger span {
           display: block;
           width: 100%;
-          height: 2px;
+          height: 1.5px;
           background-color: var(--foreground);
           border-radius: 9999px;
-          transition: all 0.3s;
+          transition: all 0.25s ease;
         }
-        
-        .menu-icon.open span:nth-child(1) {
-          transform: translateY(10px) rotate(45deg);
+
+        .hamburger.open span:nth-child(1) {
+          transform: translateY(7px) rotate(45deg);
         }
-        
-        .menu-icon.open span:nth-child(2) {
+
+        .hamburger.open span:nth-child(2) {
           opacity: 0;
         }
-        
-        .menu-icon.open span:nth-child(3) {
-          transform: translateY(-10px) rotate(-45deg);
+
+        .hamburger.open span:nth-child(3) {
+          transform: translateY(-7px) rotate(-45deg);
         }
-        
+
         .mobile-menu {
           display: flex;
           flex-direction: column;
           padding: 0.5rem 0;
           border-top: 1px solid var(--border);
-          animation: fadeIn 0.3s ease-out;
+          animation: fadeIn 0.2s ease-out;
         }
-        
+
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        
+
         @media (min-width: 640px) {
           .mobile-menu {
             display: none;
           }
         }
-        
+
         .mobile-nav-link {
           display: flex;
           align-items: center;
           padding: 0.75rem 1rem;
-          font-size: 1rem;
+          font-size: 0.9375rem;
           color: var(--foreground);
           text-decoration: none;
-          transition: background-color 0.2s;
+          transition: background-color 0.15s;
+          font-family: var(--font-heading);
+          font-weight: 500;
         }
-        
+
+        .mobile-nav-link:hover {
+          background-color: rgba(0, 0, 0, 0.04);
+        }
+
         .mobile-nav-link.active {
-          color: var(--primary);
-          background-color: rgba(var(--primary-rgb, 79, 70, 229), 0.1);
+          color: var(--cal-blue);
+          background-color: rgba(37, 99, 235, 0.06);
         }
-        
+
         .mobile-sign-in,
         .mobile-sign-out {
           display: flex;
           align-items: center;
+          gap: 0.5rem;
           width: 100%;
           padding: 0.75rem 1rem;
-          margin-top: 0.5rem;
+          margin-top: 0.25rem;
           text-align: left;
-          font-size: 1rem;
+          font-size: 0.9375rem;
           background: none;
           border: none;
           border-top: 1px solid var(--border);
           cursor: pointer;
+          font-family: var(--font-heading);
+          font-weight: 500;
         }
-        
+
         .mobile-sign-in {
-          color: var(--primary);
+          color: var(--cal-blue);
         }
-        
+
         .mobile-sign-out {
-          color: #ef4444;
-        }
-        
-        .button-icon {
-          display: flex;
-          margin-right: 0.75rem;
+          color: var(--deadline);
         }
       `}</style>
     </header>
   );
-} 
+}

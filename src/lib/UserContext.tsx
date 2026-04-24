@@ -109,9 +109,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         setGoogleAuthenticated(true);
         
         // Show a success message about calendar access
-        toast.success('Google Calendar access granted!', { 
-          duration: 4000,
-          icon: '📅'
+        toast.success('Google Calendar access granted!', {
+          duration: 4000
         });
       }
     } catch (error: any) {
@@ -138,8 +137,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       // Use a toastId to allow for programmatic dismissal
       toast.error(errorMessage, {
         id: 'auth-error',
-        duration: 8000,
-        icon: '❌',
+        duration: 8000
       });
     }
   };

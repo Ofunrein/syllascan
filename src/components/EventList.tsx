@@ -984,7 +984,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           align-items: center;
           justify-content: flex-end;
           user-select: none;
-          background: linear-gradient(to right, rgba(var(--primary-rgb), 0.05), rgba(var(--primary-rgb), 0.1));
+          background-color: rgba(var(--primary-rgb), 0.06);
         }
         
         .editor-controls {
