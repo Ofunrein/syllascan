@@ -81,7 +81,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="app-wrapper">
+    <div className="app-wrapper" style={{ minHeight: '100vh', background: '#0a0a0f', color: '#f9fafb' }}>
       <Header />
       
       <main className="main-content">
@@ -202,6 +202,8 @@ export default function Dashboard() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+          background: #0a0a0f;
+          color: #f9fafb;
         }
         
         .main-content {
@@ -269,21 +271,21 @@ export default function Dashboard() {
         }
         
         .dashboard-panel {
-          background-color: var(--card);
-          border-radius: var(--radius);
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 0.75rem;
           overflow: hidden;
           transition: transform 0.2s, box-shadow 0.2s;
         }
-        
+
         .dashboard-panel:hover {
           transform: translateY(-2px);
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
         }
         
         .panel-header {
           padding: 1.5rem;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid rgba(255,255,255,0.07);
           display: flex;
           align-items: center;
         }
@@ -314,14 +316,13 @@ export default function Dashboard() {
         .panel-title {
           font-size: 1.25rem;
           font-weight: 600;
-          color: var(--foreground);
+          color: #fff;
           margin-bottom: 0.25rem;
         }
-        
+
         .panel-description {
           font-size: 0.875rem;
-          color: var(--foreground);
-          opacity: 0.7;
+          color: rgba(255,255,255,0.5);
         }
         
         .panel-content {
@@ -359,12 +360,12 @@ export default function Dashboard() {
           justify-content: space-between;
           align-items: center;
           padding: 1rem;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid rgba(255,255,255,0.07);
           transition: background-color 0.2s;
         }
-        
+
         .calendar-item:hover {
-          background-color: rgba(0, 0, 0, 0.02);
+          background-color: rgba(255,255,255,0.04);
         }
         
         .calendar-item:last-child {
@@ -387,7 +388,7 @@ export default function Dashboard() {
         .calendar-name {
           font-size: 0.9375rem;
           font-weight: 500;
-          color: var(--foreground);
+          color: rgba(255,255,255,0.9);
         }
         
         .primary-badge {
@@ -409,16 +410,14 @@ export default function Dashboard() {
           width: 3rem;
           height: 3rem;
           margin: 0 auto 1rem;
-          opacity: 0.5;
-          color: var(--foreground);
+          color: rgba(255,255,255,0.35);
           display: flex;
           align-items: center;
           justify-content: center;
         }
-        
+
         .empty-message {
-          color: var(--foreground);
-          opacity: 0.7;
+          color: rgba(255,255,255,0.5);
           margin-bottom: 1.5rem;
         }
         
