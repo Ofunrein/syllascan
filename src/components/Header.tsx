@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useUser } from '@/lib/UserContext';
 import { useState, useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
-import { Calendar, LayoutDashboard, Settings, LogOut, LogIn } from 'lucide-react';
+import { Calendar, LayoutDashboard, Settings, LogOut, LogIn, Upload } from 'lucide-react';
 
 export default function Header() {
   const { user, loading, signIn, signOut } = useUser();
@@ -38,8 +38,12 @@ export default function Header() {
 
           {/* Desktop nav */}
           <nav className="desktop-nav">
-            <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+            <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
               <span className="nav-text">Home</span>
+            </Link>
+            <Link href="/scan" className={`nav-link ${isActive('/scan') ? 'active' : ''}`}>
+              <Upload size={14} strokeWidth={2} />
+              <span className="nav-text">Upload</span>
             </Link>
             <Link href="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
               <LayoutDashboard size={14} strokeWidth={2} />
@@ -124,6 +128,9 @@ export default function Header() {
             <Link href="/" className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Home
             </Link>
+            <Link href="/scan" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              Upload
+            </Link>
             <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Dashboard
             </Link>
@@ -152,23 +159,18 @@ export default function Header() {
 
       <style jsx>{`
         .site-header {
-          background-color: var(--card);
-          border-bottom: 1px solid var(--border);
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
           position: sticky;
           top: 0;
           z-index: 50;
-          transition: box-shadow 0.3s ease, background-color 0.3s ease;
+          transition: background 0.3s ease;
         }
-
         .site-header.scrolled {
-          box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
-          backdrop-filter: blur(10px);
-          background-color: rgba(255, 255, 255, 0.92);
-        }
-
-        :global(.dark) .site-header.scrolled {
-          background-color: rgba(31, 41, 55, 0.92);
-          box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+          background: rgba(0, 0, 0, 0.7);
+          box-shadow: 0 1px 24px rgba(0, 0, 0, 0.5);
         }
 
         .header-content {
@@ -196,10 +198,8 @@ export default function Header() {
           text-decoration: none;
         }
 
-        .logo-icon-svg {
-          color: var(--cal-blue);
-          flex-shrink: 0;
-        }
+        .logo :global(.syllascan-logo) { color: #fff !important; }
+        .logo-icon-svg { color: #fff !important; flex-shrink: 0; }
 
         /* desktop-nav handled by globals.css */
 
@@ -271,12 +271,14 @@ export default function Header() {
           top: calc(100% + 0.5rem);
           right: 0;
           width: 220px;
-          background-color: var(--card);
+          background: rgba(12, 12, 18, 0.88);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           border-radius: 0.625rem;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
           padding: 0.375rem 0;
           z-index: 100;
-          border: 1px solid var(--border);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           overflow: hidden;
         }
 
@@ -286,44 +288,11 @@ export default function Header() {
           margin-bottom: 0.25rem;
         }
 
-        .user-name {
-          font-weight: 600;
-          color: var(--foreground);
-          font-size: 0.875rem;
-          font-family: var(--font-heading);
-        }
-
-        .user-email {
-          color: var(--muted);
-          font-size: 0.75rem;
-          margin-top: 0.125rem;
-        }
-
-        .menu-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          color: var(--foreground);
-          font-size: 0.875rem;
-          transition: background-color 0.15s;
-          text-decoration: none;
-          width: 100%;
-          text-align: left;
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-weight: 500;
-          font-family: var(--font-body);
-        }
-
-        .menu-item:hover {
-          background-color: rgba(0, 0, 0, 0.04);
-        }
-
-        :global(.dark) .menu-item:hover {
-          background-color: rgba(255, 255, 255, 0.06);
-        }
+        .user-name { font-weight: 600; color: #fff; font-size: 0.875rem; font-family: var(--font-heading); }
+        .user-email { color: rgba(255, 255, 255, 0.45); font-size: 0.75rem; margin-top: 0.125rem; }
+        .menu-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; color: rgba(255, 255, 255, 0.85); font-size: 0.875rem; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 500; font-family: var(--font-body); }
+        .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
+        :global(.dark) .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
 
         .menu-item--danger {
           color: var(--deadline);
@@ -339,19 +308,19 @@ export default function Header() {
             align-items: center;
             gap: 0.4rem;
             padding: 0.45rem 0.875rem;
-            background-color: var(--cal-blue);
+            background: rgba(255, 255, 255, 0.1);
             color: #fff;
             font-size: 0.8125rem;
             font-weight: 500;
-            border-radius: 0.5rem;
-            border: none;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.2s ease;
             font-family: var(--font-heading);
+            backdrop-filter: blur(4px);
           }
-
           .sign-in-button:hover {
-            background-color: var(--primary-dark);
+            background: rgba(255, 255, 255, 0.2);
             transform: scale(1.03);
           }
         }
@@ -418,7 +387,10 @@ export default function Header() {
           display: flex;
           flex-direction: column;
           padding: 0.5rem 0;
-          border-top: 1px solid var(--border);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(8, 8, 14, 0.92);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           animation: fadeIn 0.2s ease-out;
         }
 
@@ -438,7 +410,7 @@ export default function Header() {
           align-items: center;
           padding: 0.75rem 1rem;
           font-size: 0.9375rem;
-          color: var(--foreground);
+          color: rgba(255, 255, 255, 0.75);
           text-decoration: none;
           transition: background-color 0.15s;
           font-family: var(--font-heading);
@@ -450,8 +422,8 @@ export default function Header() {
         }
 
         .mobile-nav-link.active {
-          color: var(--cal-blue);
-          background-color: rgba(37, 99, 235, 0.06);
+          color: #fff;
+          background-color: rgba(255, 255, 255, 0.08);
         }
 
         .mobile-sign-in,
@@ -473,7 +445,7 @@ export default function Header() {
         }
 
         .mobile-sign-in {
-          color: var(--cal-blue);
+          color: rgba(255, 255, 255, 0.85);
         }
 
         .mobile-sign-out {

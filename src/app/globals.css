@@ -265,7 +265,7 @@ a:hover {
   gap: 0.4rem;
   text-decoration: none;
   border-radius: 0.375rem;
-  color: var(--foreground);
+  color: rgba(255, 255, 255, 0.75);
   font-family: var(--font-heading);
   font-size: 0.875rem;
   font-weight: 500;
@@ -281,16 +281,9 @@ a:hover {
   background-color: rgba(255, 255, 255, 0.06);
 }
 
-.desktop-nav .nav-link.active {
-  opacity: 1;
-  color: var(--cal-blue);
-  background-color: rgba(37, 99, 235, 0.07);
-}
+.desktop-nav .nav-link.active { opacity: 1; color: #fff; background-color: rgba(255, 255, 255, 0.1); }
 
-.dark .desktop-nav .nav-link.active {
-  color: var(--primary);
-  background-color: rgba(96, 165, 250, 0.1);
-}
+.dark .desktop-nav .nav-link.active { color: #fff; background-color: rgba(255, 255, 255, 0.1); }
 
 /* ── Hide any unwanted bare SVGs ────────────────────────── */
 svg:not([class]) {
