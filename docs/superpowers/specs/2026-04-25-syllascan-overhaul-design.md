@@ -52,7 +52,7 @@ Google Calendar API tokens (access + refresh) are obtained via a dedicated OAuth
 | display_name | text | |
 | avatar_url | text | |
 | google_calendar_connected | boolean | |
-| google_tokens | jsonb | Encrypted access/refresh tokens |
+| google_tokens | jsonb | Access/refresh tokens, encrypted at application level before storage |
 | preferences | jsonb | Theme, default view, auto_sync_google, etc. |
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
@@ -139,7 +139,7 @@ Upload → File type detection → Conversion layer → AI extraction → Event 
 | PDF | pdfjs-dist renders ALL pages to images | Vision (multi-image) |
 | Images | Direct base64 | Vision |
 | Word (.docx) | mammoth library → text + embedded images | Text (+ vision for images) |
-| PowerPoint (.pptx) | pptx parser → text from all slides | Text |
+| PowerPoint (.pptx) | pptxgenjs or officegen → text from all slides | Text |
 | Excel (.xlsx) / CSV | xlsx library → structured text | Text |
 | Plain text / RTF / HTML | Direct text extraction, strip formatting | Text |
 
