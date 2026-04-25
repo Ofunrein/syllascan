@@ -76,7 +76,7 @@ html {
 
 body {
   font-family: var(--font-body);
-  background-color: #f8fafc;
+  background-color: #eef1f5;
   color: var(--foreground);
   min-height: 100vh;
   position: relative;
@@ -301,12 +301,12 @@ svg:not([class]) {
 /* ── Liquid Glass ────────────────────────────────────────── */
 /* Light mode liquid glass */
 .liquid-glass {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.82);
   background-blend-mode: luminosity;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: none;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 4px 24px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
   color: #111827;
@@ -327,13 +327,68 @@ svg:not([class]) {
 
 /* Dark mode liquid glass */
 .dark .liquid-glass {
-  background: rgba(255, 255, 255, 0.01);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  color: #f9fafb;
+  background: rgba(15, 15, 25, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 4px 24px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
 }
 
 .dark .liquid-glass::before {
-  background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.08) 80%, rgba(255,255,255,0.25) 100%);
+}
+
+/* ── Dark mode contrast fixes ──────────────────────────── */
+/* Eliminate grey/low-opacity text in dark mode — everything should be clearly readable */
+.dark .text-white\/40,
+.dark .text-white\/50,
+.dark .text-white\/60 {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark .text-white\/70,
+.dark .text-white\/80 {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.dark .text-white\/25,
+.dark .text-white\/30 {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Placeholder text can stay dimmer but still readable */
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Light mode contrast — ensure dark text on light glass */
+.liquid-glass p,
+.liquid-glass span,
+.liquid-glass h1, .liquid-glass h2, .liquid-glass h3, .liquid-glass h4 {
+  color: inherit;
+}
+
+/* Nav link contrast */
+.dark .nav-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+  opacity: 1 !important;
+}
+
+.dark .nav-link:hover {
+  color: #ffffff !important;
+}
+
+/* Ensure muted/secondary text in dark mode is still readable */
+.dark [class*="opacity-"] {
+  opacity: unset;
+}
+
+.dark .opacity-50,
+.dark .opacity-60 {
+  opacity: 0.8 !important;
+}
+
+.dark .opacity-40 {
+  opacity: 0.7 !important;
 }
