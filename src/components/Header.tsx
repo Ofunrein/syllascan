@@ -45,6 +45,10 @@ export default function Header() {
               <Upload size={14} strokeWidth={2} />
               <span className="nav-text">Upload</span>
             </Link>
+            <Link href="/calendar" className={`nav-link ${isActive('/calendar') ? 'active' : ''}`}>
+              <Calendar size={14} strokeWidth={2} />
+              <span className="nav-text">Calendar</span>
+            </Link>
             <Link href="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
               <LayoutDashboard size={14} strokeWidth={2} />
               <span className="nav-text">Dashboard</span>
@@ -134,6 +138,9 @@ export default function Header() {
             </Link>
             <Link href="/scan" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Upload
+            </Link>
+            <Link href="/calendar" className={`mobile-nav-link ${isActive('/calendar') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              Calendar
             </Link>
             <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Dashboard

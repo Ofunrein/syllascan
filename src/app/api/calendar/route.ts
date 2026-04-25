@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { addEventsToCalendar } from '@/lib/googleCalendar';
 import { Event } from '@/lib/openai';
 import { google } from 'googleapis';
@@ -117,6 +117,14 @@ export async function POST(request: NextRequest) {
           }
 
           console.log('Successfully refreshed access token');
+
+          // Persist refreshed token back to Supabase
+          if (userId) {
+            const serviceClient = await createServiceRoleClient();
+            await serviceClient.from('users').update({
+              google_tokens: { access_token: newAccessToken, refresh_token: refreshToken }
+            }).eq('id', userId);
+          }
 
           // Retry adding events with new token
           const eventIds = await addEventsToCalendar(newAccessToken, events);
