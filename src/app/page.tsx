@@ -1,13 +1,18 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Instagram, Twitter, Globe, ArrowRight, UploadCloud } from 'lucide-react';
+import { Instagram, Twitter, Globe, ArrowRight, UploadCloud } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
+import AuthForm from '@/components/AuthForm';
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fadingOutRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+
+  const { user, profile, authenticated, signOut } = useAuth();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -105,20 +110,42 @@ export default function Home() {
         <div className="liquid-glass rounded-full px-6 py-3 flex items-center justify-between max-w-5xl mx-auto">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <Calendar size={24} className="text-white" />
+              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+                <line x1="7" y1="14" x2="17" y2="14" strokeOpacity="0.5" />
+                <line x1="7" y1="17" x2="13" y2="17" strokeOpacity="0.5" />
+              </svg>
               <span className="text-white font-semibold text-lg">SyllaScan</span>
             </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/scan" className="text-white/80 hover:text-white transition-colors text-sm font-medium">Upload</Link>
-              <Link href="/dashboard" className="text-white/80 hover:text-white transition-colors text-sm font-medium">Dashboard</Link>
-              <Link href="/settings" className="text-white/80 hover:text-white transition-colors text-sm font-medium">Settings</Link>
-            </div>
+            {authenticated && (
+              <div className="hidden md:flex items-center gap-6">
+                <Link href="/dashboard" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Dashboard</Link>
+                <Link href="/scan" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Upload</Link>
+                <Link href="/calendar" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Calendar</Link>
+                <Link href="/settings" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Settings</Link>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/scan" className="text-white text-sm font-medium">Get Started</Link>
-            <Link href="/dashboard" className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors">
-              Dashboard
-            </Link>
+          <div className="flex items-center gap-3">
+            {authenticated ? (
+              <>
+                <span className="text-white/60 text-sm hidden md:block">{profile?.display_name || user?.email}</span>
+                {profile?.avatar_url && (
+                  <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+                )}
+                <button onClick={signOut} className="text-white/60 hover:text-white text-sm transition-colors">Sign out</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setShowAuth(true)} className="text-white text-sm font-medium">Sign in</button>
+                <Link href="/scan" className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -150,6 +177,19 @@ export default function Home() {
             Upload your syllabus and automatically extract deadlines, exams, and assignments to your Google Calendar. Built for students who mean business.
           </p>
 
+          {authenticated ? (
+            <p className="text-white/50 text-sm">
+              Welcome back, {profile?.display_name || user?.email?.split('@')[0]}
+            </p>
+          ) : (
+            <button
+              onClick={() => setShowAuth(true)}
+              className="text-white/40 hover:text-white/60 text-sm transition-colors"
+            >
+              Sign in to save your events
+            </button>
+          )}
+
           <div className="flex justify-center">
             <Link
               href="/scan"
@@ -172,6 +212,14 @@ export default function Home() {
           <Globe size={20} />
         </a>
       </div>
+
+      {showAuth && !authenticated && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAuth(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <AuthForm />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
