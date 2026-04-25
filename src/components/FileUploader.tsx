@@ -121,7 +121,15 @@ export default function FileUploader({
       'image/jpeg': [],
       'image/png': [],
       'image/gif': [],
-      'application/pdf': []
+      'image/webp': [],
+      'application/pdf': [],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'text/csv': ['.csv'],
+      'text/plain': ['.txt'],
+      'text/html': ['.html', '.htm'],
+      'application/rtf': ['.rtf'],
     },
     maxFiles: 10,
     maxSize: 10485760, // 10MB
@@ -286,7 +294,7 @@ export default function FileUploader({
               <div className="upload-text">
                 <h3 className="upload-title">Drop files here or click to upload</h3>
                 <p className="upload-description">
-                  Supports JPG, PNG, GIF, and PDF files (max 10MB, up to 10 files)
+                  Supports images, PDF, Word, PowerPoint, Excel, CSV, and text files (max 10MB, up to 10 files)
                 </p>
               </div>
               <button

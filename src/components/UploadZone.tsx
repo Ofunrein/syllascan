@@ -25,7 +25,16 @@ export default function UploadZone({
     accept: {
       'application/pdf': ['.pdf'],
       'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png']
+      'image/png': ['.png'],
+      'image/gif': ['.gif'],
+      'image/webp': ['.webp'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'text/csv': ['.csv'],
+      'text/plain': ['.txt'],
+      'text/html': ['.html', '.htm'],
+      'application/rtf': ['.rtf'],
     }
   });
 
@@ -46,7 +55,7 @@ export default function UploadZone({
           </p>
           
           <p className="text-sm text-gray-500">
-            or click to browse (PDF, JPG, PNG)
+            or click to browse (PDF, images, Word, Excel, PowerPoint, text)
           </p>
         </div>
       </div>
