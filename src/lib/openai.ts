@@ -49,7 +49,7 @@ Return a JSON object with key "events" containing an array of event objects. Ret
 export async function extractEventsFromText(text: string): Promise<ExtractedEvent[]> {
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
+      model: 'gpt-5.4-mini',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: EXTRACTION_PROMPT },
@@ -83,7 +83,7 @@ export async function extractEventsFromImages(
     }));
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
+      model: 'gpt-5.4-mini',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: EXTRACTION_PROMPT },
