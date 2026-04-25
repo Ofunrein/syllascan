@@ -119,3 +119,25 @@ export async function extractEventsFromImage(base64Image: string): Promise<Extra
 export function createOpenAIClient(apiKey: string): OpenAI {
   return new OpenAI({ apiKey });
 }
+
+// Backward-compatible Event type used by components
+// Maps to the shape components expect (camelCase, ISO date strings)
+export interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  type?: string;
+  category?: string;
+  source?: string;
+  isAllDay?: boolean;
+  isRecurring?: boolean;
+  recurrencePattern?: string;
+  confidence?: number;
+  google_event_id?: string;
+}
