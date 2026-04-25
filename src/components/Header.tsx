@@ -49,6 +49,10 @@ export default function Header() {
               <LayoutDashboard size={14} strokeWidth={2} />
               <span className="nav-text">Dashboard</span>
             </Link>
+            <Link href="/settings" className={`nav-link ${isActive('/settings') ? 'active' : ''}`}>
+              <Settings size={14} strokeWidth={2} />
+              <span className="nav-text">Settings</span>
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -159,9 +163,10 @@ export default function Header() {
 
       <style jsx>{`
         .site-header {
-          background: rgba(0, 0, 0, 0.45);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          background: rgba(255, 255, 255, 0.01);
+          background-blend-mode: luminosity;
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.07);
           position: sticky;
           top: 0;
@@ -169,7 +174,7 @@ export default function Header() {
           transition: background 0.3s ease;
         }
         .site-header.scrolled {
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(8, 8, 14, 0.62);
           box-shadow: 0 1px 24px rgba(0, 0, 0, 0.5);
         }
 
@@ -213,7 +218,7 @@ export default function Header() {
           width: 2.25rem;
           height: 2.25rem;
           border-radius: 9999px;
-          background-color: var(--border);
+          background-color: rgba(255, 255, 255, 0.14);
           animation: pulse 1.5s infinite;
         }
 

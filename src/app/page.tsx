@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, Instagram, Twitter, Globe, ArrowRight } from 'lucide-react';
+import { Calendar, Instagram, Twitter, Globe, ArrowRight, UploadCloud } from 'lucide-react';
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -111,7 +111,7 @@ export default function Home() {
             <div className="hidden md:flex items-center gap-8">
               <Link href="/scan" className="text-white/80 hover:text-white transition-colors text-sm font-medium">Upload</Link>
               <Link href="/dashboard" className="text-white/80 hover:text-white transition-colors text-sm font-medium">Dashboard</Link>
-              <Link href="/#about" className="text-white/80 hover:text-white transition-colors text-sm font-medium">About</Link>
+              <Link href="/settings" className="text-white/80 hover:text-white transition-colors text-sm font-medium">Settings</Link>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -132,18 +132,19 @@ export default function Home() {
         </h1>
 
         <div className="max-w-xl w-full space-y-4">
-          <div className="liquid-glass rounded-full pl-6 pr-2 py-2 flex items-center gap-3">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 bg-transparent text-white placeholder:text-white/40 text-base outline-none"
-            />
-            <Link href="/scan">
-              <button className="bg-white rounded-full p-3 text-black flex items-center justify-center">
-                <ArrowRight size={20} />
-              </button>
-            </Link>
-          </div>
+          <Link
+            href="/scan"
+            className="liquid-glass rounded-full pl-6 pr-2 py-2 flex items-center gap-3 text-left transition-colors hover:bg-white/5"
+            aria-label="Start scanning a syllabus"
+          >
+            <UploadCloud size={20} className="shrink-0 text-white/70" />
+            <span className="flex-1 bg-transparent text-white/80 text-base outline-none">
+              Upload a syllabus
+            </span>
+            <span className="bg-white rounded-full p-3 text-black flex items-center justify-center">
+              <ArrowRight size={20} />
+            </span>
+          </Link>
 
           <p className="text-white text-sm leading-relaxed px-4">
             Upload your syllabus and automatically extract deadlines, exams, and assignments to your Google Calendar. Built for students who mean business.

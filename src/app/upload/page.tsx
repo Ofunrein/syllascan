@@ -17,21 +17,21 @@ export default function UploadPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { setEvents } = useEventStore();
-  
+
   const handleAddFiles = useCallback((newFiles: File[]) => {
     setFiles(prev => [...prev, ...newFiles]);
     setErrorDetails(null); // Clear any previous errors
   }, []);
-  
+
   const handleClearFiles = useCallback(() => {
     setFiles([]);
     setErrorDetails(null);
   }, []);
-  
+
   const handleRemoveFile = useCallback((index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
-  
+
   const handleExtractEvents = async () => {
     if (files.length === 0) {
       toast({
@@ -41,51 +41,51 @@ export default function UploadPage() {
       });
       return;
     }
-    
+
     setIsLoading(true);
     setErrorDetails(null);
-    
+
     try {
       const formData = new FormData();
-      
+
       files.forEach((file, index) => {
         formData.append(`file-${index}`, file);
       });
-      
+
       console.log("Making extraction request...");
       const response = await fetch('/api/extract-events', {
         method: 'POST',
         body: formData,
       });
-      
+
       console.log("Response status:", response.status);
       const data = await response.json();
       console.log("Response data:", data);
-      
+
       if (!response.ok) {
         const errorMessage = data.message || data.error || 'Failed to extract events';
         console.error('Extraction error:', data);
         setErrorDetails(JSON.stringify(data, null, 2));
         throw new Error(errorMessage);
       }
-      
+
       if (data.events && data.events.length > 0) {
         // Store events in global store
         setEvents(data.events as Event[]);
-        
+
         // Show success message
         toast({
           title: 'Events extracted successfully',
           description: `Found ${data.events.length} events from your documents.`,
         });
-        
-        // Redirect to events page
-        router.push('/events');
+
+        // Redirect into the current scan workspace events tab.
+        router.push('/scan#events');
       } else {
         // Show message when no events were found
         const errorMessages = data.errors?.map(err => `${err.file}: ${err.error}`).join('\n') || '';
         setErrorDetails(errorMessages);
-        
+
         toast({
           title: 'No events found',
           description: data.message || 'No events could be extracted from the provided files.',
@@ -94,7 +94,7 @@ export default function UploadPage() {
       }
     } catch (error) {
       console.error('Error extracting events:', error);
-      
+
       toast({
         title: 'Error extracting events',
         description: error.message || 'Failed to extract events from your documents.',
@@ -104,21 +104,21 @@ export default function UploadPage() {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="container max-w-4xl py-6">
       <h1 className="text-2xl font-bold mb-6">Upload Your Documents</h1>
-      
-      <UploadZone 
+
+      <UploadZone
         files={files}
         onAddFiles={handleAddFiles}
         onRemoveFile={handleRemoveFile}
         onClearAll={handleClearFiles}
       />
-      
+
       <div className="mt-8 flex justify-center">
-        <Button 
-          onClick={handleExtractEvents} 
+        <Button
+          onClick={handleExtractEvents}
           disabled={isLoading || files.length === 0}
           size="lg"
           className="w-full max-w-xs"
@@ -133,7 +133,7 @@ export default function UploadPage() {
           )}
         </Button>
       </div>
-      
+
       {errorDetails && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
           <h3 className="text-lg font-semibold text-red-700 mb-2">Error Details:</h3>
@@ -152,4 +152,4 @@ export default function UploadPage() {
       )}
     </div>
   );
-} 
+}

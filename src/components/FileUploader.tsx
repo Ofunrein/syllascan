@@ -22,10 +22,10 @@ interface FileWithPreview {
   isLoading: boolean;
 }
 
-export default function FileUploader({ 
-  onEventsExtracted, 
-  isProcessing, 
-  setIsProcessing 
+export default function FileUploader({
+  onEventsExtracted,
+  isProcessing,
+  setIsProcessing
 }: FileUploaderProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
@@ -63,12 +63,12 @@ export default function FileUploader({
           currentPdfPage: 1,
           isLoading: true
         };
-        
+
         try {
           // Get the page count first
           const pageCount = await getPdfPageCount(selectedFile);
           filePreview.pdfPageCount = pageCount;
-          
+
           // Then convert the first page to an image
           if (pageCount > 0) {
             const imageDataUrl = await convertPdfToImage(selectedFile, 1);
@@ -80,7 +80,7 @@ export default function FileUploader({
         } finally {
           filePreview.isLoading = false;
         }
-        
+
         return filePreview;
       } else {
         throw new Error('Unsupported file type');
@@ -101,12 +101,12 @@ export default function FileUploader({
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
-    
+
     try {
       const newFiles = await Promise.all(
         acceptedFiles.map(file => createPreview(file))
       );
-      
+
       setFiles(prevFiles => [...prevFiles, ...newFiles]);
       setActiveFileIndex(prevFiles => prevFiles.length);
     } catch (error) {
@@ -134,7 +134,7 @@ export default function FileUploader({
     if (!file || file.fileType !== 'pdf' || newPage < 1 || newPage > file.pdfPageCount) {
       return;
     }
-    
+
     try {
       setFiles(prevFiles => {
         const updatedFiles = [...prevFiles];
@@ -144,9 +144,9 @@ export default function FileUploader({
         };
         return updatedFiles;
       });
-      
+
       const imageDataUrl = await convertPdfToImage(file.file, newPage);
-      
+
       setFiles(prevFiles => {
         const updatedFiles = [...prevFiles];
         updatedFiles[fileIndex] = {
@@ -160,7 +160,7 @@ export default function FileUploader({
     } catch (error) {
       console.error('Error changing PDF page:', error);
       toast.error('Error changing PDF page');
-      
+
       setFiles(prevFiles => {
         const updatedFiles = [...prevFiles];
         updatedFiles[fileIndex] = {
@@ -189,29 +189,29 @@ export default function FileUploader({
       toast.error('Please upload at least one file');
       return;
     }
-    
+
     setIsProcessing(true);
     const toastId = toast.loading('Processing files...');
-    
+
     try {
       // Prepare the files for upload
       const formData = new FormData();
       files.forEach((fileWithPreview, index) => {
         formData.append(`file${index}`, fileWithPreview.file);
       });
-      
+
       // Send the files to the server
       const response = await fetch('/api/extract-events', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to extract events');
       }
-      
+
       const data = await response.json();
-      
+
       if (data.events && Array.isArray(data.events) && data.events.length > 0) {
         onEventsExtracted(data.events);
         toast.success(`Successfully extracted ${data.events.length} events`, { id: toastId });
@@ -248,12 +248,12 @@ export default function FileUploader({
   if (!mounted) {
     return (
       <div className="w-full max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="liquid-glass rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Upload Your Documents</h2>
+            <h2 className="text-xl font-semibold text-white">Upload Your Documents</h2>
           </div>
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white/80"></div>
           </div>
         </div>
       </div>
@@ -262,19 +262,19 @@ export default function FileUploader({
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className="liquid-glass rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Upload Your Documents</h2>
+          <h2 className="text-xl font-semibold text-white">Upload Your Documents</h2>
         </div>
-        
+
         {files.length === 0 ? (
-          <div 
-            {...getRootProps()} 
+          <div
+            {...getRootProps()}
             className="upload-dropzone"
             style={{ minHeight: '300px' }}
           >
             <input {...getInputProps()} />
-            
+
             <div className="upload-content">
               <div className="upload-icon-container">
                 <svg xmlns="http://www.w3.org/2000/svg" className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -306,9 +306,9 @@ export default function FileUploader({
                 <PlusIcon className="button-icon" />
                 <span>Add More Files</span>
               </div>
-              
-              <button 
-                type="button" 
+
+              <button
+                type="button"
                 onClick={clearAllFiles}
                 className="clear-all-button"
               >
@@ -316,20 +316,20 @@ export default function FileUploader({
                 <span>Clear All</span>
               </button>
             </div>
-            
+
             {/* File thumbnails row */}
             <div className="flex flex-wrap gap-2 mb-4">
               {files.map((file, index) => (
-                <div 
+                <div
                   key={`${file.file.name}-${index}`}
                   onClick={() => setActiveFileIndex(index)}
                   className={`file-thumbnail ${index === activeFileIndex ? 'active' : ''}`}
                 >
                   {file.isLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white/80"></div>
                   ) : file.preview ? (
-                    <img 
-                      src={file.preview} 
+                    <img
+                      src={file.preview}
                       alt={`Preview of ${file.file.name}`}
                       className="object-contain w-full h-full p-1"
                     />
@@ -338,7 +338,7 @@ export default function FileUploader({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   )}
-                  
+
                   {/* Remove button */}
                   <button
                     type="button"
@@ -356,7 +356,7 @@ export default function FileUploader({
                 </div>
               ))}
             </div>
-            
+
             {/* Active file preview */}
             {activeFile && (
               <div className="file-preview">
@@ -368,22 +368,22 @@ export default function FileUploader({
                     {(activeFile.file.size / 1024).toFixed(1)} KB
                   </span>
                 </div>
-                
+
                 {activeFile.isLoading ? (
                   <div className="file-preview-loading">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading preview...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white/80"></div>
+                    <p className="text-sm text-white/55">Loading preview...</p>
                   </div>
                 ) : activeFile.preview ? (
                   <div className="space-y-2">
                     <div className="file-preview-image-container">
-                      <img 
-                        src={activeFile.preview} 
+                      <img
+                        src={activeFile.preview}
                         alt={`Preview of ${activeFile.file.name}`}
-                        className="file-preview-image" 
+                        className="file-preview-image"
                       />
                     </div>
-                    
+
                     {activeFile.fileType === 'pdf' && activeFile.pdfPageCount > 1 && (
                       <div className="pdf-navigation">
                         <button
@@ -396,11 +396,11 @@ export default function FileUploader({
                             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </button>
-                        
+
                         <span className="pdf-page-indicator">
                           Page {activeFile.currentPdfPage} of {activeFile.pdfPageCount}
                         </span>
-                        
+
                         <button
                           type="button"
                           onClick={() => handlePdfPageChange(activeFileIndex, activeFile.currentPdfPage + 1)}
@@ -424,7 +424,7 @@ export default function FileUploader({
                 )}
               </div>
             )}
-            
+
             {/* Extract button - styled like the navigation tabs */}
             <div className="extract-button-container">
               <button
@@ -461,18 +461,18 @@ export default function FileUploader({
             align-items: center;
             justify-content: center;
             padding: 2rem;
-            border: 2px dashed var(--border);
+            border: 1px dashed rgba(255, 255, 255, 0.28);
             border-radius: 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            background-color: rgba(var(--primary-rgb), 0.02);
+            background-color: rgba(255, 255, 255, 0.03);
           }
-          
+
           .upload-dropzone:hover {
-            border-color: var(--primary);
-            background-color: rgba(var(--primary-rgb), 0.05);
+            border-color: rgba(255, 255, 255, 0.55);
+            background-color: rgba(255, 255, 255, 0.06);
           }
-          
+
           .upload-content {
             display: flex;
             flex-direction: column;
@@ -480,60 +480,59 @@ export default function FileUploader({
             text-align: center;
             max-width: 400px;
           }
-          
+
           .upload-icon-container {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background-color: rgba(var(--primary-rgb), 0.08);
-            border: 1px solid rgba(var(--primary-rgb), 0.15);
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px rgba(var(--primary-rgb), 0.1);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
           }
-          
+
           .upload-icon {
             width: 40px;
             height: 40px;
-            color: var(--primary);
+            color: rgba(255, 255, 255, 0.86);
           }
-          
+
           .upload-text {
             margin-bottom: 1.5rem;
           }
-          
+
           .upload-title {
             font-size: 1.25rem;
             font-weight: 600;
-            color: var(--foreground);
+            color: white;
             margin-bottom: 0.5rem;
           }
-          
+
           .upload-description {
             font-size: 0.875rem;
-            color: var(--foreground);
+            color: rgba(255, 255, 255, 0.68);
             opacity: 0.7;
           }
-          
+
           .upload-button {
             padding: 0.625rem 1.25rem;
-            background-color: var(--primary);
-            color: white;
+            background-color: white;
+            color: black;
             font-weight: 500;
             border-radius: 0.5rem;
             transition: all 0.2s;
             border: none;
-            box-shadow: 0 2px 4px rgba(var(--primary-rgb), 0.3);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
           }
-          
+
           .upload-button:hover {
-            background-color: var(--primary-dark);
+            background-color: rgba(255, 255, 255, 0.86);
             transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(var(--primary-rgb), 0.4);
           }
-          
+
           .file-thumbnail {
             position: relative;
             width: 70px;
@@ -543,22 +542,22 @@ export default function FileUploader({
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             cursor: pointer;
             transition: all 0.2s;
-            background-color: var(--card);
+            background-color: rgba(255, 255, 255, 0.04);
           }
-          
+
           .file-thumbnail.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.3);
+            border-color: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
           }
-          
+
           .file-thumbnail:hover {
             transform: translateY(-2px);
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
           }
-          
+
           .file-remove-button {
             position: absolute;
             top: 0;
@@ -575,62 +574,62 @@ export default function FileUploader({
             transition: opacity 0.2s;
             border: none;
           }
-          
+
           .file-thumbnail:hover .file-remove-button {
             opacity: 1;
           }
-          
+
           .add-file-button {
             width: 70px;
             height: 70px;
             border-radius: 0.5rem;
-            border: 1px dashed var(--border);
+            border: 1px dashed rgba(255, 255, 255, 0.22);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
-            background-color: rgba(var(--primary-rgb), 0.02);
+            background-color: rgba(255, 255, 255, 0.04);
           }
-          
+
           .add-file-button:hover {
-            border-color: var(--primary);
-            background-color: rgba(var(--primary-rgb), 0.05);
+            border-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.07);
           }
-          
+
           .file-preview {
             border-radius: 0.75rem;
             overflow: hidden;
-            background-color: var(--card);
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            background-color: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
           }
-          
+
           .file-preview-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border);
-            background-color: rgba(var(--primary-rgb), 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background-color: rgba(255, 255, 255, 0.04);
           }
-          
+
           .file-preview-title {
             font-size: 0.875rem;
             font-weight: 600;
-            color: var(--foreground);
+            color: white;
             max-width: 70%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
           }
-          
+
           .file-preview-size {
             font-size: 0.75rem;
-            color: var(--foreground);
+            color: rgba(255, 255, 255, 0.65);
             opacity: 0.7;
           }
-          
+
           .file-preview-loading {
             display: flex;
             flex-direction: column;
@@ -639,7 +638,7 @@ export default function FileUploader({
             height: 200px;
             gap: 1rem;
           }
-          
+
           .file-preview-image-container {
             display: flex;
             justify-content: center;
@@ -649,24 +648,24 @@ export default function FileUploader({
             margin: 1rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           }
-          
+
           .file-preview-image {
             max-height: 200px;
             max-width: 100%;
             object-fit: contain;
           }
-          
+
           .file-preview-empty {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 200px;
-            background-color: rgba(var(--primary-rgb), 0.02);
+            background-color: rgba(255, 255, 255, 0.03);
             margin: 1rem;
             border-radius: 0.5rem;
           }
-          
+
           .pdf-navigation {
             display: flex;
             align-items: center;
@@ -674,10 +673,10 @@ export default function FileUploader({
             gap: 0.75rem;
             padding: 0.5rem;
             margin: 0 1rem 1rem;
-            background-color: rgba(var(--primary-rgb), 0.05);
+            background-color: rgba(255, 255, 255, 0.06);
             border-radius: 0.5rem;
           }
-          
+
           .pdf-nav-button {
             display: flex;
             align-items: center;
@@ -685,84 +684,83 @@ export default function FileUploader({
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            background-color: white;
-            color: var(--primary);
-            border: 1px solid var(--border);
+            background-color: rgba(255, 255, 255, 0.08);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.18);
             transition: all 0.2s;
           }
-          
+
           .pdf-nav-button:hover:not(:disabled) {
-            background-color: var(--primary);
-            color: white;
+            background-color: white;
+            color: black;
           }
-          
+
           .pdf-nav-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
           }
-          
+
           .pdf-page-indicator {
             font-size: 0.75rem;
             font-weight: 500;
-            color: var(--foreground);
+            color: rgba(255, 255, 255, 0.72);
           }
-          
+
           .extract-button-container {
             display: flex;
             justify-content: center;
             margin-top: 1.5rem;
           }
-          
+
           .extract-button {
             display: inline-flex;
             align-items: center;
             padding: 0.75rem 1.5rem;
-            background-color: var(--primary);
-            color: white;
+            background-color: white;
+            color: black;
             font-weight: 500;
             border-radius: 0.5rem;
             transition: all 0.3s;
             border: none;
-            box-shadow: 0 2px 4px rgba(var(--primary-rgb), 0.3);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
           }
-          
+
           .extract-button:hover:not(:disabled) {
-            background-color: var(--primary-dark);
+            background-color: rgba(255, 255, 255, 0.86);
             transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(var(--primary-rgb), 0.4);
           }
-          
+
           .extract-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
           }
-          
+
           .file-management-buttons {
             display: flex;
             gap: 1rem;
             margin-bottom: 1rem;
           }
-          
+
           .add-more-button {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            background-color: rgba(var(--primary-rgb), 0.1);
-            color: var(--primary);
+            background-color: rgba(255, 255, 255, 0.08);
+            color: white;
             font-size: 0.875rem;
             font-weight: 500;
             border-radius: 0.5rem;
             cursor: pointer;
             transition: all 0.2s;
-            border: 1px solid transparent;
+            border: 1px solid rgba(255, 255, 255, 0.14);
           }
-          
+
           .add-more-button:hover {
-            background-color: rgba(var(--primary-rgb), 0.15);
+            background-color: rgba(255, 255, 255, 0.13);
             transform: translateY(-1px);
           }
-          
+
           .clear-all-button {
             display: flex;
             align-items: center;
@@ -777,12 +775,12 @@ export default function FileUploader({
             transition: all 0.2s;
             border: 1px solid transparent;
           }
-          
+
           .clear-all-button:hover {
             background-color: rgba(239, 68, 68, 0.15);
             transform: translateY(-1px);
           }
-          
+
           .button-icon {
             width: 1rem;
             height: 1rem;
@@ -791,4 +789,4 @@ export default function FileUploader({
       </div>
     </div>
   );
-} 
+}

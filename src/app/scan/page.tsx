@@ -10,22 +10,32 @@ import GoogleAuthWrapper from '@/components/GoogleAuthWrapper';
 import EmbeddedCalendarView from '@/components/EmbeddedCalendarView';
 import CalendarAuthBanner from '@/components/CalendarAuthBanner';
 import { Upload, Calendar, CalendarCheck, LayoutGrid } from 'lucide-react';
+import { useEventStore } from '@/lib/stores/eventStore';
 
 export default function ScanPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
   const [isCalendarExpired, setIsCalendarExpired] = useState(false);
+  const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents } = useEventStore();
 
   const handleEventsExtracted = (extractedEvents: Event[]) => {
     setEvents(extractedEvents);
+    setStoredEvents(extractedEvents);
     setActiveTab('events');
   };
 
   const handleClearEvents = () => {
     setEvents([]);
+    clearStoredEvents();
     setActiveTab('upload');
   };
+
+  useEffect(() => {
+    if (storedEvents.length > 0 && events.length === 0) {
+      setEvents(storedEvents);
+    }
+  }, [storedEvents, events.length]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -55,74 +65,66 @@ export default function ScanPage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#f9fafb' }}>
+    <div className="dark min-h-screen bg-black text-white relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-25">
+        <video
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="h-full w-full object-cover translate-y-[17%]"
+        />
+      </div>
+      <div className="pointer-events-none absolute inset-0 bg-black/70" />
       {isCalendarExpired && <CalendarAuthBanner />}
-      <Header />
+      <div className="relative z-10">
+        <Header />
+      </div>
 
-      <main style={{ padding: '2rem 0' }}>
+      <main className="relative z-10 py-10 md:py-14">
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div className="mb-10 text-center">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-white/45">
+              Academic calendar intelligence
+            </p>
             <h1
+              className="text-white"
               style={{
                 fontFamily: "'Instrument Serif', serif",
                 fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-                color: '#fff',
                 marginBottom: '0.75rem',
                 letterSpacing: '-0.02em',
               }}
             >
-              SyllaScan
+              Scan, review, sync.
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '1rem', maxWidth: '32rem', margin: '0 auto' }}>
-              Upload your syllabus and automatically extract events to your Google Calendar
+            <p className="mx-auto max-w-2xl text-sm md:text-base text-white/60">
+              Upload a syllabus or schedule, preview the document, extract academic dates with AI, then send clean events to Google Calendar.
             </p>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              marginBottom: '1.5rem',
-              gap: '0.25rem',
-              flexWrap: 'wrap',
-            }}
-          >
+          <div className="mb-6 flex justify-center">
+            <div className="liquid-glass inline-flex max-w-full flex-wrap justify-center gap-1 rounded-full p-1">
             {tabs.map(({ id, label, Icon, disabled }) => (
               <button
                 key={id}
                 onClick={() => !disabled && handleTabClick(id)}
                 disabled={disabled}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.75rem 1rem',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: activeTab === id ? '#fff' : 'rgba(255,255,255,0.45)',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === id ? '2px solid rgba(255,255,255,0.85)' : '2px solid transparent',
-                  cursor: disabled ? 'not-allowed' : 'pointer',
-                  opacity: disabled ? 0.3 : 1,
-                  transition: 'all 0.2s ease',
-                }}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                  activeTab === id
+                    ? 'bg-white text-black'
+                    : 'text-white/55 hover:bg-white/5 hover:text-white'
+                } ${disabled ? 'cursor-not-allowed opacity-30' : ''}`}
               >
                 <Icon size={16} />
                 {label}
               </button>
             ))}
+            </div>
           </div>
 
-          <div
-            style={{
-              background: 'rgba(255,255,255,0.03)',
-              borderRadius: '0.875rem',
-              border: '1px solid rgba(255,255,255,0.07)',
-              padding: '1.5rem',
-            }}
-          >
+          <div className="liquid-glass rounded-[1.25rem] p-4 md:p-6">
             {activeTab === 'upload' && (
               <FileUploader
                 onEventsExtracted={handleEventsExtracted}
@@ -148,19 +150,12 @@ export default function ScanPage() {
       </main>
 
       <footer
-        style={{
-          textAlign: 'center',
-          padding: '2rem',
-          color: 'rgba(255,255,255,0.35)',
-          fontSize: '0.875rem',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
-          marginTop: '3rem',
-        }}
+        className="relative z-10 mt-6 border-t border-white/5 px-6 py-8 text-center text-sm text-white/35"
       >
         {new Date().getFullYear()} SyllaScan. All rights reserved.{' '}
-        <a href="/privacy-policy" style={{ color: 'rgba(255,255,255,0.45)' }}>Privacy Policy</a>
+        <a href="/privacy-policy" className="text-white/45 hover:text-white">Privacy Policy</a>
         {' | '}
-        <a href="/terms-of-service" style={{ color: 'rgba(255,255,255,0.45)' }}>Terms of Service</a>
+        <a href="/terms-of-service" className="text-white/45 hover:text-white">Terms of Service</a>
       </footer>
     </div>
   );

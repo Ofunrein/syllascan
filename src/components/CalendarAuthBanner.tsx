@@ -14,7 +14,7 @@ export default function CalendarAuthBanner() {
     try {
       setIsConnecting(true);
       toast.loading('Connecting to Google Calendar...');
-      
+
       // Get the authorization URL from the server
       const response = await fetch('/api/auth/google-url?prompt=select_account&state=calendar', {
         method: 'GET',
@@ -22,14 +22,14 @@ export default function CalendarAuthBanner() {
           'Content-Type': 'application/json',
         }
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to get authorization URL');
       }
-      
+
       const { url } = await response.json();
-      
+
       // Redirect to Google's OAuth page
       window.location.href = url;
     } catch (error) {
@@ -45,7 +45,7 @@ export default function CalendarAuthBanner() {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-md bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+    <div className="liquid-glass fixed top-4 right-4 z-50 max-w-md rounded-2xl overflow-hidden text-white">
       <div className="p-4 flex flex-col">
         <div className="flex justify-between items-start">
           <div className="flex items-center">
@@ -53,14 +53,14 @@ export default function CalendarAuthBanner() {
               <XCircleIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <h3 className="text-sm font-medium text-white">
                 Google Calendar authorization expired
               </h3>
             </div>
           </div>
           <button
             type="button"
-            className="ml-auto bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+            className="ml-auto rounded-md text-white/45 hover:text-white focus:outline-none"
             onClick={handleClose}
           >
             <span className="sr-only">Close</span>
@@ -68,7 +68,7 @@ export default function CalendarAuthBanner() {
           </button>
         </div>
         <div className="mt-2">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-white/62">
             Your connection to Google Calendar has expired. Please reconnect to continue using calendar features.
           </p>
         </div>
@@ -77,11 +77,11 @@ export default function CalendarAuthBanner() {
             type="button"
             onClick={handleReconnect}
             disabled={isConnecting}
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm leading-4 font-medium rounded-full shadow-sm text-black bg-white hover:bg-white/85 focus:outline-none disabled:opacity-50"
           >
             {isConnecting ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -95,4 +95,4 @@ export default function CalendarAuthBanner() {
       </div>
     </div>
   );
-} 
+}

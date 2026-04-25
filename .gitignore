@@ -20,3 +20,4 @@ gcalocr2-firebase-adminsdk-fbsvc-abe7cba762.json
 # misc
 .DS_Store
 *.pem
+.superpowers/

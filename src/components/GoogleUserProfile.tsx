@@ -18,11 +18,11 @@ export default function GoogleUserProfile() {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const response = await fetch('/api/auth/google-profile', {
           credentials: 'include' // Include cookies in the request
         });
-        
+
         if (!response.ok) {
           if (response.status === 401) {
             // Not authenticated with Google, that's okay
@@ -30,11 +30,11 @@ export default function GoogleUserProfile() {
             setIsLoading(false);
             return;
           }
-          
+
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           throw new Error(errorData.error || 'Failed to fetch Google profile');
         }
-        
+
         const data = await response.json();
         setProfile(data);
       } catch (error: any) {
@@ -44,19 +44,19 @@ export default function GoogleUserProfile() {
         setIsLoading(false);
       }
     };
-    
+
     fetchGoogleProfile();
   }, []);
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center space-x-2">
-        <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse"></div>
-        <div className="h-4 w-24 bg-gray-200 animate-pulse rounded"></div>
+        <div className="h-8 w-8 rounded-full bg-white/10 animate-pulse"></div>
+        <div className="h-4 w-24 bg-white/10 animate-pulse rounded"></div>
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="text-sm text-red-500">
@@ -64,11 +64,11 @@ export default function GoogleUserProfile() {
       </div>
     );
   }
-  
+
   if (!profile) {
     return null;
   }
-  
+
   return (
     <div className="flex items-center space-x-2">
       {profile.picture ? (
@@ -82,9 +82,9 @@ export default function GoogleUserProfile() {
           {profile.name?.charAt(0) || profile.email?.charAt(0) || 'G'}
         </div>
       )}
-      <div className="text-sm font-medium text-gray-700">
+      <div className="text-sm font-medium text-white/75">
         {profile.name || profile.email}
       </div>
     </div>
   );
-} 
+}

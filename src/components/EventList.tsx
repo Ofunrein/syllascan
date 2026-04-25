@@ -31,8 +31,8 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ event: Event; index: number } | null>(null);
   const [localEvents, setLocalEvents] = useState<Event[]>([]);
-  const [editorPosition, setEditorPosition] = useState<{ 
-    top: number; 
+  const [editorPosition, setEditorPosition] = useState<{
+    top: number;
     left: number;
     width: number;
     height: number;
@@ -42,16 +42,16 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
-  const [resizeStart, setResizeStart] = useState({ 
-    x: 0, 
-    y: 0, 
-    width: 0, 
+  const [resizeStart, setResizeStart] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
     height: 0,
     top: 0,
     left: 0
   });
   const editorRef = useRef<HTMLDivElement>(null);
-  
+
   // Initialize state after component mounts to avoid hydration errors
   useEffect(() => {
     setLocalEvents(events);
@@ -74,25 +74,25 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         let newHeight = editorPosition.height;
         let newTop = editorPosition.top;
         let newLeft = editorPosition.left;
-        
+
         // Calculate deltas (how much the mouse has moved)
         const deltaX = e.clientX - resizeStart.x;
         const deltaY = e.clientY - resizeStart.y;
-        
+
         switch (resizeDirection) {
           case ResizeDirection.BottomRight:
             // Bottom right: straightforward - just extend width and height
             newWidth = Math.max(300, resizeStart.width + deltaX);
             newHeight = Math.max(300, resizeStart.height + deltaY);
             break;
-            
+
           case ResizeDirection.BottomLeft:
             // Bottom left: extend height, reduce width, adjust left
             newWidth = Math.max(300, resizeStart.width - deltaX);
             newHeight = Math.max(300, resizeStart.height + deltaY);
             newLeft = resizeStart.left + deltaX;
             break;
-            
+
           case ResizeDirection.TopRight:
             // Top right: REVERSED - pulling toward menu makes it bigger
             // When dragging down (positive deltaY), increase height
@@ -102,7 +102,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             newTop = resizeStart.top - deltaY;
             newLeft = resizeStart.left + deltaX;
             break;
-            
+
           case ResizeDirection.TopLeft:
             // Top left: REVERSED - pulling toward menu makes it bigger
             // When dragging down (positive deltaY), increase height
@@ -113,7 +113,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             newLeft = resizeStart.left - deltaX;
             break;
         }
-        
+
         setEditorPosition({
           top: newTop,
           left: newLeft,
@@ -142,25 +142,25 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
   const handleDragStart = (e: React.MouseEvent, fromBottom = false) => {
     if (!editorPosition || !editorRef.current) return;
-    
+
     // Prevent default behavior and text selection
     e.preventDefault();
-    
+
     const rect = editorRef.current.getBoundingClientRect();
     setDragOffset({
       x: e.clientX - rect.left,
       y: fromBottom ? e.clientY - rect.bottom + 8 : e.clientY - rect.top
     });
-    
+
     setIsDragging(true);
   };
 
   const handleResizeStart = (e: React.MouseEvent, direction: ResizeDirection) => {
     if (!editorPosition || !editorRef.current) return;
-    
+
     // Prevent default behavior
     e.preventDefault();
-    
+
     const rect = editorRef.current.getBoundingClientRect();
     setResizeStart({
       x: e.clientX,
@@ -170,7 +170,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
       top: editorPosition.top,
       left: editorPosition.left
     });
-    
+
     setResizeDirection(direction);
     setIsResizing(true);
   };
@@ -211,20 +211,20 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    
+
     // Calculate initial position - centered in viewport with larger default size
     const width = Math.min(windowWidth - 40, 600); // Max width of 600px or window width - 40px
     const height = Math.min(windowHeight - 40, 700); // Max height of 700px or window height - 40px
     const left = (windowWidth - width) / 2;
     const top = scrollTop + (windowHeight - height) / 2;
-    
+
     setEditorPosition({
       top,
       left,
       width,
       height
     });
-    
+
     setEditorMode(EditorMode.Edit);
     setEditingEvent({ event, index });
   };
@@ -237,33 +237,33 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
       startDate: new Date().toISOString(),
       isAllDay: false
     };
-    
+
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    
+
     // Calculate initial position - centered in viewport with larger default size
     const width = Math.min(windowWidth - 40, 600); // Max width of 600px or window width - 40px
     const height = Math.min(windowHeight - 40, 700); // Max height of 700px or window height - 40px
     const left = (windowWidth - width) / 2;
     const top = scrollTop + (windowHeight - height) / 2;
-    
+
     setEditorPosition({
       top,
       left,
       width,
       height
     });
-    
+
     setEditorMode(EditorMode.Add);
     setEditingEvent({ event: newEvent, index: -1 });
   };
 
   const handleSaveEdit = (updatedEvent: Event) => {
     if (editingEvent === null) return;
-    
+
     const newEvents = [...localEvents];
-    
+
     if (editorMode === EditorMode.Add) {
       // Add the new event to the list
       newEvents.push(updatedEvent);
@@ -273,7 +273,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
       newEvents[editingEvent.index] = updatedEvent;
       toast.success('Event updated successfully');
     }
-    
+
     setLocalEvents(newEvents);
     setEditingEvent(null);
     setEditorPosition(null);
@@ -305,7 +305,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
     try {
       const selectedEventsArray = Array.from(selectedEvents).map(index => localEvents[index]);
-      
+
       const response = await fetch('/api/calendar', {
         method: 'POST',
         headers: {
@@ -324,14 +324,14 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
       const data = await response.json();
       toast.success(`Successfully added ${data.eventIds.length} events to your calendar!`, { id: toastId });
-      
+
       // Clear events and redirect to live calendar tab instead of upload tab
       onClearEvents();
-      
+
       // Use window location to redirect to the live calendar tab
       const currentUrl = window.location.href.split('#')[0];
       window.location.href = `${currentUrl}#live-calendar`;
-      
+
       // Find and click the live calendar tab button to activate it
       setTimeout(() => {
         const liveCalendarButton = document.querySelector('button.tab[aria-label="Live Calendar"]') as HTMLButtonElement;
@@ -361,12 +361,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   }
 
   return (
-    <div className="event-list-container">
+    <div className="event-list-container liquid-glass">
       <div className="event-list-header">
         <h2 className="event-list-title">
           Extracted Events ({localEvents.length})
         </h2>
-        
+
         <div className="event-list-actions">
           <button
             type="button"
@@ -376,7 +376,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             <PlusIcon className="h-4 w-4 mr-1" />
             Add Event
           </button>
-          
+
           <button
             type="button"
             onClick={toggleAllEvents}
@@ -385,7 +385,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             <CheckIcon className="h-4 w-4 mr-1" />
             {selectedEvents.size === localEvents.length ? 'Deselect All' : 'Select All'}
           </button>
-          
+
           <button
             type="button"
             onClick={onClearEvents}
@@ -408,8 +408,8 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
                 id={`event-${index}`}
                 className="hidden-checkbox"
               />
-              <label 
-                htmlFor={`event-${index}`} 
+              <label
+                htmlFor={`event-${index}`}
                 className="custom-checkbox"
                 aria-label={selectedEvents.has(index) ? "Selected event" : "Unselected event"}
               >
@@ -418,45 +418,45 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
                 )}
               </label>
             </div>
-            
+
             <div className="event-content">
               <label htmlFor={`event-${index}`} className="event-title">
                 {event.title || 'Untitled Event'}
               </label>
-              
+
               <div className="event-details">
                 <div className="event-time">
                   <span className="detail-label">Date:</span> {formatDate(event.date || event.startDate)}
                 </div>
-                
+
                 {event.startTime && (
                   <div className="event-time">
                     <span className="detail-label">Start:</span> {event.startTime}
                   </div>
                 )}
-                
+
                 {event.endTime && (
                   <div className="event-time">
                     <span className="detail-label">End:</span> {event.endTime}
                   </div>
                 )}
-                
+
                 {event.isAllDay && (
                   <div className="event-badge">All day event</div>
                 )}
-                
+
                 {event.location && (
                   <div className="event-location">
                     <span className="detail-label">Location:</span> {event.location}
                   </div>
                 )}
-                
+
                 {event.description && (
                   <div className="event-description">
                     <span className="detail-label">Description:</span> {event.description}
                   </div>
                 )}
-                
+
                 {event.type && (
                   <div className="event-type">
                     <span className={`event-type-badge event-type-${event.type}`}>{event.type}</span>
@@ -464,7 +464,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
                 )}
               </div>
             </div>
-            
+
             <button
               className="event-edit-button"
               onClick={(e) => handleEditEvent(event, index, e)}
@@ -475,7 +475,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           </div>
         ))}
       </div>
-      
+
       <div className="event-list-footer">
         <button
           type="button"
@@ -495,13 +495,13 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             </>
           )}
         </button>
-        
+
         {!authenticated && (
           <div className="auth-message">
             Please sign in to add events to your calendar
           </div>
         )}
-        
+
         {authenticated && !googleAuthenticated && (
           <div className="auth-message">
             Please grant calendar access to add events
@@ -510,9 +510,9 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
       </div>
 
       {editingEvent && editorPosition && (
-        <div 
+        <div
           ref={editorRef}
-          className="event-editor-container"
+          className="event-editor-container liquid-glass"
           style={{
             top: `${editorPosition.top}px`,
             left: `${editorPosition.left}px`,
@@ -521,60 +521,60 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           }}
         >
           {/* Top resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-top"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.TopLeft)}
           ></div>
-          
+
           {/* Top-right resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-top-right"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.TopRight)}
           ></div>
-          
+
           {/* Right resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-right"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.BottomRight)}
           ></div>
-          
+
           {/* Bottom-right resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-bottom-right"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.BottomRight)}
           ></div>
-          
+
           {/* Bottom resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-bottom"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.BottomRight)}
           ></div>
-          
+
           {/* Bottom-left resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-bottom-left"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.BottomLeft)}
           ></div>
-          
+
           {/* Left resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-left"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.BottomLeft)}
           ></div>
-          
+
           {/* Top-left resize handle */}
-          <div 
+          <div
             className="resize-handle resize-handle-top-left"
             onMouseDown={(e) => handleResizeStart(e, ResizeDirection.TopLeft)}
           ></div>
-          
+
           {/* Draggable header */}
-          <div 
+          <div
             className="editor-drag-handle"
             onMouseDown={(e) => handleDragStart(e)}
           >
             <div className="editor-controls">
-              <button 
+              <button
                 onClick={handleCancelEdit}
                 className="editor-close-button"
                 aria-label="Close editor"
@@ -583,16 +583,16 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
               </button>
             </div>
           </div>
-          
+
           <EventEditor
             event={editingEvent.event}
             onSave={handleSaveEdit}
             onCancel={handleCancelEdit}
             mode={editorMode}
           />
-          
+
           {/* Draggable footer */}
-          <div 
+          <div
             className="editor-drag-handle editor-footer"
             onMouseDown={(e) => handleDragStart(e, true)}
           >
@@ -602,34 +602,32 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           </div>
         </div>
       )}
-      
+
       <style jsx>{`
         .event-list-container {
-          background-color: var(--card);
-          border-radius: var(--radius);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          border-radius: 1rem;
           overflow: hidden;
         }
-        
+
         .event-list-header {
           padding: 1.25rem;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
-        
+
         .event-list-title {
           font-size: 1.25rem;
           font-weight: 600;
           margin-bottom: 1rem;
-          color: var(--foreground);
+          color: white;
         }
-        
+
         .event-list-actions {
           display: flex;
           gap: 0.5rem;
           margin-bottom: 1rem;
           flex-wrap: wrap;
         }
-        
+
         .add-event-button,
         .select-all-button,
         .clear-events-button {
@@ -642,170 +640,150 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           transition: all 0.2s;
           cursor: pointer;
         }
-        
+
         .add-event-button {
-          background-color: var(--primary);
-          color: white;
+          background-color: white;
+          color: black;
         }
-        
-        :global(.dark) .add-event-button {
-          background-color: var(--primary-light);
-        }
-        
+
         .add-event-button:hover {
-          background-color: var(--primary-dark);
+          background-color: rgba(255, 255, 255, 0.86);
         }
-        
-        :global(.dark) .add-event-button:hover {
-          background-color: var(--primary);
-        }
-        
+
         .select-all-button,
         .clear-events-button {
-          background-color: transparent;
-          border: 1px solid var(--border);
-          color: var(--foreground);
+          background-color: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          color: rgba(255, 255, 255, 0.86);
         }
-        
+
         :global(.dark) .select-all-button,
         :global(.dark) .clear-events-button {
           border-color: rgba(255, 255, 255, 0.2);
           color: rgba(255, 255, 255, 0.9);
         }
-        
+
         .select-all-button:hover,
         .clear-events-button:hover {
           background-color: rgba(0, 0, 0, 0.05);
         }
-        
+
         :global(.dark) .select-all-button:hover,
         :global(.dark) .clear-events-button:hover {
           background-color: rgba(255, 255, 255, 0.1);
         }
-        
+
         .event-list {
           max-height: 500px;
           overflow-y: auto;
           padding: 0.5rem;
         }
-        
+
         .event-item {
           display: flex;
           align-items: flex-start;
           padding: 1rem;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           position: relative;
         }
-        
+
         .event-item:last-child {
           border-bottom: none;
         }
-        
+
         .event-checkbox {
           margin-right: 1rem;
           padding-top: 0.25rem;
         }
-        
+
         .hidden-checkbox {
           position: absolute;
           opacity: 0;
           width: 0;
           height: 0;
         }
-        
+
         .custom-checkbox {
           display: flex;
           align-items: center;
           justify-content: center;
           width: 24px;
           height: 24px;
-          border: 2px solid var(--primary);
+          border: 2px solid rgba(255, 255, 255, 0.58);
           border-radius: 50%;
           cursor: pointer;
           transition: all 0.2s;
           background-color: transparent;
         }
-        
-        :global(.dark) .custom-checkbox {
-          border-color: var(--primary-light);
-        }
-        
+
         .hidden-checkbox:checked + .custom-checkbox {
-          background-color: var(--primary);
+          background-color: white;
         }
-        
-        :global(.dark) .hidden-checkbox:checked + .custom-checkbox {
-          background-color: var(--primary-light);
-        }
-        
+
         .checkbox-icon {
           width: 14px;
           height: 14px;
-          color: white;
+          color: black;
         }
-        
+
         :global(.checkbox-icon) {
           width: 14px !important;
           height: 14px !important;
-          color: white !important;
+          color: black !important;
         }
-        
+
         .event-content {
           flex: 1;
         }
-        
+
         .event-title {
           display: block;
           font-weight: 600;
           margin-bottom: 0.5rem;
-          color: var(--foreground);
+          color: white;
           cursor: pointer;
         }
-        
+
         :global(.dark) .event-title {
           color: white;
         }
-        
+
         .event-details {
           font-size: 0.875rem;
-          color: var(--foreground);
-          opacity: 0.8;
+          color: rgba(255, 255, 255, 0.7);
+          opacity: 1;
         }
-        
+
         :global(.dark) .event-details {
           color: rgba(255, 255, 255, 0.9);
           opacity: 0.9;
         }
-        
+
         .event-time,
         .event-location,
         .event-description {
           margin-bottom: 0.25rem;
         }
-        
+
         .detail-label {
           font-weight: 500;
           margin-right: 0.25rem;
         }
-        
+
         :global(.dark) .detail-label {
           color: rgba(255, 255, 255, 0.95);
         }
-        
+
         .event-badge {
           display: inline-block;
-          background-color: var(--primary);
+          background-color: rgba(255, 255, 255, 0.1);
           color: white;
           font-size: 0.75rem;
           padding: 0.125rem 0.375rem;
           border-radius: 9999px;
           margin-bottom: 0.25rem;
         }
-        
-        :global(.dark) .event-badge {
-          background-color: var(--primary-light);
-        }
-        
+
         .event-type-badge {
           display: inline-block;
           font-size: 0.75rem;
@@ -815,98 +793,88 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           background-color: #e5e7eb;
           color: #374151;
         }
-        
+
         .event-type-class {
           background-color: #dbeafe;
           color: #1e40af;
         }
-        
+
         .event-type-assignment {
           background-color: #fef3c7;
           color: #92400e;
         }
-        
+
         .event-type-exam {
           background-color: #fee2e2;
           color: #b91c1c;
         }
-        
+
         .event-type-discussion {
           background-color: #d1fae5;
           color: #065f46;
         }
-        
+
         :global(.dark) .event-type-badge {
           opacity: 0.9;
         }
-        
+
         :global(.dark) .event-type-class {
           background-color: rgba(30, 64, 175, 0.3);
           color: #93c5fd;
         }
-        
+
         :global(.dark) .event-type-assignment {
           background-color: rgba(146, 64, 14, 0.3);
           color: #fcd34d;
         }
-        
+
         :global(.dark) .event-type-exam {
           background-color: rgba(185, 28, 28, 0.3);
           color: #fca5a5;
         }
-        
+
         :global(.dark) .event-type-discussion {
           background-color: rgba(6, 95, 70, 0.3);
           color: #6ee7b7;
         }
-        
+
         .event-edit-button {
           display: flex;
           align-items: center;
           justify-content: center;
           width: 36px;
           height: 36px;
-          background-color: rgba(var(--primary-rgb), 0.1);
-          color: var(--primary);
+          background-color: rgba(255, 255, 255, 0.07);
+          color: rgba(255, 255, 255, 0.86);
           border: none;
           border-radius: 50%;
           cursor: pointer;
           transition: all 0.2s;
           margin-left: 0.5rem;
         }
-        
-        :global(.dark) .event-edit-button {
-          background-color: rgba(var(--primary-rgb), 0.25);
-          color: var(--primary-light);
-        }
-        
+
         .event-edit-button:hover {
-          background-color: var(--primary);
-          color: white;
+          background-color: white;
+          color: black;
         }
-        
-        :global(.dark) .event-edit-button:hover {
-          background-color: var(--primary-light);
-          color: var(--background);
-        }
-        
+
         :global(.edit-icon) {
           width: 18px !important;
           height: 18px !important;
         }
-        
+
         .event-list-footer {
           padding: 1.25rem;
-          border-top: 1px solid var(--border);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
           display: flex;
           flex-direction: column;
           align-items: center;
         }
-        
+
         :global(.dark) .event-list-footer {
           border-top-color: rgba(255, 255, 255, 0.1);
         }
-        
+
         .add-to-calendar-button {
           display: inline-flex;
           align-items: center;
@@ -914,8 +882,8 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           padding: 0.625rem 1.25rem;
           font-size: 0.875rem;
           font-weight: 500;
-          background-color: var(--primary);
-          color: white;
+          background-color: white;
+          color: black;
           border: none;
           border-radius: var(--radius);
           cursor: pointer;
@@ -923,46 +891,37 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           width: 100%;
           max-width: 300px;
         }
-        
-        :global(.dark) .add-to-calendar-button {
-          background-color: var(--primary-light);
-        }
-        
+
         .add-to-calendar-button:hover:not(:disabled) {
-          background-color: var(--primary-dark);
+          background-color: rgba(255, 255, 255, 0.86);
         }
-        
-        :global(.dark) .add-to-calendar-button:hover:not(:disabled) {
-          background-color: var(--primary);
-        }
-        
+
         .add-to-calendar-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
-        
+
         .auth-message {
           margin-top: 0.75rem;
           font-size: 0.875rem;
-          color: var(--foreground);
+          color: rgba(255, 255, 255, 0.68);
           opacity: 0.7;
           text-align: center;
         }
-        
+
         :global(.dark) .auth-message {
           color: rgba(255, 255, 255, 0.7);
         }
-        
+
         .calendar-container {
           height: 500px;
           padding: 1rem;
         }
-        
+
         /* Editor styles */
         .event-editor-container {
           position: fixed;
-          background-color: var(--card);
-          border-radius: var(--radius);
+          border-radius: 1rem;
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
           z-index: 100;
           overflow: hidden;
@@ -974,24 +933,24 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           max-width: 90vw;
           max-height: 90vh;
         }
-        
+
         .editor-drag-handle {
           padding: 0.75rem 1rem;
-          background-color: var(--card);
-          border-bottom: 1px solid var(--border);
+          background-color: rgba(255, 255, 255, 0.04);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           cursor: move;
           display: flex;
           align-items: center;
           justify-content: flex-end;
           user-select: none;
-          background-color: rgba(var(--primary-rgb), 0.06);
+          background-color: rgba(255, 255, 255, 0.04);
         }
-        
+
         .editor-controls {
           display: flex;
           align-items: center;
         }
-        
+
         .editor-close-button {
           display: flex;
           align-items: center;
@@ -999,40 +958,40 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background-color: rgba(0, 0, 0, 0.1);
+          background-color: rgba(255, 255, 255, 0.12);
           border: none;
           cursor: pointer;
           transition: all 0.2s;
-          color: var(--foreground);
+          color: white;
           position: relative;
         }
-        
+
         :global(.close-icon) {
           width: 18px !important;
           height: 18px !important;
-          color: var(--foreground) !important;
+          color: white !important;
           position: absolute !important;
           top: 50% !important;
           left: 50% !important;
           transform: translate(-50%, -50%) !important;
         }
-        
+
         :global(.dark) .editor-close-button {
           background-color: rgba(255, 255, 255, 0.2);
         }
-        
+
         :global(.dark) .close-icon {
           color: white !important;
         }
-        
+
         .editor-close-button:hover {
           background-color: rgba(0, 0, 0, 0.2);
         }
-        
+
         :global(.dark) .editor-close-button:hover {
           background-color: rgba(255, 255, 255, 0.3);
         }
       `}</style>
     </div>
   );
-} 
+}
