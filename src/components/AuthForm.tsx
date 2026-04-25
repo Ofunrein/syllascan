@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 
 export default function AuthForm() {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,11 @@ export default function AuthForm() {
         }
       } else {
         const result = await signInWithEmail(email, password);
-        if (result.error) setError(result.error);
+        if (result.error) {
+          setError(result.error);
+        } else {
+          router.push('/scan');
+        }
       }
     } catch {
       setError('An unexpected error occurred');
