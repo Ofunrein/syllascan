@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import ApiKeyBanner from '@/components/ApiKeyBanner';
+import UrgencyWidget from '@/components/UrgencyWidget';
+import { useEventStore } from '@/lib/stores/eventStore';
 
 // Use dynamic import with no SSR for components that need client-only features
 const DynamicProcessingHistory = dynamic(
@@ -22,6 +24,7 @@ export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>('calendar');
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const { fetchEvents } = useEventStore();
 
   // Set mounted state to true when component mounts on client
   useEffect(() => {
@@ -59,6 +62,12 @@ export default function Dashboard() {
       fetchCalendars();
     }
   }, [authenticated, mounted, user]);
+
+  useEffect(() => {
+    if (authenticated && mounted && user) {
+      fetchEvents(user.id);
+    }
+  }, [authenticated, mounted, user, fetchEvents]);
 
   if (loading || !mounted) {
     return (
@@ -108,6 +117,10 @@ export default function Dashboard() {
           </div>
 
           <div className="dashboard-grid">
+            <div className="animate-slide-up" style={{ animationDelay: '0s', gridColumn: '1 / -1' }}>
+              <UrgencyWidget />
+            </div>
+
             <div className="dashboard-panel animate-slide-up" style={{ animationDelay: '0.1s' }}>
               <div className="panel-header">
                 <div className="panel-icon">
