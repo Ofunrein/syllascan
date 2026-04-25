@@ -32,7 +32,6 @@ export default function Dashboard() {
     // Redirect to home if not logged in
     if (!loading && !user && mounted) {
       router.push('/');
-      toast.error('Please sign in to access the dashboard');
     }
   }, [user, loading, router, mounted]);
 

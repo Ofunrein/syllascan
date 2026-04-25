@@ -27,7 +27,7 @@ export default function RootLayout({
         <Toaster
           position="top-right"
           toastOptions={{
-            duration: 3000,
+            duration: 1500,
             style: {
               background: 'rgba(10, 10, 15, 0.86)',
               color: '#f9fafb',
@@ -38,10 +38,10 @@ export default function RootLayout({
               zIndex: 9999,
               fontFamily: "'Inter', sans-serif",
               backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
             },
-            success: { duration: 3000 },
-            error: { duration: 3000 },
-            className: '',
+            success: { duration: 1500 },
+            error: { duration: 2000 },
           }}
         />
         <ClientLayout>
