@@ -1,61 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getFirebaseAdminAuth, getFirebaseAdminDb } from '@/lib/firebase-admin';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
 
 export async function DELETE(
-  request: NextRequest,
-  context: { params: { id: string } }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const id = context.params.id;
-    const authHeader = request.headers.get('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  const { id } = await params;
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    const idToken = authHeader.split('Bearer ')[1];
-    
-    // Verify the Firebase ID token
-    const decodedToken = await getFirebaseAdminAuth().verifyIdToken(idToken);
-    const uid = decodedToken.uid;
-
-    // Get the record to verify ownership
-    const db = getFirebaseAdminDb();
-    const recordRef = db.collection('processingHistory').doc(id);
-    const record = await recordRef.get();
-    
-    if (!record.exists) {
-      return NextResponse.json(
-        { error: 'Record not found' },
-        { status: 404 }
-      );
-    }
-    
-    const recordData = record.data();
-    
-    // Verify the user owns this record
-    if (recordData?.userId !== uid) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-    
-    // Delete the record
-    await recordRef.delete();
-
-    return NextResponse.json({ 
-      success: true,
-      message: 'Record deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting record:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete record' },
-      { status: 500 }
-    );
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-} 
+
+  const { error } = await supabase
+    .from('documents')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}

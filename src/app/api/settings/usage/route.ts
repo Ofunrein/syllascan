@@ -1,53 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initAdmin } from '@/lib/firebase-admin';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
 
-// Initialize Firebase Admin
-initAdmin();
-const db = getFirestore();
+export async function GET() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-// API endpoint to get the user's API usage data
-export async function GET(request: NextRequest) {
-  try {
-    // Get user session
-    const session = await getServerSession(authOptions);
-    
-    // Check if user is logged in
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    const userId = session.user.id || session.user.email;
-    
-    // Get the user's API usage data from Firestore
-    const usageRef = db.collection('apiUsage').doc(userId);
-    const usageDoc = await usageRef.get();
-    
-    if (!usageDoc.exists) {
-      // No usage data yet, return default values
-      return NextResponse.json({
-        usageCount: 0,
-        hasCustomKey: false
-      });
-    }
-    
-    const usageData = usageDoc.data();
-    
-    return NextResponse.json({
-      usageCount: usageData.usageCount || 0,
-      hasCustomKey: !!usageData.customApiKey
-    });
-  } catch (error) {
-    console.error('Error fetching API usage data:', error);
-    
-    return NextResponse.json(
-      { error: 'Failed to fetch API usage data', details: error.toString() },
-      { status: 500 }
-    );
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-} 
+
+  const today = new Date().toISOString().split('T')[0];
+  const { data: usage } = await supabase
+    .from('api_usage')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('date', today)
+    .single();
+
+  return NextResponse.json({
+    extraction_count: usage?.extraction_count ?? 0,
+    chat_count: usage?.chat_count ?? 0,
+  });
+}

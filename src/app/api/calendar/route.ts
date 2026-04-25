@@ -1,66 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { addEventsToCalendar } from '@/lib/googleCalendar';
 import { Event } from '@/lib/openai';
 import { google } from 'googleapis';
-import { getFirebaseAdminAuth } from '@/lib/firebase-admin';
 import { recordProcessingHistory } from '@/lib/processingHistory';
 
 export async function POST(request: NextRequest) {
   try {
-    // Try to get the access token from the Authorization header or cookies
-    let accessToken = null;
-    let refreshToken = null;
-    let userId = null;
-    const authHeader = request.headers.get('Authorization');
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      accessToken = authHeader.split('Bearer ')[1];
-      
-      // If we have a token in the Authorization header, try to get the user ID
-      try {
-        const auth = getFirebaseAdminAuth();
-        const decodedToken = await auth.verifyIdToken(accessToken);
-        userId = decodedToken.uid;
-      } catch (authError) {
-        console.error('Error verifying ID token:', authError);
-        // Continue without user ID, we'll try to get it from cookies
-      }
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id ?? null;
+
+    // Get Google tokens from Supabase user profile, with cookie fallback
+    let accessToken: string | null = null;
+    let refreshToken: string | null = null;
+
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('google_tokens')
+        .eq('id', userId)
+        .single();
+
+      accessToken = profile?.google_tokens?.access_token || null;
+      refreshToken = profile?.google_tokens?.refresh_token || null;
     }
-    
-    // Try to get tokens from cookies if not in Authorization header
+
+    // Cookie-based fallback for existing sessions
     if (!accessToken) {
-      const cookieToken = request.cookies.get('access_token');
-      if (cookieToken) {
-        accessToken = cookieToken.value;
-      }
-      }
-      
+      accessToken = request.cookies.get('access_token')?.value || null;
+    }
     if (!refreshToken) {
-      const cookieRefreshToken = request.cookies.get('refresh_token');
-      if (cookieRefreshToken) {
-        refreshToken = cookieRefreshToken.value;
-      }
+      refreshToken = request.cookies.get('refresh_token')?.value || null;
     }
-    
-    // Try to get userId from session cookie if not from token
-    if (!userId) {
-      const sessionCookie = request.cookies.get('session');
-      if (sessionCookie) {
-        try {
-          const auth = getFirebaseAdminAuth();
-          const decodedClaims = await auth.verifySessionCookie(sessionCookie.value);
-          userId = decodedClaims.uid;
-        } catch (sessionError) {
-          console.error('Error verifying session cookie:', sessionError);
-          // Continue without user ID
-        }
-      }
-    }
-    
+
     console.log('Access token found:', !!accessToken);
     console.log('Refresh token found:', !!refreshToken);
     console.log('User ID found:', !!userId);
-    
+
     if (!accessToken) {
       return NextResponse.json(
         { error: 'Unauthorized - No access token provided' },
@@ -81,106 +58,103 @@ export async function POST(request: NextRequest) {
     try {
       // Use the addEventsToCalendar function from our utility
       const eventIds = await addEventsToCalendar(accessToken, events, refreshToken);
-      
+
       // Record processing history if we have a user ID
       if (userId) {
-        // Group events by source file if available
         const fileGroups = new Map<string, Event[]>();
-        
+
         for (const event of events) {
           const sourceFile = event.sourceFile || 'Unknown File';
           if (!fileGroups.has(sourceFile)) {
             fileGroups.set(sourceFile, []);
           }
-          fileGroups.get(sourceFile).push(event);
+          fileGroups.get(sourceFile)!.push(event);
         }
-        
-        // Record processing history for each file
+
         for (const [fileName, fileEvents] of fileGroups.entries()) {
-          // Get file type from first event if available
           const fileType = fileEvents[0].sourceFileType || 'application/octet-stream';
-          
-          await recordProcessingHistory({
+
+          await recordProcessingHistory(
             userId,
             fileName,
             fileType,
-            eventCount: fileEvents.length,
-            status: 'success',
-          });
+            0, // fileSize unknown in this context
+            0, // pageCount unknown in this context
+            fileEvents.length,
+            'completed'
+          );
         }
       }
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: `Successfully added ${eventIds.length} events to calendar`,
-        eventIds 
+        eventIds
       });
     } catch (apiError: any) {
       console.error('Error in initial add events request:', apiError);
-      
+
       // If we have a refresh token and it's an auth error, try to refresh and retry
       if (refreshToken && (apiError.code === 401 || (apiError.response && apiError.response.status === 401))) {
         console.log('Attempting to refresh token and retry adding events');
-        
+
         try {
-          // Use the OAuth2 client to refresh the token
           const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET,
             process.env.GOOGLE_REDIRECT_URI
           );
-          
+
           oauth2Client.setCredentials({
             refresh_token: refreshToken
           });
-          
+
           const { credentials } = await oauth2Client.refreshAccessToken();
           const newAccessToken = credentials.access_token;
-          
+
           if (!newAccessToken) {
             throw new Error('Failed to refresh access token');
           }
-          
+
           console.log('Successfully refreshed access token');
-          
+
           // Retry adding events with new token
           const eventIds = await addEventsToCalendar(newAccessToken, events);
-          
+
           // Record processing history if we have a user ID
           if (userId) {
-            // Group events by source file if available
             const fileGroups = new Map<string, Event[]>();
-            
+
             for (const event of events) {
               const sourceFile = event.sourceFile || 'Unknown File';
               if (!fileGroups.has(sourceFile)) {
                 fileGroups.set(sourceFile, []);
               }
-              fileGroups.get(sourceFile).push(event);
+              fileGroups.get(sourceFile)!.push(event);
             }
-            
-            // Record processing history for each file
+
             for (const [fileName, fileEvents] of fileGroups.entries()) {
-              // Get file type from first event if available
               const fileType = fileEvents[0].sourceFileType || 'application/octet-stream';
-              
-              await recordProcessingHistory({
+
+              await recordProcessingHistory(
                 userId,
                 fileName,
                 fileType,
-                eventCount: fileEvents.length,
-                status: 'success',
-              });
+                0,
+                0,
+                fileEvents.length,
+                'completed'
+              );
             }
           }
-          
+
           // Set the new access token in a cookie
-          const response = NextResponse.json({ 
-            success: true, 
+          const response = NextResponse.json({
+            success: true,
             message: `Successfully added ${eventIds.length} events to calendar`,
-            eventIds 
+            eventIds
           });
-          
+
           response.cookies.set({
             name: 'access_token',
             value: newAccessToken,
@@ -190,7 +164,7 @@ export async function POST(request: NextRequest) {
             path: '/',
             maxAge: 3600 // 1 hour
           });
-          
+
           return response;
         } catch (refreshError: any) {
           console.error('Error refreshing token:', refreshError);
@@ -200,7 +174,7 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      
+
       // If we couldn't refresh or it's not an auth error, return the original error
       if (apiError.code === 401 || (apiError.response && apiError.response.status === 401)) {
         return NextResponse.json(
@@ -208,7 +182,7 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
-      
+
       return NextResponse.json(
         { error: apiError.message || 'Failed to add events to calendar' },
         { status: 500 }
@@ -221,4 +195,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
