@@ -6,6 +6,7 @@ import { ToastProvider } from '@/components/ui/use-toast';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import CalendarAuthBanner from '@/components/CalendarAuthBanner';
 import ToastDismissButton from '@/components/ToastDismissButton';
+import QuickAdd from '@/components/QuickAdd';
 import { useEffect, useState } from 'react';
 
 export default function ClientLayout({
@@ -80,6 +81,7 @@ export default function ClientLayout({
               {showAuthBanner && <CalendarAuthBanner />}
               {showToastButton && <ToastDismissButton />}
               {children}
+              <QuickAdd />
             </div>
           </ToastProvider>
           <style jsx global>{`
