@@ -1,17 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ThemeToggle from './ThemeToggle';
-import { Calendar, LayoutDashboard, Settings, LogOut, LogIn, Upload } from 'lucide-react';
+import { Calendar, LayoutDashboard, Settings, LogOut, Upload } from 'lucide-react';
 
 export default function Header() {
-  const { user, profile, loading, signInWithGoogle, signOut } = useAuth();
+  const { user, profile, loading, authenticated, signInWithGoogle, signOut } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12);
@@ -19,10 +22,26 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    if (userMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [userMenuOpen]);
+
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
     return pathname?.startsWith(path);
   };
+
+  // Logo links to /dashboard when authenticated, / when not
+  const logoHref = authenticated ? '/dashboard' : '/';
 
   return (
     <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
@@ -30,14 +49,12 @@ export default function Header() {
         <div className="header-content">
           {/* Logo */}
           <div className="logo-container">
-            <Link href="/" className="logo">
+            <Link href={logoHref} className="logo">
               <svg className="logo-icon-svg w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                {/* Calendar body */}
                 <rect x="3" y="4" width="18" height="18" rx="2" />
                 <line x1="16" y1="2" x2="16" y2="6" />
                 <line x1="8" y1="2" x2="8" y2="6" />
                 <line x1="3" y1="10" x2="21" y2="10" />
-                {/* Scan lines */}
                 <line x1="7" y1="14" x2="17" y2="14" strokeOpacity="0.5" />
                 <line x1="7" y1="17" x2="13" y2="17" strokeOpacity="0.5" />
               </svg>
@@ -45,24 +62,19 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Desktop nav */}
-          <nav className="desktop-nav">
-            <Link href="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
-              <LayoutDashboard size={14} strokeWidth={2} />
-              <span className="nav-text">Dashboard</span>
-            </Link>
-            <Link href="/scan" className={`nav-link ${isActive('/scan') ? 'active' : ''}`}>
-              <Upload size={14} strokeWidth={2} />
-              <span className="nav-text">Upload</span>
-            </Link>
-            <Link href="/calendar" className={`nav-link ${isActive('/calendar') ? 'active' : ''}`}>
-              <Calendar size={14} strokeWidth={2} />
-              <span className="nav-text">Calendar</span>
-            </Link>
-            <Link href="/settings" className={`nav-link ${isActive('/settings') ? 'active' : ''}`}>
-              <Settings size={14} strokeWidth={2} />
-            </Link>
-          </nav>
+          {/* Desktop nav — only Upload + Calendar when authenticated */}
+          {authenticated && (
+            <nav className="desktop-nav">
+              <Link href="/scan" className={`nav-link ${isActive('/scan') ? 'active' : ''}`}>
+                <Upload size={14} strokeWidth={2} />
+                <span className="nav-text">Upload</span>
+              </Link>
+              <Link href="/calendar" className={`nav-link ${isActive('/calendar') ? 'active' : ''}`}>
+                <Calendar size={14} strokeWidth={2} />
+                <span className="nav-text">Calendar</span>
+              </Link>
+            </nav>
+          )}
 
           {/* Actions */}
           <div className="header-actions">
@@ -71,10 +83,10 @@ export default function Header() {
             {loading ? (
               <div className="user-placeholder" />
             ) : user ? (
-              <div className="user-menu">
+              <div className="user-menu" ref={userMenuRef}>
                 <button
                   className="user-button"
-                  onClick={() => setMenuOpen(!menuOpen)}
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
                   aria-label="User menu"
                 >
                   {profile?.avatar_url ? (
@@ -90,20 +102,21 @@ export default function Header() {
                   )}
                 </button>
 
-                {menuOpen && (
+                {userMenuOpen && (
                   <div className="dropdown-menu">
                     <div className="user-info">
                       <div className="user-name">{profile?.display_name || 'User'}</div>
                       <div className="user-email">{user.email || ''}</div>
                     </div>
-                    <Link href="/dashboard" className="menu-item" onClick={() => setMenuOpen(false)}>
+                    <Link href="/dashboard" className="menu-item" onClick={() => setUserMenuOpen(false)}>
                       <LayoutDashboard size={15} strokeWidth={2} />
                       Dashboard
                     </Link>
-                    <Link href="/settings" className="menu-item" onClick={() => setMenuOpen(false)}>
+                    <Link href="/settings" className="menu-item" onClick={() => setUserMenuOpen(false)}>
                       <Settings size={15} strokeWidth={2} />
                       Settings
                     </Link>
+                    <div className="menu-divider" />
                     <button onClick={signOut} className="menu-item menu-item--danger">
                       <LogOut size={15} strokeWidth={2} />
                       Sign out
@@ -112,7 +125,7 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <button onClick={signInWithGoogle} className="sign-in-button">
+              <button onClick={() => router.push('/')} className="sign-in-button">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="google-icon">
                   <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />
                 </svg>
@@ -138,25 +151,29 @@ export default function Header() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="mobile-menu">
-            <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Dashboard
-            </Link>
-            <Link href="/scan" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Upload
-            </Link>
-            <Link href="/calendar" className={`mobile-nav-link ${isActive('/calendar') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Calendar
-            </Link>
-            <Link href="/settings" className={`mobile-nav-link ${isActive('/settings') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Settings
-            </Link>
+            {authenticated && (
+              <>
+                <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                  Dashboard
+                </Link>
+                <Link href="/scan" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                  Upload
+                </Link>
+                <Link href="/calendar" className={`mobile-nav-link ${isActive('/calendar') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                  Calendar
+                </Link>
+                <Link href="/settings" className={`mobile-nav-link ${isActive('/settings') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                  Settings
+                </Link>
+              </>
+            )}
 
             {!user && (
-              <button onClick={signInWithGoogle} className="mobile-sign-in">
+              <button onClick={() => { setMenuOpen(false); router.push('/'); }} className="mobile-sign-in">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="google-icon">
                   <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />
                 </svg>
-                Sign in with Google
+                Sign in
               </button>
             )}
 
@@ -224,8 +241,6 @@ export default function Header() {
         :global(.dark) .logo :global(.syllascan-logo) { color: #fff !important; }
         .logo-icon-svg { color: #111827 !important; flex-shrink: 0; }
         :global(.dark) .logo-icon-svg { color: #fff !important; }
-
-        /* desktop-nav handled by globals.css */
 
         .header-actions {
           display: flex;
@@ -328,6 +343,12 @@ export default function Header() {
         .menu-item:hover { background-color: rgba(0, 0, 0, 0.04); }
         :global(.dark) .menu-item { color: rgba(255, 255, 255, 0.85); }
         :global(.dark) .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
+
+        .menu-divider {
+          height: 1px;
+          background: var(--border);
+          margin: 0.25rem 0;
+        }
 
         .menu-item--danger {
           color: var(--deadline);
