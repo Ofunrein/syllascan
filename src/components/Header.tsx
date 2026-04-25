@@ -40,8 +40,8 @@ export default function Header() {
     return pathname?.startsWith(path);
   };
 
-  // Logo links to /dashboard when authenticated, / when not
-  const logoHref = authenticated ? '/dashboard' : '/';
+  // Logo links to /scan (upload) when authenticated, / when not
+  const logoHref = authenticated ? '/scan' : '/';
 
   return (
     <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
@@ -110,7 +110,7 @@ export default function Header() {
                     </div>
                     <Link href="/dashboard" className="menu-item" onClick={() => setUserMenuOpen(false)}>
                       <LayoutDashboard size={15} strokeWidth={2} />
-                      Dashboard
+                      My Events
                     </Link>
                     <Link href="/settings" className="menu-item" onClick={() => setUserMenuOpen(false)}>
                       <Settings size={15} strokeWidth={2} />
@@ -154,7 +154,7 @@ export default function Header() {
             {authenticated && (
               <>
                 <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                  Dashboard
+                  My Events
                 </Link>
                 <Link href="/scan" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
                   Upload

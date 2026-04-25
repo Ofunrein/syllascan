@@ -16,10 +16,10 @@ export default function Home() {
 
   const { user, profile, authenticated, loading, signOut } = useAuth();
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to upload
   useEffect(() => {
     if (authenticated && !loading) {
-      router.push('/dashboard');
+      router.push('/scan');
     }
   }, [authenticated, loading, router]);
 

@@ -49,7 +49,7 @@ Return a JSON object with key "events" containing an array of event objects. Ret
 export async function extractEventsFromText(text: string): Promise<ExtractedEvent[]> {
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-5.4-mini',
+      model: 'gpt-4.1-mini',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: EXTRACTION_PROMPT },
@@ -83,7 +83,7 @@ export async function extractEventsFromImages(
     }));
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-5.4-mini',
+      model: 'gpt-4.1-mini',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: EXTRACTION_PROMPT },
@@ -110,18 +110,14 @@ export async function extractEventsFromImages(
   }
 }
 
-// Keep backward compatibility
 export async function extractEventsFromImage(base64Image: string): Promise<ExtractedEvent[]> {
   return extractEventsFromImages([{ base64: base64Image, mimeType: 'image/jpeg' }]);
 }
 
-// Create an OpenAI client with a specific API key
 export function createOpenAIClient(apiKey: string): OpenAI {
   return new OpenAI({ apiKey });
 }
 
-// Backward-compatible Event type used by components
-// Maps to the shape components expect (camelCase, ISO date strings)
 export interface Event {
   id: string;
   title: string;

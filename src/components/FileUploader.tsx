@@ -37,6 +37,30 @@ export default function FileUploader({
     setMounted(true);
   }, []);
 
+  // Clipboard paste support — Cmd/Ctrl+V anywhere on the page
+  useEffect(() => {
+    if (!mounted) return;
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      const items = Array.from(e.clipboardData.items);
+      const pastedFiles: File[] = [];
+      for (const item of items) {
+        if (item.kind === 'file') {
+          const f = item.getAsFile();
+          if (f) pastedFiles.push(f);
+        }
+      }
+      if (pastedFiles.length > 0) {
+        e.preventDefault();
+        const newPreviews = await Promise.all(pastedFiles.map(f => createPreview(f)));
+        setFiles(prev => [...prev, ...newPreviews]);
+        toast.success(`Pasted ${pastedFiles.length} file${pastedFiles.length > 1 ? 's' : ''}`);
+      }
+    };
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [mounted, createPreview]);
+
   const createPreview = useCallback(async (selectedFile: File): Promise<FileWithPreview> => {
     try {
       if (selectedFile.type.startsWith('image/')) {
@@ -252,17 +276,13 @@ export default function FileUploader({
 
   const activeFile = files[activeFileIndex];
 
-  // Show loading state during SSR to prevent hydration mismatch
+  // SSR skeleton
   if (!mounted) {
     return (
       <div className="w-full max-w-2xl mx-auto">
-        <div className="liquid-glass rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Upload Your Documents</h2>
-          </div>
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white/80"></div>
-          </div>
+        <div className="rounded-xl border border-white/8 bg-white/3 p-6 space-y-4">
+          <div className="h-5 w-40 rounded-md bg-white/8 animate-pulse" />
+          <div className="h-48 rounded-xl bg-white/5 animate-pulse" />
         </div>
       </div>
     );
@@ -270,531 +290,372 @@ export default function FileUploader({
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="liquid-glass rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">Upload Your Documents</h2>
+      {files.length === 0 ? (
+        /* ── Empty state: full drag-drop zone ── */
+        <div
+          {...getRootProps()}
+          className={`dropzone ${isDragActive ? 'dropzone--active' : ''}`}
+        >
+          <input {...getInputProps()} />
+          <div className="dropzone-inner">
+            <div className="dropzone-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <p className="dropzone-title">
+              {isDragActive ? 'Drop to upload' : 'Drop files or click to browse'}
+            </p>
+            <p className="dropzone-sub">PDF, Word, Excel, PowerPoint, images, CSV, text · max 10 MB</p>
+          </div>
         </div>
-
-        {files.length === 0 ? (
-          <div
-            {...getRootProps()}
-            className="upload-dropzone"
-            style={{ minHeight: '300px' }}
-          >
-            <input {...getInputProps()} />
-
-            <div className="upload-content">
-              <div className="upload-icon-container">
-                <svg xmlns="http://www.w3.org/2000/svg" className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
+      ) : (
+        /* ── Files loaded state ── */
+        <div className="files-panel">
+          {/* Header bar */}
+          <div className="files-header">
+            <span className="files-count">{files.length} {files.length === 1 ? 'file' : 'files'}</span>
+            <div className="files-actions">
+              <div {...getRootProps()} className="action-link">
+                <input {...getInputProps()} />
+                <PlusIcon className="action-icon" />
+                Add files
               </div>
-              <div className="upload-text">
-                <h3 className="upload-title">Drop files here or click to upload</h3>
-                <p className="upload-description">
-                  Supports images, PDF, Word, PowerPoint, Excel, CSV, and text files (max 10MB, up to 10 files)
-                </p>
-              </div>
-              <button
-                type="button"
-                className="upload-button"
-              >
-                Browse Files
+              <button type="button" onClick={clearAllFiles} className="action-link action-link--danger">
+                <TrashIcon className="action-icon" />
+                Clear all
               </button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* File management buttons */}
-            <div className="file-management-buttons">
-              <div {...getRootProps()} className="add-more-button">
-                <input {...getInputProps()} />
-                <PlusIcon className="button-icon" />
-                <span>Add More Files</span>
-              </div>
 
-              <button
-                type="button"
-                onClick={clearAllFiles}
-                className="clear-all-button"
-              >
-                <TrashIcon className="button-icon" />
-                <span>Clear All</span>
-              </button>
-            </div>
-
-            {/* File thumbnails row */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {files.map((file, index) => (
-                <div
+          {/* File list */}
+          <ul className="file-list">
+            {files.map((file, index) => {
+              const ext = file.file.name.split('.').pop()?.toUpperCase() ?? 'FILE';
+              const isActive = index === activeFileIndex;
+              return (
+                <li
                   key={`${file.file.name}-${index}`}
+                  className={`file-row ${isActive ? 'file-row--active' : ''}`}
                   onClick={() => setActiveFileIndex(index)}
-                  className={`file-thumbnail ${index === activeFileIndex ? 'active' : ''}`}
                 >
-                  {file.isLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white/80"></div>
-                  ) : file.preview ? (
-                    <img
-                      src={file.preview}
-                      alt={`Preview of ${file.file.name}`}
-                      className="object-contain w-full h-full p-1"
-                    />
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  )}
-
-                  {/* Remove button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(index);
-                    }}
-                    className="file-remove-button"
-                    disabled={isProcessing}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Active file preview */}
-            {activeFile && (
-              <div className="file-preview">
-                <div className="file-preview-header">
-                  <h3 className="file-preview-title" title={activeFile.file.name}>
-                    {activeFile.file.name}
-                  </h3>
-                  <span className="file-preview-size">
-                    {(activeFile.file.size / 1024).toFixed(1)} KB
-                  </span>
-                </div>
-
-                {activeFile.isLoading ? (
-                  <div className="file-preview-loading">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white/80"></div>
-                    <p className="text-sm text-white/55">Loading preview...</p>
-                  </div>
-                ) : activeFile.preview ? (
-                  <div className="space-y-2">
-                    <div className="file-preview-image-container">
-                      <img
-                        src={activeFile.preview}
-                        alt={`Preview of ${activeFile.file.name}`}
-                        className="file-preview-image"
-                      />
-                    </div>
-
-                    {activeFile.fileType === 'pdf' && activeFile.pdfPageCount > 1 && (
-                      <div className="pdf-navigation">
-                        <button
-                          type="button"
-                          onClick={() => handlePdfPageChange(activeFileIndex, activeFile.currentPdfPage - 1)}
-                          disabled={activeFile.currentPdfPage <= 1 || isProcessing}
-                          className="pdf-nav-button"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-
-                        <span className="pdf-page-indicator">
-                          Page {activeFile.currentPdfPage} of {activeFile.pdfPageCount}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handlePdfPageChange(activeFileIndex, activeFile.currentPdfPage + 1)}
-                          disabled={activeFile.currentPdfPage >= activeFile.pdfPageCount || isProcessing}
-                          className="pdf-nav-button"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
+                  {/* Thumbnail */}
+                  <div className="file-thumb">
+                    {file.isLoading ? (
+                      <div className="thumb-skeleton" />
+                    ) : file.preview ? (
+                      <img src={file.preview} alt="" className="thumb-img" />
+                    ) : (
+                      <span className="thumb-ext">{ext}</span>
                     )}
                   </div>
-                ) : (
-                  <div className="file-preview-empty">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No preview available</p>
+                  {/* Info */}
+                  <div className="file-info">
+                    <span className="file-name" title={file.file.name}>{file.file.name}</span>
+                    <span className="file-size">{(file.file.size / 1024).toFixed(0)} KB</span>
                   </div>
-                )}
-              </div>
-            )}
+                  {/* Remove */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeFile(index); }}
+                    className="file-remove"
+                    disabled={isProcessing}
+                    aria-label="Remove file"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
-            {/* Extract button - styled like the navigation tabs */}
-            <div className="extract-button-container">
-              <button
-                type="button"
-                onClick={extractEvents}
-                disabled={files.length === 0 || isProcessing}
-                className="extract-button"
-              >
-                {isProcessing ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                    Extract Events
-                  </>
-                )}
-              </button>
+          {/* Preview pane for active file */}
+          {activeFile && (activeFile.preview || activeFile.isLoading) && (
+            <div className="preview-pane">
+              {activeFile.isLoading ? (
+                <div className="preview-skeleton" />
+              ) : (
+                <>
+                  <img src={activeFile.preview!} alt={activeFile.file.name} className="preview-img" />
+                  {activeFile.fileType === 'pdf' && activeFile.pdfPageCount > 1 && (
+                    <div className="pdf-nav">
+                      <button
+                        type="button"
+                        onClick={() => handlePdfPageChange(activeFileIndex, activeFile.currentPdfPage - 1)}
+                        disabled={activeFile.currentPdfPage <= 1 || isProcessing}
+                        className="pdf-nav-btn"
+                      >‹</button>
+                      <span className="pdf-nav-label">
+                        {activeFile.currentPdfPage} / {activeFile.pdfPageCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handlePdfPageChange(activeFileIndex, activeFile.currentPdfPage + 1)}
+                        disabled={activeFile.currentPdfPage >= activeFile.pdfPageCount || isProcessing}
+                        className="pdf-nav-btn"
+                      >›</button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
+          )}
+
+          {/* Extract CTA */}
+          <div className="extract-wrap">
+            <button
+              type="button"
+              onClick={extractEvents}
+              disabled={files.length === 0 || isProcessing}
+              className="extract-btn"
+            >
+              {isProcessing ? (
+                <>
+                  <svg className="spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                  Extracting…
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12l7 7 7-7" />
+                  </svg>
+                  Extract Events
+                </>
+              )}
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        <style jsx>{`
-          .upload-dropzone {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            border: 1px dashed rgba(255, 255, 255, 0.28);
-            border-radius: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background-color: rgba(255, 255, 255, 0.03);
-          }
+      <style jsx>{`
+        /* ── Drop zone ── */
+        .dropzone {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 260px;
+          border: 1.5px dashed rgba(255,255,255,0.18);
+          border-radius: 1rem;
+          background: rgba(255,255,255,0.025);
+          cursor: pointer;
+          transition: border-color 0.25s, background 0.25s;
+        }
+        .dropzone:hover, .dropzone--active {
+          border-color: rgba(255,255,255,0.5);
+          background: rgba(255,255,255,0.05);
+        }
+        .dropzone--active {
+          border-style: solid;
+          border-color: rgba(255,255,255,0.65);
+        }
+        .dropzone-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+          text-align: center;
+          padding: 2rem;
+          pointer-events: none;
+        }
+        .dropzone-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.14);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 0.25rem;
+        }
+        .dropzone-icon svg { width: 26px; height: 26px; color: rgba(255,255,255,0.75); }
+        .dropzone-title { font-size: 1rem; font-weight: 600; color: #fff; }
+        .dropzone-sub { font-size: 0.8125rem; color: rgba(255,255,255,0.4); max-width: 320px; }
 
-          .upload-dropzone:hover {
-            border-color: rgba(255, 255, 255, 0.55);
-            background-color: rgba(255, 255, 255, 0.06);
-          }
+        /* ── Files panel ── */
+        .files-panel {
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 1rem;
+          background: rgba(255,255,255,0.025);
+          overflow: hidden;
+        }
 
-          .upload-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            max-width: 400px;
-          }
+        /* Header */
+        .files-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.875rem 1.25rem;
+          border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        .files-count {
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: rgba(255,255,255,0.55);
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+        }
+        .files-actions { display: flex; align-items: center; gap: 1.25rem; }
+        .action-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: rgba(255,255,255,0.55);
+          cursor: pointer;
+          transition: color 0.15s;
+          background: none;
+          border: none;
+          padding: 0;
+        }
+        .action-link:hover { color: rgba(255,255,255,0.9); }
+        .action-link--danger { color: rgba(239,68,68,0.65); }
+        .action-link--danger:hover { color: rgb(239,68,68); }
+        .action-icon { width: 13px; height: 13px; }
 
-          .upload-icon-container {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
-          }
+        /* File list */
+        .file-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+        .file-row {
+          display: flex;
+          align-items: center;
+          gap: 0.875rem;
+          padding: 0.75rem 1.25rem;
+          cursor: pointer;
+          transition: background 0.15s;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .file-row:last-child { border-bottom: none; }
+        .file-row:hover { background: rgba(255,255,255,0.04); }
+        .file-row--active { background: rgba(255,255,255,0.06); }
 
-          .upload-icon {
-            width: 40px;
-            height: 40px;
-            color: rgba(255, 255, 255, 0.86);
-          }
+        .file-thumb {
+          width: 40px;
+          height: 40px;
+          border-radius: 6px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .thumb-img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-ext { font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.05em; }
+        .thumb-skeleton { width: 100%; height: 100%; background: rgba(255,255,255,0.1); animation: pulse 1.2s infinite; }
 
-          .upload-text {
-            margin-bottom: 1.5rem;
-          }
+        .file-info { flex: 1; min-width: 0; }
+        .file-name {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: rgba(255,255,255,0.9);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .file-size { font-size: 0.75rem; color: rgba(255,255,255,0.35); }
 
-          .upload-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: white;
-            margin-bottom: 0.5rem;
-          }
+        .file-remove {
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          background: none;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: rgba(255,255,255,0.25);
+          transition: color 0.15s, background 0.15s;
+          flex-shrink: 0;
+        }
+        .file-remove:hover { color: rgb(239,68,68); background: rgba(239,68,68,0.1); }
+        .file-remove svg { width: 14px; height: 14px; }
 
-          .upload-description {
-            font-size: 0.875rem;
-            color: rgba(255, 255, 255, 0.68);
-            opacity: 0.7;
-          }
+        /* Preview */
+        .preview-pane {
+          border-top: 1px solid rgba(255,255,255,0.07);
+          background: rgba(0,0,0,0.2);
+          padding: 1.25rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .preview-skeleton {
+          width: 100%;
+          height: 180px;
+          border-radius: 0.75rem;
+          background: rgba(255,255,255,0.06);
+          animation: pulse 1.2s infinite;
+        }
+        .preview-img {
+          max-height: 220px;
+          max-width: 100%;
+          object-fit: contain;
+          border-radius: 0.5rem;
+        }
 
-          .upload-button {
-            padding: 0.625rem 1.25rem;
-            background-color: white;
-            color: black;
-            font-weight: 500;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-            border: none;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
-          }
+        /* PDF nav */
+        .pdf-nav { display: flex; align-items: center; gap: 0.75rem; }
+        .pdf-nav-btn {
+          width: 28px; height: 28px;
+          border-radius: 6px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.14);
+          color: white;
+          font-size: 1.1rem;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .pdf-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
+        .pdf-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .pdf-nav-label { font-size: 0.8125rem; color: rgba(255,255,255,0.5); }
 
-          .upload-button:hover {
-            background-color: rgba(255, 255, 255, 0.86);
-            transform: translateY(-1px);
-          }
+        /* Extract CTA */
+        .extract-wrap {
+          padding: 1.25rem;
+          border-top: 1px solid rgba(255,255,255,0.07);
+          display: flex;
+          justify-content: center;
+        }
+        .extract-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 2rem;
+          background: white;
+          color: #0a0a0f;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          border-radius: 9999px;
+          border: none;
+          cursor: pointer;
+          transition: opacity 0.2s, transform 0.2s;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .extract-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .extract-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .extract-btn svg { width: 16px; height: 16px; }
+        .spin { animation: spin 0.8s linear infinite; }
 
-          .file-thumbnail {
-            position: relative;
-            width: 70px;
-            height: 70px;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            cursor: pointer;
-            transition: all 0.2s;
-            background-color: rgba(255, 255, 255, 0.04);
-          }
-
-          .file-thumbnail.active {
-            border-color: rgba(255, 255, 255, 0.7);
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
-          }
-
-          .file-thumbnail:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-          }
-
-          .file-remove-button {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background-color: rgba(239, 68, 68, 0.9);
-            color: white;
-            border-radius: 0 0 0 0.375rem;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.2s;
-            border: none;
-          }
-
-          .file-thumbnail:hover .file-remove-button {
-            opacity: 1;
-          }
-
-          .add-file-button {
-            width: 70px;
-            height: 70px;
-            border-radius: 0.5rem;
-            border: 1px dashed rgba(255, 255, 255, 0.22);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background-color: rgba(255, 255, 255, 0.04);
-          }
-
-          .add-file-button:hover {
-            border-color: rgba(255, 255, 255, 0.5);
-            background-color: rgba(255, 255, 255, 0.07);
-          }
-
-          .file-preview {
-            border-radius: 0.75rem;
-            overflow: hidden;
-            background-color: rgba(255, 255, 255, 0.035);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
-          }
-
-          .file-preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background-color: rgba(255, 255, 255, 0.04);
-          }
-
-          .file-preview-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: white;
-            max-width: 70%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          .file-preview-size {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.65);
-            opacity: 0.7;
-          }
-
-          .file-preview-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            gap: 1rem;
-          }
-
-          .file-preview-image-container {
-            display: flex;
-            justify-content: center;
-            padding: 1rem;
-            background-color: white;
-            border-radius: 0.5rem;
-            margin: 1rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          }
-
-          .file-preview-image {
-            max-height: 200px;
-            max-width: 100%;
-            object-fit: contain;
-          }
-
-          .file-preview-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            background-color: rgba(255, 255, 255, 0.03);
-            margin: 1rem;
-            border-radius: 0.5rem;
-          }
-
-          .pdf-navigation {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 0.5rem;
-            margin: 0 1rem 1rem;
-            background-color: rgba(255, 255, 255, 0.06);
-            border-radius: 0.5rem;
-          }
-
-          .pdf-nav-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.08);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            transition: all 0.2s;
-          }
-
-          .pdf-nav-button:hover:not(:disabled) {
-            background-color: white;
-            color: black;
-          }
-
-          .pdf-nav-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-          }
-
-          .pdf-page-indicator {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.72);
-          }
-
-          .extract-button-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 1.5rem;
-          }
-
-          .extract-button {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.75rem 1.5rem;
-            background-color: white;
-            color: black;
-            font-weight: 500;
-            border-radius: 0.5rem;
-            transition: all 0.3s;
-            border: none;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
-          }
-
-          .extract-button:hover:not(:disabled) {
-            background-color: rgba(255, 255, 255, 0.86);
-            transform: translateY(-1px);
-          }
-
-          .extract-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-
-          .file-management-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-          }
-
-          .add-more-button {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background-color: rgba(255, 255, 255, 0.08);
-            color: white;
-            font-size: 0.875rem;
-            font-weight: 500;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-          }
-
-          .add-more-button:hover {
-            background-color: rgba(255, 255, 255, 0.13);
-            transform: translateY(-1px);
-          }
-
-          .clear-all-button {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background-color: rgba(239, 68, 68, 0.1);
-            color: rgb(239, 68, 68);
-            font-size: 0.875rem;
-            font-weight: 500;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-          }
-
-          .clear-all-button:hover {
-            background-color: rgba(239, 68, 68, 0.15);
-            transform: translateY(-1px);
-          }
-
-          .button-icon {
-            width: 1rem;
-            height: 1rem;
-          }
-        `}</style>
-      </div>
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
