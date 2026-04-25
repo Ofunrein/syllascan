@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -15,7 +15,7 @@ const DynamicProcessingHistory = dynamic(
 );
 
 export default function Dashboard() {
-  const { user, loading, authenticated } = useUser();
+  const { user, profile, loading, authenticated } = useAuth();
   const router = useRouter();
   const [calendars, setCalendars] = useState<any[]>([]);
   const [isLoadingCalendars, setIsLoadingCalendars] = useState(false);
@@ -91,18 +91,18 @@ export default function Dashboard() {
           <div className="dashboard-header animate-fade-in">
             <div className="welcome-card">
               <div className="welcome-avatar">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="Profile" className="avatar-image" />
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="avatar-image" />
                 ) : (
                   <div className="avatar-placeholder">
-                    {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                    {profile?.display_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </div>
                 )}
               </div>
               <div className="welcome-text">
                 <h1 className="dashboard-title">Welcome to your Dashboard</h1>
                 <p className="dashboard-welcome">
-                  Hello, {user.displayName || user.email}! Here's an overview of your calendars and processing history.
+                  Hello, {profile?.display_name || user.email}! Here's an overview of your calendars and processing history.
                 </p>
               </div>
             </div>

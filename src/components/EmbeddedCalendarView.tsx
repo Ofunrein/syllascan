@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function EmbeddedCalendarView() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [viewMode] = useState<'WEEK' | 'MONTH' | 'AGENDA'>('WEEK');
   const [timezone] = useState('America/Chicago');
   const [calendarUrl, setCalendarUrl] = useState('');

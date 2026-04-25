@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event } from '@/lib/openai';
 import { format, parseISO } from 'date-fns';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 import toast from 'react-hot-toast';
 import EventEditor from './EventEditor';
 import { PencilIcon, PlusIcon, TrashIcon, CheckIcon, CalendarIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -26,7 +26,7 @@ interface EventListProps {
 }
 
 export default function EventList({ events, onClearEvents }: EventListProps) {
-  const { user, authenticated, googleAuthenticated } = useUser();
+  const { user, authenticated, googleCalendarConnected } = useAuth();
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ event: Event; index: number } | null>(null);
@@ -290,7 +290,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
       return;
     }
 
-    if (!googleAuthenticated) {
+    if (!googleCalendarConnected) {
       toast.error('Please grant calendar access to add events to your calendar');
       return;
     }
@@ -480,7 +480,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         <button
           type="button"
           onClick={handleAddToCalendar}
-          disabled={selectedEvents.size === 0 || isAddingToCalendar || !authenticated || !googleAuthenticated}
+          disabled={selectedEvents.size === 0 || isAddingToCalendar || !authenticated || !googleCalendarConnected}
           className="add-to-calendar-button"
         >
           {isAddingToCalendar ? (
@@ -502,7 +502,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           </div>
         )}
 
-        {authenticated && !googleAuthenticated && (
+        {authenticated && !googleCalendarConnected && (
           <div className="auth-message">
             Please grant calendar access to add events
           </div>

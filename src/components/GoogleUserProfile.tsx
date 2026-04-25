@@ -1,90 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-interface GoogleProfile {
-  email: string;
-  name: string;
-  picture: string;
-}
+import { useAuth } from '@/components/AuthProvider';
 
 export default function GoogleUserProfile() {
-  const [profile, setProfile] = useState<GoogleProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { profile, loading } = useAuth();
 
-  useEffect(() => {
-    const fetchGoogleProfile = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch('/api/auth/google-profile', {
-          credentials: 'include' // Include cookies in the request
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            // Not authenticated with Google, that's okay
-            setProfile(null);
-            setIsLoading(false);
-            return;
-          }
-
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || 'Failed to fetch Google profile');
-        }
-
-        const data = await response.json();
-        setProfile(data);
-      } catch (error: any) {
-        console.error('Error fetching Google profile:', error);
-        setError(error.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchGoogleProfile();
-  }, []);
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center space-x-2">
-        <div className="h-8 w-8 rounded-full bg-white/10 animate-pulse"></div>
-        <div className="h-4 w-24 bg-white/10 animate-pulse rounded"></div>
+      <div className="flex items-center gap-3 animate-pulse">
+        <div className="w-8 h-8 rounded-full bg-white/10" />
+        <div className="h-4 w-24 rounded bg-white/10" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="text-sm text-red-500">
-        Error loading Google profile
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return null;
-  }
+  if (!profile) return null;
 
   return (
-    <div className="flex items-center space-x-2">
-      {profile.picture ? (
+    <div className="flex items-center gap-3">
+      {profile.avatar_url ? (
         <img
-          src={profile.picture}
-          alt={profile.name || 'Google user'}
-          className="h-8 w-8 rounded-full"
+          src={profile.avatar_url}
+          alt={profile.display_name || ''}
+          className="w-8 h-8 rounded-full"
+          referrerPolicy="no-referrer"
         />
       ) : (
-        <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-          {profile.name?.charAt(0) || profile.email?.charAt(0) || 'G'}
+        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+          {(profile.display_name || profile.email)?.[0]?.toUpperCase()}
         </div>
       )}
-      <div className="text-sm font-medium text-white/75">
-        {profile.name || profile.email}
-      </div>
+      <span className="text-white/80 text-sm">{profile.display_name || profile.email}</span>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { UserProvider } from '@/lib/UserContext';
+import { AuthProvider } from '@/components/AuthProvider';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import { ToastProvider } from '@/components/ui/use-toast';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -74,7 +74,7 @@ export default function ClientLayout({
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <UserProvider>
+        <AuthProvider>
           <ToastProvider>
             <div className="app-container">
               {showAuthBanner && <CalendarAuthBanner />}
@@ -111,7 +111,7 @@ export default function ClientLayout({
               color: rgba(255, 255, 255, 0.9) !important;
             }
           `}</style>
-        </UserProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

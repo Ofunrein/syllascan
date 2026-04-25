@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 import { Calendar, momentLocalizer, View, NavigateAction } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -22,7 +22,7 @@ interface CalendarEvent {
 }
 
 export default function LiveCalendarView() {
-  const { googleAuthenticated } = useUser();
+  const { googleCalendarConnected } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,13 +140,13 @@ export default function LiveCalendarView() {
 
   // Fetch events when component mounts or when googleAuthenticated changes
   useEffect(() => {
-    if (googleAuthenticated) {
+    if (googleCalendarConnected) {
       fetchGoogleCalendarEvents();
     } else {
       // If not authenticated with Google, set loading to false
       setIsLoading(false);
     }
-  }, [googleAuthenticated, timeRange]);
+  }, [googleCalendarConnected, timeRange]);
 
   // Add this useEffect right after the other useEffect hooks
   useEffect(() => {
@@ -346,7 +346,7 @@ export default function LiveCalendarView() {
   }
 
   // Show authentication prompt if not authenticated with Google
-  if (!googleAuthenticated) {
+  if (!googleCalendarConnected) {
   return (
       <div className="w-full max-w-4xl mx-auto">
         <div className="liquid-glass rounded-2xl overflow-hidden text-white">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { 
@@ -54,7 +54,7 @@ export default function ProcessingHistory() {
   const [history, setHistory] = useState<ProcessingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [usingSampleData, setUsingSampleData] = useState(false);
-  const { user } = useUser();
+  const { user, session } = useAuth();
 
   const renderHistoryItems = () => {
     return (
@@ -101,15 +101,18 @@ export default function ProcessingHistory() {
         throw new Error('User not authenticated');
       }
       
-      // Get the user's ID token
-      const idToken = await user.getIdToken();
-      
+      // Get the access token from the session
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
       // Make a real API call to fetch processing history
       const response = await fetch('/api/history', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
 
@@ -150,15 +153,18 @@ export default function ProcessingHistory() {
         return;
       }
       
-      // Get the user's ID token
-      const idToken = await user.getIdToken();
-      
+      // Get the access token from the session
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+
       // Otherwise, make a real API call
       const response = await fetch(`/api/history/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
 

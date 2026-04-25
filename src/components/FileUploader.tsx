@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { Event } from '@/lib/openai';
 import toast from 'react-hot-toast';
 import { convertPdfToImage, getPdfPageCount } from '@/utils/pdfUtils';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import dynamic from 'next/dynamic';
 
@@ -30,7 +30,7 @@ export default function FileUploader({
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const [mounted, setMounted] = useState(false);
-  const { user, authenticated } = useUser();
+  const { user, authenticated } = useAuth();
 
   // Prevent hydration mismatch
   useEffect(() => {

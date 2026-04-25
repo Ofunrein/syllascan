@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, ReactNode } from 'react';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
 import GoogleUserProfile from './GoogleUserProfile';
 
@@ -10,7 +10,7 @@ interface GoogleAuthWrapperProps {
 }
 
 export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) {
-  const { user, authenticated, googleAuthenticated, signIn } = useUser();
+  const { user, authenticated, googleCalendarConnected, signInWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -49,7 +49,7 @@ export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) 
         </div>
         <p className="mb-4 text-white/65">Please sign in with your Google account to access this feature.</p>
         <button
-          onClick={signIn}
+          onClick={signInWithGoogle}
           className="px-4 py-2 bg-white text-black rounded-full hover:bg-white/85 transition flex items-center"
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -87,7 +87,7 @@ export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) 
     );
   }
 
-  if (!googleAuthenticated) {
+  if (!googleCalendarConnected) {
     return (
       <div className="liquid-glass rounded-2xl p-6 text-white">
         <h2 className="text-xl font-semibold mb-4">Google Calendar Access Required</h2>
@@ -109,7 +109,7 @@ export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) 
           To use this feature, you need to authorize access to your Google Calendar.
         </p>
         <button
-          onClick={signIn}
+          onClick={signInWithGoogle}
           className="px-4 py-2 bg-white text-black rounded-full hover:bg-white/85 transition flex items-center"
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

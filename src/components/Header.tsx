@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useUser } from '@/lib/UserContext';
+import { useAuth } from '@/components/AuthProvider';
 import { useState, useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
 import { Calendar, LayoutDashboard, Settings, LogOut, LogIn, Upload } from 'lucide-react';
 
 export default function Header() {
-  const { user, loading, signIn, signOut } = useUser();
+  const { user, profile, loading, signInWithGoogle, signOut } = useAuth();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -68,15 +68,15 @@ export default function Header() {
                   onClick={() => setMenuOpen(!menuOpen)}
                   aria-label="User menu"
                 >
-                  {user.photoURL ? (
+                  {profile?.avatar_url ? (
                     <img
-                      src={user.photoURL}
-                      alt={user.displayName || 'User profile'}
+                      src={profile.avatar_url}
+                      alt={profile.display_name || 'User profile'}
                       className="user-avatar"
                     />
                   ) : (
                     <div className="user-initial">
-                      {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      {profile?.display_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                     </div>
                   )}
                 </button>
@@ -84,7 +84,7 @@ export default function Header() {
                 {menuOpen && (
                   <div className="dropdown-menu">
                     <div className="user-info">
-                      <div className="user-name">{user.displayName || 'User'}</div>
+                      <div className="user-name">{profile?.display_name || 'User'}</div>
                       <div className="user-email">{user.email || ''}</div>
                     </div>
                     <Link href="/dashboard" className="menu-item" onClick={() => setMenuOpen(false)}>
@@ -103,7 +103,7 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <button onClick={signIn} className="sign-in-button">
+              <button onClick={signInWithGoogle} className="sign-in-button">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="google-icon">
                   <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />
                 </svg>
@@ -143,7 +143,7 @@ export default function Header() {
             </Link>
 
             {!user && (
-              <button onClick={signIn} className="mobile-sign-in">
+              <button onClick={signInWithGoogle} className="mobile-sign-in">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="google-icon">
                   <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />
                 </svg>
