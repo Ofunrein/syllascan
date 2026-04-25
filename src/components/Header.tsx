@@ -31,15 +31,25 @@ export default function Header() {
           {/* Logo */}
           <div className="logo-container">
             <Link href="/" className="logo">
-              <Calendar size={18} strokeWidth={2} className="logo-icon-svg" />
+              <svg className="logo-icon-svg w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                {/* Calendar body */}
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+                {/* Scan lines */}
+                <line x1="7" y1="14" x2="17" y2="14" strokeOpacity="0.5" />
+                <line x1="7" y1="17" x2="13" y2="17" strokeOpacity="0.5" />
+              </svg>
               <span className="syllascan-logo">SyllaScan</span>
             </Link>
           </div>
 
           {/* Desktop nav */}
           <nav className="desktop-nav">
-            <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
-              <span className="nav-text">Home</span>
+            <Link href="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
+              <LayoutDashboard size={14} strokeWidth={2} />
+              <span className="nav-text">Dashboard</span>
             </Link>
             <Link href="/scan" className={`nav-link ${isActive('/scan') ? 'active' : ''}`}>
               <Upload size={14} strokeWidth={2} />
@@ -49,13 +59,8 @@ export default function Header() {
               <Calendar size={14} strokeWidth={2} />
               <span className="nav-text">Calendar</span>
             </Link>
-            <Link href="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
-              <LayoutDashboard size={14} strokeWidth={2} />
-              <span className="nav-text">Dashboard</span>
-            </Link>
             <Link href="/settings" className={`nav-link ${isActive('/settings') ? 'active' : ''}`}>
               <Settings size={14} strokeWidth={2} />
-              <span className="nav-text">Settings</span>
             </Link>
           </nav>
 
@@ -133,17 +138,14 @@ export default function Header() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="mobile-menu">
-            <Link href="/" className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Home
+            <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              Dashboard
             </Link>
             <Link href="/scan" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Upload
             </Link>
             <Link href="/calendar" className={`mobile-nav-link ${isActive('/calendar') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Calendar
-            </Link>
-            <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Dashboard
             </Link>
             <Link href="/settings" className={`mobile-nav-link ${isActive('/settings') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
               Settings
@@ -170,17 +172,25 @@ export default function Header() {
 
       <style jsx>{`
         .site-header {
-          background: rgba(255, 255, 255, 0.01);
+          background: rgba(255, 255, 255, 0.6);
           background-blend-mode: luminosity;
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
           position: sticky;
           top: 0;
           z-index: 50;
           transition: background 0.3s ease;
         }
         .site-header.scrolled {
+          background: rgba(255, 255, 255, 0.85);
+          box-shadow: 0 1px 24px rgba(0, 0, 0, 0.08);
+        }
+        :global(.dark) .site-header {
+          background: rgba(255, 255, 255, 0.01);
+          border-bottom-color: rgba(255, 255, 255, 0.07);
+        }
+        :global(.dark) .site-header.scrolled {
           background: rgba(8, 8, 14, 0.62);
           box-shadow: 0 1px 24px rgba(0, 0, 0, 0.5);
         }
@@ -210,8 +220,10 @@ export default function Header() {
           text-decoration: none;
         }
 
-        .logo :global(.syllascan-logo) { color: #fff !important; }
-        .logo-icon-svg { color: #fff !important; flex-shrink: 0; }
+        .logo :global(.syllascan-logo) { color: #111827 !important; }
+        :global(.dark) .logo :global(.syllascan-logo) { color: #fff !important; }
+        .logo-icon-svg { color: #111827 !important; flex-shrink: 0; }
+        :global(.dark) .logo-icon-svg { color: #fff !important; }
 
         /* desktop-nav handled by globals.css */
 
@@ -225,8 +237,11 @@ export default function Header() {
           width: 2.25rem;
           height: 2.25rem;
           border-radius: 9999px;
-          background-color: rgba(255, 255, 255, 0.14);
+          background-color: rgba(0, 0, 0, 0.08);
           animation: pulse 1.5s infinite;
+        }
+        :global(.dark) .user-placeholder {
+          background-color: rgba(255, 255, 255, 0.14);
         }
 
         @keyframes pulse {
@@ -283,15 +298,20 @@ export default function Header() {
           top: calc(100% + 0.5rem);
           right: 0;
           width: 220px;
-          background: rgba(12, 12, 18, 0.88);
+          background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 0.625rem;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
           padding: 0.375rem 0;
           z-index: 100;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(0, 0, 0, 0.08);
           overflow: hidden;
+        }
+        :global(.dark) .dropdown-menu {
+          background: rgba(12, 12, 18, 0.88);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+          border-color: rgba(255, 255, 255, 0.1);
         }
 
         .user-info {
@@ -300,10 +320,13 @@ export default function Header() {
           margin-bottom: 0.25rem;
         }
 
-        .user-name { font-weight: 600; color: #fff; font-size: 0.875rem; font-family: var(--font-heading); }
-        .user-email { color: rgba(255, 255, 255, 0.45); font-size: 0.75rem; margin-top: 0.125rem; }
-        .menu-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; color: rgba(255, 255, 255, 0.85); font-size: 0.875rem; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 500; font-family: var(--font-body); }
-        .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
+        .user-name { font-weight: 600; color: #111827; font-size: 0.875rem; font-family: var(--font-heading); }
+        :global(.dark) .user-name { color: #fff; }
+        .user-email { color: rgba(0, 0, 0, 0.45); font-size: 0.75rem; margin-top: 0.125rem; }
+        :global(.dark) .user-email { color: rgba(255, 255, 255, 0.45); }
+        .menu-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; color: rgba(0, 0, 0, 0.75); font-size: 0.875rem; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 500; font-family: var(--font-body); }
+        .menu-item:hover { background-color: rgba(0, 0, 0, 0.04); }
+        :global(.dark) .menu-item { color: rgba(255, 255, 255, 0.85); }
         :global(.dark) .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
 
         .menu-item--danger {
@@ -320,20 +343,28 @@ export default function Header() {
             align-items: center;
             gap: 0.4rem;
             padding: 0.45rem 0.875rem;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            background: rgba(0, 0, 0, 0.06);
+            color: #111827;
             font-size: 0.8125rem;
             font-weight: 500;
             border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(0, 0, 0, 0.1);
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: var(--font-heading);
             backdrop-filter: blur(4px);
           }
           .sign-in-button:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.1);
             transform: scale(1.03);
+          }
+          :global(.dark) .sign-in-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.18);
+          }
+          :global(.dark) .sign-in-button:hover {
+            background: rgba(255, 255, 255, 0.2);
           }
         }
 
@@ -378,9 +409,12 @@ export default function Header() {
           display: block;
           width: 100%;
           height: 1.5px;
-          background-color: rgba(255, 255, 255, 0.85);
+          background-color: rgba(0, 0, 0, 0.7);
           border-radius: 9999px;
           transition: all 0.25s ease;
+        }
+        :global(.dark) .hamburger span {
+          background-color: rgba(255, 255, 255, 0.85);
         }
 
         .hamburger.open span:nth-child(1) {
@@ -399,11 +433,15 @@ export default function Header() {
           display: flex;
           flex-direction: column;
           padding: 0.5rem 0;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(8, 8, 14, 0.92);
+          border-top: 1px solid rgba(0, 0, 0, 0.06);
+          background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           animation: fadeIn 0.2s ease-out;
+        }
+        :global(.dark) .mobile-menu {
+          border-top-color: rgba(255, 255, 255, 0.08);
+          background: rgba(8, 8, 14, 0.92);
         }
 
         @keyframes fadeIn {
@@ -422,11 +460,14 @@ export default function Header() {
           align-items: center;
           padding: 0.75rem 1rem;
           font-size: 0.9375rem;
-          color: rgba(255, 255, 255, 0.75);
+          color: rgba(0, 0, 0, 0.65);
           text-decoration: none;
           transition: background-color 0.15s;
           font-family: var(--font-heading);
           font-weight: 500;
+        }
+        :global(.dark) .mobile-nav-link {
+          color: rgba(255, 255, 255, 0.75);
         }
 
         .mobile-nav-link:hover {
@@ -434,6 +475,10 @@ export default function Header() {
         }
 
         .mobile-nav-link.active {
+          color: #111827;
+          background-color: rgba(0, 0, 0, 0.04);
+        }
+        :global(.dark) .mobile-nav-link.active {
           color: #fff;
           background-color: rgba(255, 255, 255, 0.08);
         }
@@ -457,6 +502,9 @@ export default function Header() {
         }
 
         .mobile-sign-in {
+          color: rgba(0, 0, 0, 0.75);
+        }
+        :global(.dark) .mobile-sign-in {
           color: rgba(255, 255, 255, 0.85);
         }
 
