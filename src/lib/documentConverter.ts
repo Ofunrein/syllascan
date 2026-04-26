@@ -1,14 +1,6 @@
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { resolve } from 'path';
-
-// pdfjs HANGS in Node.js with workerSrc = ''.
-// Fix: point to the actual worker .mjs file via file:// URL.
-// This causes pdfjs to spawn it as a proper worker thread in Node.js.
-if (typeof window === 'undefined') {
-  GlobalWorkerOptions.workerSrc = `file://${resolve(process.cwd(), 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')}`;
-}
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export interface ConvertedContent {
   type: 'text' | 'images';
@@ -57,7 +49,9 @@ export async function convertDocument(
 
 async function convertPdf(buffer: Buffer): Promise<ConvertedContent> {
   const uint8 = new Uint8Array(buffer);
-  const pdf = await getDocument({ data: uint8, useSystemFonts: true }).promise;
+  // disableWorker: true runs pdfjs inline without spawning a worker thread.
+  // Required for serverless (Vercel Lambda) — file:// worker URLs don't work there.
+  const pdf = await getDocument({ data: uint8, useSystemFonts: true, disableWorker: true }).promise;
   const numPages = pdf.numPages;
   const allText: string[] = [];
 
