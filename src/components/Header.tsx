@@ -107,7 +107,7 @@ export default function Header() {
                       <div className="user-name">{profile?.display_name || 'User'}</div>
                       <div className="user-email">{user.email || ''}</div>
                     </div>
-                    <Link href="/dashboard" className="menu-item" onClick={() => setUserMenuOpen(false)}>
+                    <Link href="/scan#events" className="menu-item" onClick={() => setUserMenuOpen(false)}>
                       <LayoutDashboard size={15} strokeWidth={2} />
                       My Events
                     </Link>
@@ -152,7 +152,7 @@ export default function Header() {
           <div className="mobile-menu">
             {authenticated && (
               <>
-                <Link href="/dashboard" className={`mobile-nav-link ${isActive('/dashboard') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                <Link href="/scan#events" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
                   My Events
                 </Link>
                 <Link href="/scan" className={`mobile-nav-link ${isActive('/scan') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
