@@ -166,7 +166,8 @@ export default function ScanPage() {
       <footer
         className="relative z-10 mt-6 border-t border-white/5 px-6 py-8 text-center text-sm text-white/35"
       >
-        {new Date().getFullYear()} SyllaScan. All rights reserved.{' '}
+        <a href="/" className="text-white/50 hover:text-white transition-colors mr-4">← Home</a>
+        {new Date().getFullYear()} SyllaScan.{' '}
         <a href="/privacy-policy" className="text-white/45 hover:text-white">Privacy Policy</a>
         {' | '}
         <a href="/terms-of-service" className="text-white/45 hover:text-white">Terms of Service</a>

@@ -39,8 +39,8 @@ export default function Header() {
     return pathname?.startsWith(path);
   };
 
-  // Logo links to /scan (upload) when authenticated, / when not
-  const logoHref = authenticated ? '/scan' : '/';
+  // Logo always links to / (landing page) — from there, auth redirects to /scan if logged in
+  const logoHref = '/';
 
   return (
     <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>

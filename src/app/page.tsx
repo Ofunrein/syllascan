@@ -163,13 +163,12 @@ export default function Home() {
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button onClick={() => setShowAuth(true)} className="text-white text-sm font-medium">Sign in</button>
+            <div className="flex items-center">
               <button
                 onClick={() => setShowAuth(true)}
-                className="liquid-glass rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
+                className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
               >
-                Get Started
+                Sign in
               </button>
             </div>
           )}
@@ -205,15 +204,6 @@ export default function Home() {
           <p className="text-white/90 text-xs sm:text-sm leading-relaxed px-2 sm:px-4">
             Upload syllabi, schedules, or any document — AI extracts deadlines, exams, and events automatically. Create events with natural language and sync everything to Google Calendar.
           </p>
-
-          <div className="flex justify-center">
-            <button
-              onClick={startFlow}
-              className="liquid-glass rounded-full px-6 sm:px-8 py-2.5 sm:py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors"
-            >
-              Get started free
-            </button>
-          </div>
         </div>
       </div>
 
