@@ -38,65 +38,36 @@ export default function FileUploader({
   }, []);
 
   const createPreview = useCallback(async (selectedFile: File): Promise<FileWithPreview> => {
-    try {
-      if (selectedFile.type.startsWith('image/')) {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            resolve({
-              file: selectedFile,
-              preview: reader.result as string,
-              fileType: 'image',
-              pdfPageCount: 0,
-              currentPdfPage: 1,
-              isLoading: false
-            });
-          };
-          reader.readAsDataURL(selectedFile);
-        });
-      } else if (selectedFile.type === 'application/pdf') {
-        const filePreview: FileWithPreview = {
+    // Images — generate preview in browser
+    if (selectedFile.type.startsWith('image/')) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({
           file: selectedFile,
-          preview: null,
-          fileType: 'pdf',
+          preview: reader.result as string,
+          fileType: 'image',
           pdfPageCount: 0,
           currentPdfPage: 1,
-          isLoading: true
-        };
-
-        try {
-          // Get the page count first
-          const pageCount = await getPdfPageCount(selectedFile);
-          filePreview.pdfPageCount = pageCount;
-
-          // Then convert the first page to an image
-          if (pageCount > 0) {
-            const imageDataUrl = await convertPdfToImage(selectedFile, 1);
-            filePreview.preview = imageDataUrl;
-          }
-        } catch (error) {
-          console.error('Error processing PDF:', error);
-          toast.error('Error processing PDF file');
-        } finally {
-          filePreview.isLoading = false;
-        }
-
-        return filePreview;
-      } else {
-        throw new Error('Unsupported file type');
-      }
-    } catch (error) {
-      console.error('Error creating preview:', error);
-      toast.error('Error creating file preview');
-      return {
-        file: selectedFile,
-        preview: null,
-        fileType: null,
-        pdfPageCount: 0,
-        currentPdfPage: 1,
-        isLoading: false
-      };
+          isLoading: false,
+        });
+        reader.onerror = () => resolve({
+          file: selectedFile, preview: null, fileType: 'image',
+          pdfPageCount: 0, currentPdfPage: 1, isLoading: false,
+        });
+        reader.readAsDataURL(selectedFile);
+      });
     }
+
+    // All document types (PDF, DOCX, XLSX, etc.) — add instantly, no browser preview
+    // pdfjs in browser is unreliable; server handles extraction
+    return {
+      file: selectedFile,
+      preview: null,
+      fileType: selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : null,
+      pdfPageCount: 0,
+      currentPdfPage: 1,
+      isLoading: false,
+    };
   }, []);
 
   // Clipboard paste — after createPreview is declared to avoid TDZ
@@ -125,14 +96,13 @@ export default function FileUploader({
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
-
     try {
-      const newFiles = await Promise.all(
-        acceptedFiles.map(file => createPreview(file))
-      );
-
-      setFiles(prevFiles => [...prevFiles, ...newFiles]);
-      setActiveFileIndex(prevFiles => prevFiles.length);
+      const newFiles = await Promise.all(acceptedFiles.map(f => createPreview(f)));
+      setFiles(prev => {
+        const updated = [...prev, ...newFiles];
+        setActiveFileIndex(prev.length); // index of first newly added file
+        return updated;
+      });
     } catch (error) {
       console.error('Error processing files:', error);
       toast.error('Error processing files');
@@ -141,24 +111,29 @@ export default function FileUploader({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    // No strict accept filter — rely on extension matching, reject only truly unsupported
     accept: {
-      'image/jpeg': [],
-      'image/png': [],
-      'image/gif': [],
-      'image/webp': [],
-      'application/pdf': [],
+      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.svg'],
+      'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/msword': ['.doc'],
+      'application/vnd.ms-excel': ['.xls'],
       'text/csv': ['.csv'],
-      'text/plain': ['.txt'],
+      'text/plain': ['.txt', '.md'],
       'text/html': ['.html', '.htm'],
       'application/rtf': ['.rtf'],
+      'application/octet-stream': ['.pdf', '.docx', '.pptx', '.xlsx'], // fallback for wrong MIME
+    },
+    onDropRejected: (rejections) => {
+      const names = rejections.map(r => r.file.name).join(', ');
+      toast.error(`Could not add: ${names}. Try dragging directly from your file manager.`);
     },
     maxFiles: 10,
-    maxSize: 10485760, // 10MB
-    noClick: !mounted, // Prevent click handling during SSR
-    noDrag: !mounted,  // Prevent drag handling during SSR
+    maxSize: 20971520,
+    noClick: !mounted,
+    noDrag: !mounted,
   });
 
   const handlePdfPageChange = useCallback(async (fileIndex: number, newPage: number) => {
