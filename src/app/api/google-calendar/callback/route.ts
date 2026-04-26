@@ -9,15 +9,22 @@ export async function GET(request: Request) {
   const next = state?.startsWith('/') ? state : '/scan#live-calendar';
 
   if (error || !code) {
-    return NextResponse.redirect(`${origin}/scan?calendar_error=denied#live-calendar`);
+    console.error('[calendar-callback] OAuth error or missing code:', error);
+    return NextResponse.redirect(`${origin}/scan?calendar_error=${encodeURIComponent(error || 'no_code')}`);
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (authError || !user) {
+    console.error('[calendar-callback] No authenticated user:', authError?.message);
     return NextResponse.redirect(`${origin}/?error=not_authenticated`);
   }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
+  const redirectUri = `${appUrl}/api/google-calendar/callback`;
+
+  console.log('[calendar-callback] Exchanging code for tokens, redirect_uri:', redirectUri);
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -26,7 +33,7 @@ export async function GET(request: Request) {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || origin}/api/google-calendar/callback`,
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     }),
   });
@@ -34,8 +41,13 @@ export async function GET(request: Request) {
   const tokens = await tokenResponse.json();
 
   if (!tokenResponse.ok) {
-    return NextResponse.redirect(`${origin}/scan?calendar_error=token_exchange_failed#live-calendar`);
+    console.error('[calendar-callback] Token exchange failed:', JSON.stringify(tokens));
+    return NextResponse.redirect(
+      `${origin}/scan?calendar_error=${encodeURIComponent(tokens.error_description || tokens.error || 'token_exchange_failed')}`
+    );
   }
+
+  console.log('[calendar-callback] Got tokens, saving for user:', user.id);
 
   const serviceClient = await createServiceRoleClient();
   const { data: existingProfile } = await serviceClient
@@ -45,7 +57,7 @@ export async function GET(request: Request) {
     .single();
 
   const metadata = user.user_metadata ?? {};
-  await serviceClient
+  const { error: upsertError } = await serviceClient
     .from('users')
     .upsert({
       id: user.id,
@@ -59,7 +71,13 @@ export async function GET(request: Request) {
       },
     }, { onConflict: 'id' });
 
-  const separator = next.includes('?') ? '&' : '?';
+  if (upsertError) {
+    console.error('[calendar-callback] Failed to save tokens:', upsertError.message);
+  } else {
+    console.log('[calendar-callback] Tokens saved successfully');
+  }
+
   const [path, hash] = next.split('#');
-  return NextResponse.redirect(`${origin}${path}${separator}calendar_connected=true${hash ? `#${hash}` : ''}`);
+  const sep = path.includes('?') ? '&' : '?';
+  return NextResponse.redirect(`${origin}${path}${sep}calendar_connected=true${hash ? `#${hash}` : ''}`);
 }

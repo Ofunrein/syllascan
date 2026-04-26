@@ -18,12 +18,19 @@ export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) 
   // Check if we just returned from Google OAuth flow
   useEffect(() => {
     const calendarConnected = searchParams?.get('calendar_connected');
+    const calendarError = searchParams?.get('calendar_error');
+
     if (calendarConnected === 'true') {
       refreshProfile();
-
-      // Remove the query parameter from the URL
       const url = new URL(window.location.href);
       url.searchParams.delete('calendar_connected');
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    if (calendarError) {
+      setError(`Calendar connection failed: ${decodeURIComponent(calendarError)}`);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('calendar_error');
       window.history.replaceState({}, '', url.toString());
     }
   }, [searchParams, refreshProfile]);
