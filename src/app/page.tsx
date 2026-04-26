@@ -166,7 +166,7 @@ export default function Home() {
             <div className="flex items-center">
               <button
                 onClick={() => setShowAuth(true)}
-                className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
+                className="bg-white rounded-full px-5 py-2 text-black text-sm font-semibold hover:opacity-90 transition-opacity"
               >
                 Sign in
               </button>
