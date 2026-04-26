@@ -37,30 +37,6 @@ export default function FileUploader({
     setMounted(true);
   }, []);
 
-  // Clipboard paste support — Cmd/Ctrl+V anywhere on the page
-  useEffect(() => {
-    if (!mounted) return;
-    const handlePaste = async (e: ClipboardEvent) => {
-      if (!e.clipboardData) return;
-      const items = Array.from(e.clipboardData.items);
-      const pastedFiles: File[] = [];
-      for (const item of items) {
-        if (item.kind === 'file') {
-          const f = item.getAsFile();
-          if (f) pastedFiles.push(f);
-        }
-      }
-      if (pastedFiles.length > 0) {
-        e.preventDefault();
-        const newPreviews = await Promise.all(pastedFiles.map(f => createPreview(f)));
-        setFiles(prev => [...prev, ...newPreviews]);
-        toast.success(`Pasted ${pastedFiles.length} file${pastedFiles.length > 1 ? 's' : ''}`);
-      }
-    };
-    document.addEventListener('paste', handlePaste);
-    return () => document.removeEventListener('paste', handlePaste);
-  }, [mounted, createPreview]);
-
   const createPreview = useCallback(async (selectedFile: File): Promise<FileWithPreview> => {
     try {
       if (selectedFile.type.startsWith('image/')) {
@@ -122,6 +98,30 @@ export default function FileUploader({
       };
     }
   }, []);
+
+  // Clipboard paste — after createPreview is declared to avoid TDZ
+  useEffect(() => {
+    if (!mounted) return;
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      const items = Array.from(e.clipboardData.items);
+      const pastedFiles: File[] = [];
+      for (const item of items) {
+        if (item.kind === 'file') {
+          const f = item.getAsFile();
+          if (f) pastedFiles.push(f);
+        }
+      }
+      if (pastedFiles.length > 0) {
+        e.preventDefault();
+        const newPreviews = await Promise.all(pastedFiles.map(f => createPreview(f)));
+        setFiles(prev => [...prev, ...newPreviews]);
+        toast.success(`Pasted ${pastedFiles.length} file${pastedFiles.length > 1 ? 's' : ''}`);
+      }
+    };
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [mounted, createPreview]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
