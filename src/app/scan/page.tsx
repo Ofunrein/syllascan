@@ -11,13 +11,29 @@ import EmbeddedCalendarView from '@/components/EmbeddedCalendarView';
 import CalendarAuthBanner from '@/components/CalendarAuthBanner';
 import { Upload, Calendar, CalendarCheck, LayoutGrid } from 'lucide-react';
 import { useEventStore } from '@/lib/stores/eventStore';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function ScanPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
   const [isCalendarExpired, setIsCalendarExpired] = useState(false);
-  const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents } = useEventStore();
+  const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents, fetchEvents } = useEventStore();
+  const { user, authenticated } = useAuth();
+
+  // Load all saved events from Supabase on mount
+  useEffect(() => {
+    if (authenticated && user) {
+      fetchEvents(user.id);
+    }
+  }, [authenticated, user, fetchEvents]);
+
+  // Sync local events with store
+  useEffect(() => {
+    if (storedEvents.length > 0) {
+      setEvents(storedEvents);
+    }
+  }, [storedEvents]);
 
   const handleEventsExtracted = (extractedEvents: Event[]) => {
     setEvents(extractedEvents);
@@ -32,17 +48,11 @@ export default function ScanPage() {
   };
 
   useEffect(() => {
-    if (storedEvents.length > 0 && events.length === 0) {
-      setEvents(storedEvents);
-    }
-  }, [storedEvents, events.length]);
-
-  useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
       if (hash === 'live-calendar') setActiveTab('live-calendar');
       else if (hash === 'embedded-calendar') setActiveTab('embedded-calendar');
-      else if (hash === 'events' && events.length > 0) setActiveTab('events');
+      else if (hash === 'events') setActiveTab('events');
       else if (hash === 'upload') setActiveTab('upload');
     };
     handleHashChange();
@@ -57,9 +67,9 @@ export default function ScanPage() {
 
   type TabId = 'upload' | 'events' | 'live-calendar' | 'embedded-calendar';
 
-  const tabs: Array<{ id: TabId; label: string; Icon: React.ElementType; disabled?: boolean }> = [
+  const tabs: Array<{ id: TabId; label: string; Icon: React.ElementType; badge?: number }> = [
     { id: 'upload', label: 'Upload', Icon: Upload },
-    { id: 'events', label: 'Events', Icon: Calendar, disabled: events.length === 0 },
+    { id: 'events', label: 'Events', Icon: Calendar, badge: events.length || undefined },
     { id: 'live-calendar', label: 'Live Calendar', Icon: CalendarCheck },
     { id: 'embedded-calendar', label: 'Embedded', Icon: LayoutGrid },
   ];
@@ -106,19 +116,23 @@ export default function ScanPage() {
 
           <div className="mb-6 flex justify-center">
             <div className="liquid-glass inline-flex max-w-full flex-wrap justify-center gap-1 rounded-full p-1">
-            {tabs.map(({ id, label, Icon, disabled }) => (
+            {tabs.map(({ id, label, Icon, badge }) => (
               <button
                 key={id}
-                onClick={() => !disabled && handleTabClick(id)}
-                disabled={disabled}
+                onClick={() => handleTabClick(id)}
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                   activeTab === id
                     ? 'bg-white text-black'
                     : 'text-white/55 hover:bg-white/5 hover:text-white'
-                } ${disabled ? 'cursor-not-allowed opacity-30' : ''}`}
+                }`}
               >
                 <Icon size={16} />
                 {label}
+                {badge ? (
+                  <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-bold ${activeTab === id ? 'bg-black/15 text-black' : 'bg-white/15 text-white'}`}>
+                    {badge}
+                  </span>
+                ) : null}
               </button>
             ))}
             </div>
