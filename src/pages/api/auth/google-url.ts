@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { google } from 'googleapis';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -25,6 +24,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Create OAuth2 client
+    const { google } = await import('googleapis');
     const oauth2Client = new google.auth.OAuth2(
       clientId,
       clientSecret,
@@ -55,4 +55,4 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     console.error('Error generating Google OAuth URL:', error);
     return res.status(500).json({ error: 'Failed to generate authorization URL' });
   }
-} 
+}

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from 'googleapis';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
@@ -49,6 +48,7 @@ export async function GET(request: NextRequest) {
     const timeMax = searchParams.get('timeMax') || new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString();
 
     // Set up Google Calendar API
+    const { google } = await import('googleapis');
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
 

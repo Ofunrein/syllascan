@@ -13,7 +13,7 @@ export default function CalendarAuthBanner() {
   const handleConnect = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/google-calendar/authorize');
+      const res = await fetch(`/api/google-calendar/authorize?next=${encodeURIComponent('/scan#live-calendar')}`);
       const { url } = await res.json();
       window.location.href = url;
     } catch {

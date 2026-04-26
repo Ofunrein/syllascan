@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url);
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -10,9 +11,9 @@ export async function GET() {
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/google-calendar/callback`;
+  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || origin}/api/google-calendar/callback`;
+  const next = searchParams.get('next') || '/scan#live-calendar';
   const scopes = [
-    'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/calendar.events',
     'https://www.googleapis.com/auth/calendar.readonly',
   ].join(' ');
@@ -24,6 +25,7 @@ export async function GET() {
   authUrl.searchParams.set('scope', scopes);
   authUrl.searchParams.set('access_type', 'offline');
   authUrl.searchParams.set('prompt', 'consent');
+  authUrl.searchParams.set('state', next);
 
   return NextResponse.json({ url: authUrl.toString() });
 }

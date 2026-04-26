@@ -29,7 +29,7 @@ export default function SettingsPage() {
 
   const handleConnectCalendar = async () => {
     try {
-      const res = await fetch('/api/google-calendar/authorize');
+      const res = await fetch(`/api/google-calendar/authorize?next=${encodeURIComponent('/settings')}`);
       const { url } = await res.json();
       window.location.href = url;
     } catch (e) {

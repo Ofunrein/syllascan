@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { addEventsToCalendar } from '@/lib/googleCalendar';
 import { Event } from '@/lib/openai';
-import { google } from 'googleapis';
 import { recordProcessingHistory } from '@/lib/processingHistory';
 
 export async function POST(request: NextRequest) {
@@ -99,6 +98,7 @@ export async function POST(request: NextRequest) {
         console.log('Attempting to refresh token and retry adding events');
 
         try {
+          const { google } = await import('googleapis');
           const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET,

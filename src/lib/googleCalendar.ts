@@ -1,4 +1,3 @@
-import { google } from 'googleapis';
 import { Event } from './openai';
 
 interface GoogleApiError {
@@ -8,6 +7,11 @@ interface GoogleApiError {
     data?: Record<string, unknown>;
   };
   message?: string;
+}
+
+async function getGoogleApi() {
+  const { google } = await import('googleapis');
+  return google;
 }
 
 // Function to refresh an access token using the refresh token
@@ -51,6 +55,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<string |
 export async function addEventsToCalendar(accessToken: string, events: Event[], refreshToken?: string): Promise<string[]> {
   try {
     console.log('Adding events to calendar with access token length:', accessToken.length);
+    const google = await getGoogleApi();
     
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
@@ -173,6 +178,7 @@ export async function addEventsToCalendar(accessToken: string, events: Event[], 
 export async function getUserCalendars(accessToken: string, refreshToken?: string) {
   try {
     console.log('Getting user calendars with access token length:', accessToken.length);
+    const google = await getGoogleApi();
     
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
@@ -224,4 +230,4 @@ function isAuthError(error: GoogleApiError): boolean {
     (error.response && error.response.status === 401) ||
     (error.message && error.message.includes('invalid_grant'))
   );
-} 
+}

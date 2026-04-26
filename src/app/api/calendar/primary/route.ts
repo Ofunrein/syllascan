@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from 'googleapis';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,6 +26,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Set up Google Calendar API
+    const { google } = await import('googleapis');
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
     
@@ -117,4 +117,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

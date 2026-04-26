@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import GoogleUserProfile from './GoogleUserProfile';
 
 interface GoogleAuthWrapperProps {
@@ -10,24 +10,42 @@ interface GoogleAuthWrapperProps {
 }
 
 export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) {
-  const { user, authenticated, googleCalendarConnected, signInWithGoogle } = useAuth();
+  const { user, authenticated, googleCalendarConnected, signInWithGoogle, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // Check if we just returned from Google OAuth flow
   useEffect(() => {
-    const calendarAccess = searchParams.get('calendar_access');
-    if (calendarAccess === 'granted') {
-      console.log('Calendar access was granted via URL parameter');
+    const calendarConnected = searchParams?.get('calendar_connected');
+    if (calendarConnected === 'true') {
+      refreshProfile();
 
       // Remove the query parameter from the URL
       const url = new URL(window.location.href);
-      url.searchParams.delete('calendar_access');
+      url.searchParams.delete('calendar_connected');
       window.history.replaceState({}, '', url.toString());
     }
-  }, [searchParams]);
+  }, [searchParams, refreshProfile]);
+
+  const connectGoogleCalendar = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/google-calendar/authorize?next=${encodeURIComponent('/scan#live-calendar')}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start Google Calendar authorization');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to connect Google Calendar');
+      setIsLoading(false);
+    }
+  };
 
   if (!authenticated) {
     return (
@@ -109,7 +127,7 @@ export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) 
           To use this feature, you need to authorize access to your Google Calendar.
         </p>
         <button
-          onClick={signInWithGoogle}
+          onClick={connectGoogleCalendar}
           className="px-4 py-2 bg-white text-black rounded-full hover:bg-white/85 transition flex items-center"
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

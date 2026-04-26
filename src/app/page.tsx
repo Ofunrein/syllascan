@@ -16,6 +16,14 @@ export default function Home() {
 
   const { user, profile, authenticated, loading, signOut } = useAuth();
 
+  const startFlow = () => {
+    if (authenticated) {
+      router.push('/scan');
+    } else {
+      setShowAuth(true);
+    }
+  };
+
   // Redirect authenticated users to upload
   useEffect(() => {
     if (authenticated && !loading) {
@@ -131,15 +139,40 @@ export default function Home() {
               <span className="text-white font-semibold text-base sm:text-lg">SyllaScan</span>
             </Link>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button onClick={() => setShowAuth(true)} className="text-white text-sm font-medium">Sign in</button>
-            <button
-              onClick={() => setShowAuth(true)}
-              className="liquid-glass rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
-            >
-              Get Started
-            </button>
-          </div>
+          {loading ? (
+            <div className="h-8 w-20 rounded-full bg-white/10 animate-pulse" />
+          ) : authenticated ? (
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link href="/scan" className="text-white text-sm font-medium">Go to scan</Link>
+              <button
+                onClick={signOut}
+                className="liquid-glass rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
+              >
+                Sign out
+              </button>
+              <Link
+                href="/settings"
+                className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/10 text-sm font-semibold text-white"
+                aria-label="Account settings"
+              >
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.display_name || user?.email || 'User'} className="h-full w-full object-cover" />
+                ) : (
+                  profile?.display_name?.charAt(0) || user?.email?.charAt(0) || 'U'
+                )}
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button onClick={() => setShowAuth(true)} className="text-white text-sm font-medium">Sign in</button>
+              <button
+                onClick={() => setShowAuth(true)}
+                className="liquid-glass rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
+              >
+                Get Started
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -156,7 +189,7 @@ export default function Home() {
 
         <div className="max-w-lg w-full space-y-4">
           <button
-            onClick={() => setShowAuth(true)}
+            onClick={startFlow}
             className="liquid-glass rounded-full pl-4 sm:pl-6 pr-2 py-2 flex items-center gap-3 text-left transition-colors hover:bg-white/5 w-full"
             aria-label="Upload any document"
           >
@@ -175,7 +208,7 @@ export default function Home() {
 
           <div className="flex justify-center">
             <button
-              onClick={() => setShowAuth(true)}
+              onClick={startFlow}
               className="liquid-glass rounded-full px-6 sm:px-8 py-2.5 sm:py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors"
             >
               Get started free

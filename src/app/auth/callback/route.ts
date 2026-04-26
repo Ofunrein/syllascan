@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -8,8 +8,32 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const user = data.user;
+
+    if (!error && user) {
+      const serviceClient = await createServiceRoleClient();
+      const { data: existingProfile } = await serviceClient
+        .from('users')
+        .select('google_tokens, google_calendar_connected')
+        .eq('id', user.id)
+        .single();
+
+      const accessToken = data.session?.provider_token ?? existingProfile?.google_tokens?.access_token ?? null;
+      const refreshToken = data.session?.provider_refresh_token ?? existingProfile?.google_tokens?.refresh_token ?? null;
+      const metadata = user.user_metadata ?? {};
+
+      await serviceClient.from('users').upsert({
+        id: user.id,
+        email: user.email ?? '',
+        display_name: metadata.full_name ?? metadata.name ?? user.email?.split('@')[0] ?? null,
+        avatar_url: metadata.avatar_url ?? metadata.picture ?? null,
+        google_calendar_connected: Boolean(accessToken) || Boolean(existingProfile?.google_calendar_connected),
+        google_tokens: accessToken
+          ? { access_token: accessToken, refresh_token: refreshToken }
+          : existingProfile?.google_tokens ?? null,
+      }, { onConflict: 'id' });
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

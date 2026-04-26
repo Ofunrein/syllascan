@@ -115,7 +115,7 @@ export default function LiveCalendarView() {
       toast.loading('Connecting to Google Calendar...');
 
       // Get the authorization URL from the server
-      const response = await fetch('/api/auth/google-url', {
+      const response = await fetch(`/api/google-calendar/authorize?next=${encodeURIComponent('/scan#live-calendar')}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
