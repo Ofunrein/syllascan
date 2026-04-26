@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { PlusIcon, XMarkIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/components/AuthProvider';
 import { useEventStore } from '@/lib/stores/eventStore';
@@ -15,6 +15,33 @@ export default function QuickAdd() {
   const [preview, setPreview] = useState<Event | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Drag state
+  const [pos, setPos] = useState({ x: 0, y: 0 }); // offset from default bottom-right
+  const dragging = useRef(false);
+  const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, input')) return;
+    dragging.current = true;
+    dragStart.current = { mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y };
+    e.preventDefault();
+  }, [pos]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      setPos({
+        x: dragStart.current.px + (e.clientX - dragStart.current.mx),
+        y: dragStart.current.py + (e.clientY - dragStart.current.my),
+      });
+    };
+    const onUp = () => { dragging.current = false; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, []);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -123,10 +150,20 @@ export default function QuickAdd() {
 
       {/* Quick Add Panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)]">
+        <div
+          ref={panelRef}
+          className="fixed z-50 w-96 max-w-[calc(100vw-3rem)]"
+          style={{
+            bottom: `calc(1.5rem - ${pos.y}px)`,
+            right: `calc(1.5rem - ${pos.x}px)`,
+          }}
+        >
           <div className="liquid-glass rounded-2xl p-4 border border-white/10 shadow-2xl">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-3">
+            {/* Header — drag handle */}
+            <div
+              className="flex items-center justify-between mb-3 cursor-grab active:cursor-grabbing select-none"
+              onMouseDown={onMouseDown}
+            >
               <span className="text-white/80 text-sm font-medium">Quick Add Event</span>
               <button
                 onClick={() => { setOpen(false); setPreview(null); setInput(''); setError(null); }}
