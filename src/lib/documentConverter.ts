@@ -1,10 +1,13 @@
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { resolve } from 'path';
 
-// Disable worker for server-side usage
+// pdfjs HANGS in Node.js with workerSrc = ''.
+// Fix: point to the actual worker .mjs file via file:// URL.
+// This causes pdfjs to spawn it as a proper worker thread in Node.js.
 if (typeof window === 'undefined') {
-  GlobalWorkerOptions.workerSrc = '';
+  GlobalWorkerOptions.workerSrc = `file://${resolve(process.cwd(), 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')}`;
 }
 
 export interface ConvertedContent {

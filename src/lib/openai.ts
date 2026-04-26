@@ -81,34 +81,50 @@ export async function extractEventsFromImages(
 ): Promise<ExtractedEvent[]> {
   const prompt = buildExtractionPrompt();
 
-  // Use Responses API for vision (required for gpt-5.4-mini per OpenAI docs)
   const imageInputs = images.map((img) => ({
     type: 'input_image' as const,
     image_url: `data:${img.mimeType};base64,${img.base64}`,
     detail: 'high' as const,
   }));
 
-  // @ts-ignore — Responses API types may not be in older SDK versions
-  const response = await (openai as any).responses.create({
-    model: 'gpt-5.4-mini',
-    input: [
-      {
+  try {
+    // @ts-ignore — Responses API
+    const response = await (openai as any).responses.create({
+      model: 'gpt-5.4-mini',
+      input: [{
         role: 'user',
         content: [
-          {
-            type: 'input_text',
-            text: `${prompt}\n\nExtract ALL calendar events from these document pages. Return JSON with key "events".`,
-          },
+          { type: 'input_text', text: `${prompt}\n\nExtract ALL calendar events. Return JSON with key "events".` },
           ...imageInputs,
         ],
-      },
-    ],
-  });
+      }],
+    });
 
-  const content: string = response.output_text ?? '';
-  if (!content) return [];
-  const parsed = extractJsonFromText(content);
-  return parsed?.events || [];
+    const content: string = response.output_text ?? '';
+    if (!content) throw new Error('Empty Responses API response');
+    const parsed = extractJsonFromText(content);
+    return parsed?.events || [];
+  } catch (err: any) {
+    console.error('[extractEventsFromImages] Responses API error:', err.message, '— trying Chat Completions fallback');
+
+    // Fallback to Chat Completions (gpt-4o-mini has reliable vision + max_tokens support)
+    const chatImages: OpenAI.ChatCompletionContentPart[] = images.map((img) => ({
+      type: 'image_url' as const,
+      image_url: { url: `data:${img.mimeType};base64,${img.base64}`, detail: 'high' as const },
+    }));
+    const fallback = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: prompt },
+        { role: 'user', content: [{ type: 'text', text: 'Extract ALL calendar events. Return JSON with key "events".' }, ...chatImages] },
+      ],
+      max_tokens: 4096,
+      temperature: 0.1,
+    });
+    const content = fallback.choices[0]?.message?.content ?? '';
+    const parsed = extractJsonFromText(content);
+    return parsed?.events || [];
+  }
 }
 
 export async function extractEventsFromImage(base64Image: string): Promise<ExtractedEvent[]> {

@@ -4,6 +4,9 @@ import { convertDocument } from '@/lib/documentConverter';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 
+// Extend Vercel function timeout to 60s (default 10s is too short for LLM calls)
+export const maxDuration = 60;
+
 const ACCEPTED_MIME_TYPES = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

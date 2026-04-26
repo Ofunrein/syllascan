@@ -222,8 +222,11 @@ export default function FileUploader({
       if (data.events && Array.isArray(data.events) && data.events.length > 0) {
         onEventsExtracted(data.events);
         toast.success(`Successfully extracted ${data.events.length} events`, { id: toastId });
+      } else if (data.errors?.length > 0) {
+        // Show the actual server error so we know what went wrong
+        toast.error(`Extraction failed: ${data.errors[0].error}`, { id: toastId, duration: 6000 });
       } else {
-        toast.error('No events found in the uploaded files', { id: toastId });
+        toast.error(data.message || 'No events found in the uploaded files', { id: toastId });
       }
     } catch (error) {
       console.error('Error extracting events:', error);
