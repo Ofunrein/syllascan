@@ -56,7 +56,15 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="liquid-glass rounded-2xl p-8 max-w-md mx-auto">
+    <div className="rounded-2xl p-8 max-w-md mx-auto w-full"
+      style={{
+        background: 'rgba(10, 10, 20, 0.85)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08), 0 24px 64px rgba(0,0,0,0.6)',
+      }}
+    >
       <h2 className="text-xl font-semibold text-white mb-6 text-center">
         {mode === 'signin' ? 'Sign In' : 'Create Account'}
       </h2>
@@ -64,7 +72,7 @@ export default function AuthForm() {
       <button
         onClick={signInWithGoogle}
         className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
-                   bg-white/10 hover:bg-white/20 text-white transition-colors mb-6"
+                   bg-white/10 hover:bg-white/18 text-white transition-colors mb-6 border border-white/10"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>

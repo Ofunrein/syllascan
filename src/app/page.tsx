@@ -210,23 +210,23 @@ export default function Home() {
       {/* Feature highlights */}
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="liquid-glass rounded-2xl p-5 sm:p-6 text-center">
-          <Sparkles size={28} className="text-white mx-auto mb-3" />
-          <h3 className="text-white font-semibold text-sm mb-1">Smart extraction</h3>
-          <p className="text-white/90 text-xs leading-relaxed">
+          <Sparkles size={28} className="mx-auto mb-3" />
+          <h3 className="font-semibold text-sm mb-1">Smart extraction</h3>
+          <p className="text-xs leading-relaxed opacity-70">
             Upload any document and AI extracts events, deadlines, and assignments automatically.
           </p>
         </div>
         <div className="liquid-glass rounded-2xl p-5 sm:p-6 text-center">
-          <MessageSquare size={28} className="text-white mx-auto mb-3" />
-          <h3 className="text-white font-semibold text-sm mb-1">Natural language</h3>
-          <p className="text-white/90 text-xs leading-relaxed">
+          <MessageSquare size={28} className="mx-auto mb-3" />
+          <h3 className="font-semibold text-sm mb-1">Natural language</h3>
+          <p className="text-xs leading-relaxed opacity-70">
             Type &ldquo;midterm March 15 at 2pm&rdquo; and it creates the event instantly.
           </p>
         </div>
         <div className="liquid-glass rounded-2xl p-5 sm:p-6 text-center">
-          <CalendarSync size={28} className="text-white mx-auto mb-3" />
-          <h3 className="text-white font-semibold text-sm mb-1">Calendar sync</h3>
-          <p className="text-white/90 text-xs leading-relaxed">
+          <CalendarSync size={28} className="mx-auto mb-3" />
+          <h3 className="font-semibold text-sm mb-1">Calendar sync</h3>
+          <p className="text-xs leading-relaxed opacity-70">
             Events sync to Google Calendar with one click. Never miss a deadline again.
           </p>
         </div>

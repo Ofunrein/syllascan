@@ -1,6 +1,7 @@
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+// pdfjs is dynamically imported inside convertPdf() to avoid module-level
+// side effects that corrupt networking in Vercel Lambda environments.
 
 export interface ConvertedContent {
   type: 'text' | 'images';
@@ -48,9 +49,10 @@ export async function convertDocument(
 }
 
 async function convertPdf(buffer: Buffer): Promise<ConvertedContent> {
+  // Dynamic import keeps pdfjs out of the module scope — static imports cause
+  // Lambda networking corruption even for non-PDF requests.
+  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs' as any);
   const uint8 = new Uint8Array(buffer);
-  // disableWorker: true runs pdfjs inline without spawning a worker thread.
-  // Required for serverless (Vercel Lambda) — file:// worker URLs don't work there.
   const pdf = await getDocument({ data: uint8, useSystemFonts: true, disableWorker: true }).promise;
   const numPages = pdf.numPages;
   const allText: string[] = [];
