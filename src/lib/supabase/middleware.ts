@@ -25,7 +25,11 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  // Use getSession() not getUser() — getUser() triggers a server-side token refresh
+  // on every request. Combined with the client-side refresh, this causes double-refresh
+  // within the reuse window, triggering Supabase's replay-attack detection and revoking
+  // the session (making users appear logged out on every visit).
+  await supabase.auth.getSession();
 
   return supabaseResponse;
 }
