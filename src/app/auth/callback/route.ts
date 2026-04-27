@@ -23,12 +23,18 @@ export async function GET(request: Request) {
       const refreshToken = data.session?.provider_refresh_token ?? existingProfile?.google_tokens?.refresh_token ?? null;
       const metadata = user.user_metadata ?? {};
 
+      // Any Google sign-in always requests calendar scopes with prompt:consent,
+      // so mark calendar connected for all Google provider sign-ins regardless
+      // of whether provider_token is present (Supabase PKCE often omits it).
+      const isGoogleSignIn = user.app_metadata?.provider === 'google'
+        || user.app_metadata?.providers?.includes('google');
+
       await serviceClient.from('users').upsert({
         id: user.id,
         email: user.email ?? '',
         display_name: metadata.full_name ?? metadata.name ?? user.email?.split('@')[0] ?? null,
         avatar_url: metadata.avatar_url ?? metadata.picture ?? null,
-        google_calendar_connected: Boolean(accessToken) || Boolean(existingProfile?.google_calendar_connected),
+        google_calendar_connected: isGoogleSignIn || Boolean(accessToken) || Boolean(existingProfile?.google_calendar_connected),
         google_tokens: accessToken
           ? { access_token: accessToken, refresh_token: refreshToken }
           : existingProfile?.google_tokens ?? null,
