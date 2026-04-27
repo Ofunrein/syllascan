@@ -139,9 +139,7 @@ export default function Home() {
               <span className="text-white font-semibold text-base sm:text-lg">SyllaScan</span>
             </Link>
           </div>
-          {loading ? (
-            <div className="h-8 w-20 rounded-full bg-white/10 animate-pulse" />
-          ) : authenticated ? (
+          {authenticated && !loading ? (
             <div className="flex items-center gap-2 sm:gap-3">
               <Link href="/scan" className="text-white text-sm font-medium">Go to scan</Link>
               <button
