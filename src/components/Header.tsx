@@ -96,7 +96,7 @@ export default function Header() {
                     />
                   ) : (
                     <div className="user-initial">
-                      {profile?.display_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      {(profile?.display_name?.charAt(0) || user.email?.charAt(0) || 'U').toUpperCase()}
                     </div>
                   )}
                 </button>

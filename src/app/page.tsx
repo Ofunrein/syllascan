@@ -158,7 +158,7 @@ export default function Home() {
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt={profile.display_name || user?.email || 'User'} className="h-full w-full object-cover" />
                 ) : (
-                  profile?.display_name?.charAt(0) || user?.email?.charAt(0) || 'U'
+                  (profile?.display_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()
                 )}
               </Link>
             </div>
