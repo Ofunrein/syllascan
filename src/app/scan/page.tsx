@@ -69,7 +69,7 @@ export default function ScanPage() {
 
   const tabs: Array<{ id: TabId; label: string; Icon: React.ElementType; badge?: number }> = [
     { id: 'upload', label: 'Upload', Icon: Upload },
-    { id: 'events', label: 'Events', Icon: Calendar, badge: events.length || undefined },
+    { id: 'events', label: 'Events', Icon: Calendar, badge: Math.max(events.length, storedEvents.length) || undefined },
     { id: 'live-calendar', label: 'Live Calendar', Icon: CalendarCheck },
     { id: 'embedded-calendar', label: 'Embedded', Icon: LayoutGrid },
   ];
