@@ -88,7 +88,7 @@ export default function ScanPage() {
       </div>
       <div className="pointer-events-none absolute inset-0 bg-black/70" />
       {isCalendarExpired && <CalendarAuthBanner />}
-      <div className="relative z-10">
+      <div className="relative z-50">
         <Header />
       </div>
 
