@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Instagram, Twitter, Globe, ArrowRight, UploadCloud, Sparkles, MessageSquare, CalendarSync } from 'lucide-react';
+import { Instagram, Twitter, Globe, UploadCloud, Sparkles, MessageSquare, CalendarSync } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import AuthForm from '@/components/AuthForm';
 
@@ -185,16 +185,13 @@ export default function Home() {
         <div className="max-w-lg w-full space-y-4">
           <button
             onClick={startFlow}
-            className="liquid-glass rounded-full pl-4 sm:pl-6 pr-2 py-2 flex min-h-16 items-center gap-3 text-left transition-colors hover:bg-white/5 w-full"
+            className="liquid-glass rounded-full px-6 py-4 flex min-h-16 items-center justify-center gap-3 w-full cursor-pointer transition-all duration-200 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98]"
             aria-label="Upload any document"
             title="Upload any document"
           >
             <UploadCloud size={20} className="shrink-0 text-white" />
-            <span className="flex-1 bg-transparent text-white text-sm sm:text-base outline-none">
+            <span className="text-white text-sm sm:text-base font-medium">
               Upload any document
-            </span>
-            <span className="bg-white rounded-full p-2.5 sm:p-3 text-black flex h-11 w-11 shrink-0 items-center justify-center">
-              <ArrowRight size={18} />
             </span>
           </button>
 
