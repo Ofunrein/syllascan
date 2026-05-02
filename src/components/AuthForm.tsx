@@ -31,7 +31,7 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
       } else {
         const result = await signInWithEmail(email, password);
         if (result.error) setError(result.error);
-        else router.push('/scan');
+        else { onClose?.(); router.push('/scan'); }
       }
     } catch {
       setError('An unexpected error occurred');
@@ -52,7 +52,7 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
 
   return (
     <div
-      style={{ background:'rgba(10,10,20,0.92)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 24px 64px rgba(0,0,0,0.7)' }}
+      style={{ background:'rgba(10,12,22,0.72)', backdropFilter:'blur(28px) saturate(180%)', WebkitBackdropFilter:'blur(28px) saturate(180%)', border:'1px solid rgba(255,255,255,0.13)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.1), 0 24px 64px rgba(0,0,0,0.65)' }}
       className="relative rounded-2xl p-8 max-w-md mx-auto w-full"
     >
       {/* X close */}

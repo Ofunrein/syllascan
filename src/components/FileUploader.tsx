@@ -408,10 +408,15 @@ export default function FileUploader({
           </ul>
 
           {/* Preview pane for active file */}
-          {activeFile && (activeFile.preview || activeFile.isLoading) && (
+          {activeFile && (activeFile.preview || activeFile.isLoading || activeFile.fileType === null) && (
             <div className="preview-pane">
               {activeFile.isLoading ? (
                 <div className="preview-skeleton" />
+              ) : activeFile.fileType === null || (!activeFile.preview && activeFile.fileType !== 'text') ? (
+                <div className="preview-no-preview">
+                  <span className="preview-no-ext">{activeFile.file.name.split('.').pop()?.toUpperCase()}</span>
+                  <span className="preview-no-label">No preview available</span>
+                </div>
               ) : activeFile.fileType === 'text' ? (
                 <pre className="preview-text">{activeFile.preview}</pre>
               ) : (
@@ -659,6 +664,24 @@ export default function FileUploader({
           padding: 0.75rem;
           font-family: ui-monospace, monospace;
           margin: 0;
+        }
+        .preview-no-preview {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 1.5rem 0;
+        }
+        .preview-no-ext {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.35);
+          letter-spacing: 0.1em;
+          font-family: ui-monospace, monospace;
+        }
+        .preview-no-label {
+          font-size: 0.75rem;
+          color: rgba(255,255,255,0.25);
         }
 
         /* PDF nav */

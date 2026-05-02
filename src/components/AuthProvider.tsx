@@ -43,13 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const metadata = user.user_metadata ?? {};
     const displayName = metadata.full_name ?? metadata.name ?? user.email?.split('@')[0] ?? null;
     const avatarUrl = metadata.avatar_url ?? metadata.picture ?? null;
+    const isGoogleOAuth =
+      user.app_metadata?.provider === 'google' ||
+      (Array.isArray(user.app_metadata?.providers) &&
+        (user.app_metadata.providers as string[]).includes('google'));
 
     return {
       id: user.id,
       email: user.email ?? '',
       display_name: displayName,
       avatar_url: avatarUrl,
-      google_calendar_connected: false,
+      google_calendar_connected: isGoogleOAuth,
       google_tokens: null,
       preferences: {
         theme: 'dark',
@@ -147,11 +151,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/';
   };
 
-  const isGoogleUser =
-    user?.app_metadata?.provider === 'google' ||
-    (Array.isArray(user?.app_metadata?.providers) &&
-      (user.app_metadata.providers as string[]).includes('google'));
-
   return (
     <AuthContext.Provider
       value={{
@@ -160,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         loading,
         authenticated: !!user,
-        googleCalendarConnected: effectiveProfile?.google_calendar_connected || isGoogleUser || false,
+        googleCalendarConnected: effectiveProfile?.google_calendar_connected ?? false,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,

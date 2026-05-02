@@ -157,6 +157,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const fileEntries = Array.from(formData.entries()).filter(([key]) => key.startsWith('file'));
 
