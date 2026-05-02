@@ -162,8 +162,11 @@ export default function Home() {
               <button
                 onClick={() => setShowAuth(true)}
                 title="Sign in"
-                className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
+                className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white/10 transition-colors flex items-center gap-2"
               >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />
+                </svg>
                 Sign in
               </button>
             </div>
@@ -185,11 +188,11 @@ export default function Home() {
         <div className="max-w-lg w-full space-y-4">
           <button
             onClick={startFlow}
-            className="liquid-glass rounded-full px-6 py-4 flex min-h-16 items-center justify-center gap-3 w-full cursor-pointer transition-all duration-200 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98]"
+            className="liquid-glass rounded-full px-6 py-4 relative flex min-h-16 items-center justify-center w-full cursor-pointer transition-all duration-200 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98]"
             aria-label="Upload any document"
             title="Upload any document"
           >
-            <UploadCloud size={20} className="shrink-0 text-white" />
+            <UploadCloud size={20} className="absolute left-5 sm:left-6 shrink-0 text-white" />
             <span className="text-white text-sm sm:text-base font-medium">
               Upload any document
             </span>
