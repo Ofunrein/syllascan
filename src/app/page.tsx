@@ -24,13 +24,6 @@ export default function Home() {
     }
   };
 
-  // Redirect authenticated users to upload
-  useEffect(() => {
-    if (authenticated && !loading) {
-      router.push('/scan');
-    }
-  }, [authenticated, loading, router]);
-
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -123,7 +116,7 @@ export default function Home() {
         style={{ opacity: 0 }}
       />
 
-      {/* Landing page nav — clean: logo + sign in / get started */}
+      {/* Landing page nav — clean: logo + account action */}
       <nav className="relative z-20 px-4 sm:px-6 pt-4 sm:pt-6">
         <div className="liquid-glass rounded-full px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between max-w-2xl mx-auto">
           <div className="flex items-center">
@@ -139,11 +132,14 @@ export default function Home() {
               <span className="text-white font-semibold text-base sm:text-lg">SyllaScan</span>
             </Link>
           </div>
-          {authenticated && !loading ? (
+          {loading ? (
+            <div className="h-8 w-24 animate-pulse rounded-full bg-white/10" aria-hidden="true" />
+          ) : authenticated ? (
             <div className="flex items-center gap-2 sm:gap-3">
-              <Link href="/scan" className="text-white text-sm font-medium">Go to scan</Link>
+              <Link href="/scan" className="text-white text-sm font-medium" title="Go to scan">Go to scan</Link>
               <button
                 onClick={signOut}
+                title="Sign out"
                 className="liquid-glass rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
               >
                 Sign out
@@ -152,9 +148,10 @@ export default function Home() {
                 href="/settings"
                 className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/10 text-sm font-semibold text-white"
                 aria-label="Account settings"
+                title="Account settings"
               >
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt={profile.display_name || user?.email || 'User'} className="h-full w-full object-cover" />
+                  <img src={profile.avatar_url} alt={profile.display_name || user?.email || 'User'} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   (profile?.display_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()
                 )}
@@ -164,6 +161,7 @@ export default function Home() {
             <div className="flex items-center">
               <button
                 onClick={() => setShowAuth(true)}
+                title="Sign in"
                 className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
               >
                 Sign in
@@ -187,14 +185,15 @@ export default function Home() {
         <div className="max-w-lg w-full space-y-4">
           <button
             onClick={startFlow}
-            className="liquid-glass rounded-full pl-4 sm:pl-6 pr-2 py-2 flex items-center gap-3 text-left transition-colors hover:bg-white/5 w-full"
+            className="liquid-glass rounded-full pl-4 sm:pl-6 pr-2 py-2 flex min-h-16 items-center gap-3 text-left transition-colors hover:bg-white/5 w-full"
             aria-label="Upload any document"
+            title="Upload any document"
           >
             <UploadCloud size={20} className="shrink-0 text-white" />
             <span className="flex-1 bg-transparent text-white text-sm sm:text-base outline-none">
               Upload any document
             </span>
-            <span className="bg-white rounded-full p-2.5 sm:p-3 text-black flex items-center justify-center">
+            <span className="bg-white rounded-full p-2.5 sm:p-3 text-black flex h-11 w-11 shrink-0 items-center justify-center">
               <ArrowRight size={18} />
             </span>
           </button>

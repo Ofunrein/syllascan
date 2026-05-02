@@ -38,7 +38,7 @@ export default function OAuthCallback() {
           body: JSON.stringify({
             code,
             state: state || 'calendar',
-            redirectUri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI,
+            redirectUri: `${window.location.origin}/oauth2callback`,
           }),
         });
         
@@ -95,4 +95,4 @@ export default function OAuthCallback() {
       </div>
     </div>
   );
-} 
+}

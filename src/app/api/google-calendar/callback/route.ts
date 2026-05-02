@@ -21,8 +21,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/?error=not_authenticated`);
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
-  const redirectUri = `${appUrl}/api/google-calendar/callback`;
+  const redirectUri = `${origin}/api/google-calendar/callback`;
 
   console.log('[calendar-callback] Exchanging code for tokens, redirect_uri:', redirectUri);
 

@@ -8,7 +8,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    const proto = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const redirectUri = `${proto}://${host}/oauth2callback`;
     
     // Get the state parameter from the query string
     const { state, prompt } = req.query;
@@ -18,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Otherwise, use 'consent' to ensure we get a refresh token
     const promptParam = prompt === 'select_account' ? 'select_account' : 'consent';
 
-    if (!clientId || !clientSecret || !redirectUri) {
+    if (!clientId || !clientSecret || !host) {
       console.error('OAuth configuration missing');
       return res.status(500).json({ error: 'OAuth configuration missing' });
     }

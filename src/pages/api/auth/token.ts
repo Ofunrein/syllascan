@@ -15,7 +15,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Exchange the code for tokens
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const actualRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    const proto = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const actualRedirectUri = redirectUri || (host ? `${proto}://${host}/oauth2callback` : null);
 
     if (!clientId || !clientSecret || !actualRedirectUri) {
       console.error('OAuth configuration missing');
@@ -90,4 +92,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error handling token exchange:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-} 
+}

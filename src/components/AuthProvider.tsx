@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   useCallback,
   type ReactNode,
@@ -35,6 +36,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
+
+  const effectiveProfile = useMemo<UserProfile | null>(() => {
+    if (profile || !user) return profile;
+
+    const metadata = user.user_metadata ?? {};
+    const displayName = metadata.full_name ?? metadata.name ?? user.email?.split('@')[0] ?? null;
+    const avatarUrl = metadata.avatar_url ?? metadata.picture ?? null;
+
+    return {
+      id: user.id,
+      email: user.email ?? '',
+      display_name: displayName,
+      avatar_url: avatarUrl,
+      google_calendar_connected: false,
+      google_tokens: null,
+      preferences: {
+        theme: 'dark',
+        default_view: 'month',
+        auto_sync_google: false,
+      },
+      created_at: '',
+      updated_at: '',
+    };
+  }, [profile, user]);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -126,11 +151,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        profile,
+        profile: effectiveProfile,
         session,
         loading,
         authenticated: !!user,
-        googleCalendarConnected: profile?.google_calendar_connected ?? false,
+        googleCalendarConnected: effectiveProfile?.google_calendar_connected ?? false,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,

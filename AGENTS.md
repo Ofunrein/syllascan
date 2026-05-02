@@ -4,7 +4,7 @@
 - Next.js 15.2.0 (App Router), TypeScript, React 19.
 - Tailwind CSS 4, Shadcn UI.
 - OpenAI Vision (gpt-4o) for OCR.
-- Firebase for backend services.
+- Supabase for backend services.
 
 ## Code Style
 - Use PascalCase for React components in `src/components/`.

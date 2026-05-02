@@ -42,14 +42,13 @@ After the scan, if a revision is needed, you can edit events manually or use the
 - React Big Calendar for the calendar view
 
 **Backend:**
-- Firebase (Auth + Firestore)
+- Supabase (Auth + database)
 - OpenAI Vision API for the actual document reading
 - Google Calendar API
 - Hosted on Vercel
 
 **Other stuff:**
 - PDF.js for rendering PDFs
-- NextAuth for handling OAuth
 
 ## Getting Started
 
@@ -69,7 +68,7 @@ npm install
 ```
 
 Copy `.env.example` to `.env` and add your API keys:
-- Firebase config
+- Supabase config
 - OpenAI API key
 - Google OAuth credentials
 
@@ -87,7 +86,7 @@ Visit `http://localhost:3000`
 3. OpenAI returns structured data with dates, titles, and descriptions
 4. You can edit these events on the frontend
 5. When you're happy with them, click to add them to Google Calendar via their API
-6. Everything gets saved to Firestore so you can see your processing history
+6. Everything gets saved to Supabase so you can see your processing history
 
 ## Limitations
 

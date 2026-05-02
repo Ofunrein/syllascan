@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || origin}/api/google-calendar/callback`;
+  const redirectUri = `${origin}/api/google-calendar/callback`;
   const next = searchParams.get('next') || '/scan#live-calendar';
   const scopes = [
     'https://www.googleapis.com/auth/calendar.events',

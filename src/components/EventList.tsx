@@ -29,6 +29,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   const { user, authenticated, googleCalendarConnected } = useAuth();
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
+  const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ event: Event; index: number } | null>(null);
   const [localEvents, setLocalEvents] = useState<Event[]>([]);
   const [editorPosition, setEditorPosition] = useState<{
@@ -356,6 +357,21 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     }
   };
 
+  const handleConnectCalendar = async () => {
+    setIsConnectingCalendar(true);
+    try {
+      const res = await fetch(`/api/google-calendar/authorize?next=${encodeURIComponent('/scan#events')}`);
+      if (!res.ok) throw new Error('Failed to start Google Calendar authorization');
+      const { url } = await res.json();
+      if (!url) throw new Error('Missing Google authorization URL');
+      window.location.href = url;
+    } catch (error) {
+      console.error('Error connecting Google Calendar:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to connect Google Calendar');
+      setIsConnectingCalendar(false);
+    }
+  };
+
   if (localEvents.length === 0) {
     return null;
   }
@@ -504,7 +520,15 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
         {authenticated && !googleCalendarConnected && (
           <div className="auth-message">
-            Please grant calendar access to add events
+            <span>Please grant calendar access to add events.</span>
+            <button
+              type="button"
+              onClick={handleConnectCalendar}
+              disabled={isConnectingCalendar}
+              className="calendar-connect-button"
+            >
+              {isConnectingCalendar ? 'Opening Google...' : 'Connect Google Calendar'}
+            </button>
           </div>
         )}
       </div>
@@ -907,10 +931,35 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           color: rgba(255, 255, 255, 0.68);
           opacity: 0.7;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.625rem;
         }
 
         :global(.dark) .auth-message {
           color: rgba(255, 255, 255, 0.7);
+        }
+
+        .calendar-connect-button {
+          padding: 0.5rem 0.875rem;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s, opacity 0.2s;
+        }
+
+        .calendar-connect-button:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.18);
+        }
+
+        .calendar-connect-button:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
         }
 
         .calendar-container {
