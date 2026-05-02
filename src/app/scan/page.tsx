@@ -12,12 +12,14 @@ import CalendarAuthBanner from '@/components/CalendarAuthBanner';
 import { Upload, Calendar, CalendarCheck, LayoutGrid } from 'lucide-react';
 import { useEventStore } from '@/lib/stores/eventStore';
 import { useAuth } from '@/components/AuthProvider';
+import AuthForm from '@/components/AuthForm';
 
 export default function ScanPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
   const [isCalendarExpired, setIsCalendarExpired] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents, fetchEvents } = useEventStore();
   const { user, authenticated } = useAuth();
 
@@ -144,6 +146,7 @@ export default function ScanPage() {
                 onEventsExtracted={handleEventsExtracted}
                 isProcessing={isProcessing}
                 setIsProcessing={setIsProcessing}
+                onRequireAuth={() => setShowAuth(true)}
               />
             )}
             {activeTab === 'events' && (
@@ -172,6 +175,17 @@ export default function ScanPage() {
         {' | '}
         <a href="/terms-of-service" className="text-white/45 hover:text-white">Terms of Service</a>
       </footer>
+
+      {showAuth && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={() => setShowAuth(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <AuthForm onClose={() => setShowAuth(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

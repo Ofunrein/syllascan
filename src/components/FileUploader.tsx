@@ -11,6 +11,7 @@ interface FileUploaderProps {
   onEventsExtracted: (events: Event[]) => void;
   isProcessing: boolean;
   setIsProcessing: (isProcessing: boolean) => void;
+  onRequireAuth?: () => void;
 }
 
 interface FileWithPreview {
@@ -25,7 +26,8 @@ interface FileWithPreview {
 export default function FileUploader({
   onEventsExtracted,
   isProcessing,
-  setIsProcessing
+  setIsProcessing,
+  onRequireAuth,
 }: FileUploaderProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
@@ -219,6 +221,11 @@ export default function FileUploader({
       return;
     }
 
+    if (!authenticated && onRequireAuth) {
+      onRequireAuth();
+      return;
+    }
+
     setIsProcessing(true);
     const toastId = toast.loading('Processing files...');
 
@@ -256,7 +263,7 @@ export default function FileUploader({
     } finally {
       setIsProcessing(false);
     }
-  }, [files, setIsProcessing, onEventsExtracted]);
+  }, [files, setIsProcessing, onEventsExtracted, authenticated, onRequireAuth]);
 
   const clearAllFiles = useCallback(() => {
     setFiles([]);

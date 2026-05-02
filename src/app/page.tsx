@@ -17,11 +17,7 @@ export default function Home() {
   const { user, profile, authenticated, loading, signOut } = useAuth();
 
   const startFlow = () => {
-    if (authenticated) {
-      router.push('/scan');
-    } else {
-      setShowAuth(true);
-    }
+    router.push('/scan');
   };
 
   useEffect(() => {
