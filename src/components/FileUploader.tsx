@@ -39,7 +39,7 @@ export default function FileUploader({
 
   const createPreview = useCallback(async (selectedFile: File): Promise<FileWithPreview> => {
     // Images — generate preview in browser
-    if (selectedFile.type.startsWith('image/')) {
+    if (selectedFile.type.startsWith('image/') && selectedFile.type !== 'image/heic' && selectedFile.type !== 'image/heif') {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve({
@@ -58,12 +58,34 @@ export default function FileUploader({
       });
     }
 
-    // All document types (PDF, DOCX, XLSX, etc.) — add instantly, no browser preview
-    // pdfjs in browser is unreliable; server handles extraction
+    // PDFs — render page 1 via pdfjs
+    if (selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf')) {
+      try {
+        const [imageDataUrl, pageCount] = await Promise.all([
+          convertPdfToImage(selectedFile, 1),
+          getPdfPageCount(selectedFile),
+        ]);
+        return {
+          file: selectedFile,
+          preview: imageDataUrl,
+          fileType: 'pdf',
+          pdfPageCount: pageCount,
+          currentPdfPage: 1,
+          isLoading: false,
+        };
+      } catch {
+        return {
+          file: selectedFile, preview: null, fileType: 'pdf',
+          pdfPageCount: 0, currentPdfPage: 1, isLoading: false,
+        };
+      }
+    }
+
+    // All other document types — no browser preview
     return {
       file: selectedFile,
       preview: null,
-      fileType: selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : null,
+      fileType: null,
       pdfPageCount: 0,
       currentPdfPage: 1,
       isLoading: false,
@@ -113,7 +135,7 @@ export default function FileUploader({
     onDrop,
     // No strict accept filter — rely on extension matching, reject only truly unsupported
     accept: {
-      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.svg'],
+      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.svg', '.heic', '.heif'],
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
