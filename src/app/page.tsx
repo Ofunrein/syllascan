@@ -136,7 +136,7 @@ export default function Home() {
               <button
                 onClick={signOut}
                 title="Sign out"
-                className="liquid-glass rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
+                className="liquid-glass rounded-full px-4 sm:px-5 py-1.5 sm:py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors cursor-pointer"
               >
                 Sign out
               </button>
@@ -158,7 +158,7 @@ export default function Home() {
               <button
                 onClick={() => setShowAuth(true)}
                 title="Sign in"
-                className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white/10 transition-colors flex items-center gap-2"
+                className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white/10 transition-colors flex items-center gap-2 cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor" />

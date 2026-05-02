@@ -41,6 +41,9 @@ export async function convertDocument(
     case 'rtf':
     case 'html':
     case 'htm':
+    case 'ics':
+    case 'ical':
+    case 'md':
       return convertText(buffer);
     default:
       // Try as text fallback

@@ -57,7 +57,7 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
     >
       {/* X close */}
       {onClose && (
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/8 transition-colors text-lg leading-none">
+        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/8 transition-colors text-lg leading-none cursor-pointer">
           ×
         </button>
       )}
@@ -80,14 +80,14 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
         <button
           type="button"
           onClick={() => { setMode('signin'); setError(null); }}
-          className={`flex-1 py-2.5 rounded-full text-sm font-semibold tracking-wide uppercase transition-all ${mode === 'signin' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+          className={`flex-1 py-2.5 rounded-full text-sm font-semibold tracking-wide uppercase transition-all cursor-pointer ${mode === 'signin' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
         >
           Log In
         </button>
         <button
           type="button"
           onClick={() => { setMode('signup'); setError(null); }}
-          className={`flex-1 py-2.5 rounded-full text-sm font-semibold tracking-wide uppercase transition-all ${mode === 'signup' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+          className={`flex-1 py-2.5 rounded-full text-sm font-semibold tracking-wide uppercase transition-all cursor-pointer ${mode === 'signup' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
         >
           Sign Up
         </button>
@@ -96,7 +96,7 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
       {/* Google */}
       <button
         onClick={signInWithGoogle}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/8 hover:bg-white/15 text-white transition-colors mb-5 border border-white/10 text-sm font-medium"
+        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/8 hover:bg-white/15 text-white transition-colors mb-5 border border-white/10 text-sm font-medium cursor-pointer"
       >
         <svg className="w-4.5 h-4.5 flex-shrink-0" viewBox="0 0 24 24" width="18" height="18">
           <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -156,7 +156,7 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3.5 rounded-full bg-white text-black font-semibold uppercase tracking-widest text-sm hover:bg-white/90 transition-all disabled:opacity-50 mt-1"
+          className="w-full py-3.5 rounded-full bg-white text-black font-semibold uppercase tracking-widest text-sm hover:bg-white/90 transition-all disabled:opacity-50 mt-1 cursor-pointer"
         >
           {loading ? '...' : mode === 'signin' ? 'Log In' : 'Create Account'}
         </button>

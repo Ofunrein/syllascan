@@ -17,6 +17,7 @@ const ACCEPTED_MIME_TYPES = new Set([
   'text/plain',
   'text/rtf',
   'text/html',
+  'text/calendar',
   'application/rtf',
 ]);
 

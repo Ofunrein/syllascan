@@ -17,7 +17,7 @@ interface FileUploaderProps {
 interface FileWithPreview {
   file: File;
   preview: string | null;
-  fileType: 'image' | 'pdf' | null;
+  fileType: 'image' | 'pdf' | 'text' | null;
   pdfPageCount: number;
   currentPdfPage: number;
   isLoading: boolean;
@@ -81,6 +81,32 @@ export default function FileUploader({
           pdfPageCount: 0, currentPdfPage: 1, isLoading: false,
         };
       }
+    }
+
+    // Text-based files — read first 1200 chars for preview
+    const textExts = ['txt', 'md', 'csv', 'html', 'htm', 'rtf', 'gdoc', 'ics', 'ical'];
+    const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() ?? '';
+    const isTextFile = selectedFile.type.startsWith('text/') || textExts.includes(fileExt);
+    if (isTextFile) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = (reader.result as string).slice(0, 1200);
+          resolve({
+            file: selectedFile,
+            preview: text,
+            fileType: 'text',
+            pdfPageCount: 0,
+            currentPdfPage: 1,
+            isLoading: false,
+          });
+        };
+        reader.onerror = () => resolve({
+          file: selectedFile, preview: null, fileType: 'text',
+          pdfPageCount: 0, currentPdfPage: 1, isLoading: false,
+        });
+        reader.readAsText(selectedFile);
+      });
     }
 
     // All other document types — no browser preview
@@ -148,7 +174,8 @@ export default function FileUploader({
       'text/plain': ['.txt', '.md'],
       'text/html': ['.html', '.htm'],
       'application/rtf': ['.rtf'],
-      'application/octet-stream': ['.pdf', '.docx', '.pptx', '.xlsx'], // fallback for wrong MIME
+      'text/calendar': ['.ics', '.ical'],
+      'application/octet-stream': ['.pdf', '.docx', '.pptx', '.xlsx', '.ics'], // fallback for wrong MIME
     },
     onDropRejected: (rejections) => {
       const names = rejections.map(r => r.file.name).join(', ');
@@ -385,6 +412,8 @@ export default function FileUploader({
             <div className="preview-pane">
               {activeFile.isLoading ? (
                 <div className="preview-skeleton" />
+              ) : activeFile.fileType === 'text' ? (
+                <pre className="preview-text">{activeFile.preview}</pre>
               ) : (
                 <>
                   <img src={activeFile.preview!} alt={activeFile.file.name} className="preview-img" />
@@ -614,6 +643,22 @@ export default function FileUploader({
           max-width: 100%;
           object-fit: contain;
           border-radius: 0.5rem;
+        }
+        .preview-text {
+          width: 100%;
+          max-height: 200px;
+          overflow-y: auto;
+          font-size: 0.75rem;
+          line-height: 1.5;
+          color: rgba(255,255,255,0.7);
+          white-space: pre-wrap;
+          word-break: break-word;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 0.5rem;
+          padding: 0.75rem;
+          font-family: ui-monospace, monospace;
+          margin: 0;
         }
 
         /* PDF nav */
