@@ -17,6 +17,7 @@ import AuthForm from '@/components/AuthForm';
 export default function ScanPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
   const [isCalendarExpired, setIsCalendarExpired] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -147,6 +148,8 @@ export default function ScanPage() {
                 isProcessing={isProcessing}
                 setIsProcessing={setIsProcessing}
                 onRequireAuth={() => setShowAuth(true)}
+                externalFiles={pendingFiles}
+                setExternalFiles={setPendingFiles}
               />
             )}
             {activeTab === 'events' && (

@@ -12,6 +12,8 @@ interface FileUploaderProps {
   isProcessing: boolean;
   setIsProcessing: (isProcessing: boolean) => void;
   onRequireAuth?: () => void;
+  externalFiles?: FileWithPreview[];
+  setExternalFiles?: (files: FileWithPreview[]) => void;
 }
 
 interface FileWithPreview {
@@ -28,8 +30,12 @@ export default function FileUploader({
   isProcessing,
   setIsProcessing,
   onRequireAuth,
+  externalFiles,
+  setExternalFiles,
 }: FileUploaderProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const effectiveFiles = externalFiles ?? files;
+  const effectiveSetFiles = setExternalFiles ?? setFiles;
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const [mounted, setMounted] = useState(false);
   const { user, authenticated } = useAuth();
@@ -136,7 +142,7 @@ export default function FileUploader({
       if (pastedFiles.length > 0) {
         e.preventDefault();
         const newPreviews = await Promise.all(pastedFiles.map(f => createPreview(f)));
-        setFiles(prev => [...prev, ...newPreviews]);
+        effectiveSetFiles([...effectiveFiles, ...newPreviews]);
         toast.success(`Pasted ${pastedFiles.length} file${pastedFiles.length > 1 ? 's' : ''}`);
       }
     };
@@ -148,11 +154,9 @@ export default function FileUploader({
     if (acceptedFiles.length === 0) return;
     try {
       const newFiles = await Promise.all(acceptedFiles.map(f => createPreview(f)));
-      setFiles(prev => {
-        const updated = [...prev, ...newFiles];
-        setActiveFileIndex(prev.length); // index of first newly added file
-        return updated;
-      });
+      const updated = [...effectiveFiles, ...newFiles];
+      setActiveFileIndex(effectiveFiles.length);
+      effectiveSetFiles(updated);
     } catch (error) {
       console.error('Error processing files:', error);
       toast.error('Error processing files');
@@ -188,62 +192,48 @@ export default function FileUploader({
   });
 
   const handlePdfPageChange = useCallback(async (fileIndex: number, newPage: number) => {
-    const file = files[fileIndex];
+    const file = effectiveFiles[fileIndex];
     if (!file || file.fileType !== 'pdf' || newPage < 1 || newPage > file.pdfPageCount) {
       return;
     }
 
     try {
-      setFiles(prevFiles => {
-        const updatedFiles = [...prevFiles];
-        updatedFiles[fileIndex] = {
-          ...updatedFiles[fileIndex],
-          isLoading: true
-        };
-        return updatedFiles;
-      });
+      const updatedLoading = [...effectiveFiles];
+      updatedLoading[fileIndex] = { ...updatedLoading[fileIndex], isLoading: true };
+      effectiveSetFiles(updatedLoading);
 
       const imageDataUrl = await convertPdfToImage(file.file, newPage);
 
-      setFiles(prevFiles => {
-        const updatedFiles = [...prevFiles];
-        updatedFiles[fileIndex] = {
-          ...updatedFiles[fileIndex],
-          preview: imageDataUrl,
-          currentPdfPage: newPage,
-          isLoading: false
-        };
-        return updatedFiles;
-      });
+      const updatedDone = [...effectiveFiles];
+      updatedDone[fileIndex] = {
+        ...updatedDone[fileIndex],
+        preview: imageDataUrl,
+        currentPdfPage: newPage,
+        isLoading: false,
+      };
+      effectiveSetFiles(updatedDone);
     } catch (error) {
       console.error('Error changing PDF page:', error);
       toast.error('Error changing PDF page');
 
-      setFiles(prevFiles => {
-        const updatedFiles = [...prevFiles];
-        updatedFiles[fileIndex] = {
-          ...updatedFiles[fileIndex],
-          isLoading: false
-        };
-        return updatedFiles;
-      });
+      const updatedErr = [...effectiveFiles];
+      updatedErr[fileIndex] = { ...updatedErr[fileIndex], isLoading: false };
+      effectiveSetFiles(updatedErr);
     }
-  }, [files]);
+  }, [effectiveFiles, effectiveSetFiles]);
 
   const removeFile = useCallback((index: number) => {
-    setFiles(prevFiles => {
-      const newFiles = prevFiles.filter((_, i) => i !== index);
-      if (activeFileIndex >= newFiles.length && newFiles.length > 0) {
-        setActiveFileIndex(newFiles.length - 1);
-      } else if (newFiles.length === 0) {
-        setActiveFileIndex(0);
-      }
-      return newFiles;
-    });
-  }, [activeFileIndex]);
+    const newFiles = effectiveFiles.filter((_, i) => i !== index);
+    if (activeFileIndex >= newFiles.length && newFiles.length > 0) {
+      setActiveFileIndex(newFiles.length - 1);
+    } else if (newFiles.length === 0) {
+      setActiveFileIndex(0);
+    }
+    effectiveSetFiles(newFiles);
+  }, [effectiveFiles, effectiveSetFiles, activeFileIndex]);
 
   const extractEvents = useCallback(async () => {
-    if (files.length === 0) {
+    if (effectiveFiles.length === 0) {
       toast.error('Please upload at least one file');
       return;
     }
@@ -259,7 +249,7 @@ export default function FileUploader({
     try {
       // Prepare the files for upload
       const formData = new FormData();
-      files.forEach((fileWithPreview, index) => {
+      effectiveFiles.forEach((fileWithPreview, index) => {
         formData.append(`file${index}`, fileWithPreview.file);
       });
 
@@ -277,6 +267,7 @@ export default function FileUploader({
 
       if (data.events && Array.isArray(data.events) && data.events.length > 0) {
         onEventsExtracted(data.events);
+        effectiveSetFiles([]);
         toast.success(`Successfully extracted ${data.events.length} events`, { id: toastId });
       } else if (data.errors?.length > 0) {
         // Show the actual server error so we know what went wrong
@@ -290,12 +281,12 @@ export default function FileUploader({
     } finally {
       setIsProcessing(false);
     }
-  }, [files, setIsProcessing, onEventsExtracted, authenticated, onRequireAuth]);
+  }, [effectiveFiles, effectiveSetFiles, setIsProcessing, onEventsExtracted, authenticated, onRequireAuth]);
 
   const clearAllFiles = useCallback(() => {
-    setFiles([]);
+    effectiveSetFiles([]);
     setActiveFileIndex(0);
-  }, []);
+  }, [effectiveSetFiles]);
 
   // Clean up previews when component unmounts
   useEffect(() => {
@@ -308,7 +299,7 @@ export default function FileUploader({
     };
   }, [files]);
 
-  const activeFile = files[activeFileIndex];
+  const activeFile = effectiveFiles[activeFileIndex];
 
   // SSR skeleton
   if (!mounted) {
@@ -324,7 +315,7 @@ export default function FileUploader({
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {files.length === 0 ? (
+      {effectiveFiles.length === 0 ? (
         /* ── Empty state: full drag-drop zone ── */
         <div
           {...getRootProps()}
@@ -350,7 +341,7 @@ export default function FileUploader({
         <div className="files-panel">
           {/* Header bar */}
           <div className="files-header">
-            <span className="files-count">{files.length} {files.length === 1 ? 'file' : 'files'}</span>
+            <span className="files-count">{effectiveFiles.length} {effectiveFiles.length === 1 ? 'file' : 'files'}</span>
             <div className="files-actions">
               <div {...getRootProps()} className="action-link">
                 <input {...getInputProps()} />
@@ -366,7 +357,7 @@ export default function FileUploader({
 
           {/* File list */}
           <ul className="file-list">
-            {files.map((file, index) => {
+            {effectiveFiles.map((file, index) => {
               const ext = file.file.name.split('.').pop()?.toUpperCase() ?? 'FILE';
               const isActive = index === activeFileIndex;
               return (
@@ -451,7 +442,7 @@ export default function FileUploader({
             <button
               type="button"
               onClick={extractEvents}
-              disabled={files.length === 0 || isProcessing}
+              disabled={effectiveFiles.length === 0 || isProcessing}
               className="extract-btn"
             >
               {isProcessing ? (
