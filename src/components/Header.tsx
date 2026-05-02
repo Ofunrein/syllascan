@@ -13,6 +13,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,12 +90,13 @@ export default function Header() {
                   aria-label="User menu"
                   title="User menu"
                 >
-                  {profile?.avatar_url ? (
+                  {profile?.avatar_url && !avatarError ? (
                     <img
                       src={profile.avatar_url}
                       alt={profile.display_name || 'User profile'}
                       className="user-avatar"
                       referrerPolicy="no-referrer"
+                      onError={() => setAvatarError(true)}
                     />
                   ) : (
                     <div className="user-initial">

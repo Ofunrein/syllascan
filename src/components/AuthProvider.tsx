@@ -147,6 +147,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/';
   };
 
+  const isGoogleUser =
+    user?.app_metadata?.provider === 'google' ||
+    (Array.isArray(user?.app_metadata?.providers) &&
+      (user.app_metadata.providers as string[]).includes('google'));
+
   return (
     <AuthContext.Provider
       value={{
@@ -155,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         loading,
         authenticated: !!user,
-        googleCalendarConnected: effectiveProfile?.google_calendar_connected ?? false,
+        googleCalendarConnected: effectiveProfile?.google_calendar_connected || isGoogleUser || false,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
