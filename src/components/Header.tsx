@@ -49,7 +49,11 @@ export default function Header() {
         <div className="header-content">
           {/* Logo */}
           <div className="logo-container">
-            <Link href={logoHref} className="logo">
+            <Link
+              href={logoHref}
+              className="logo"
+              style={{ display: 'inline-flex', flexDirection: 'row', alignItems: 'center', gap: '0.55rem' }}
+            >
               <svg className="logo-icon-svg w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" />
                 <line x1="16" y1="2" x2="16" y2="6" />
@@ -112,16 +116,16 @@ export default function Header() {
                       <div className="user-email">{user.email || ''}</div>
                     </div>
                     <Link href="/scan#events" className="menu-item" onClick={() => setUserMenuOpen(false)}>
-                      <LayoutDashboard size={15} strokeWidth={2} />
+                      <span className="menu-item-icon"><LayoutDashboard size={15} strokeWidth={2} /></span>
                       <span className="menu-item-label">My Events</span>
                     </Link>
                     <Link href="/settings" className="menu-item" onClick={() => setUserMenuOpen(false)}>
-                      <Settings size={15} strokeWidth={2} />
+                      <span className="menu-item-icon"><Settings size={15} strokeWidth={2} /></span>
                       <span className="menu-item-label">Settings</span>
                     </Link>
                     <div className="menu-divider" />
                     <button onClick={signOut} className="menu-item menu-item--danger">
-                      <LogOut size={15} strokeWidth={2} />
+                      <span className="menu-item-icon"><LogOut size={15} strokeWidth={2} /></span>
                       <span className="menu-item-label">Sign out</span>
                     </button>
                   </div>
@@ -323,14 +327,14 @@ export default function Header() {
           position: absolute;
           top: calc(100% + 0.85rem);
           right: 0;
-          width: 320px;
+          width: 278px;
           max-width: calc(100vw - 2rem);
           background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-radius: 1rem;
+          border-radius: 0.95rem;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-          padding: 0.8rem 0;
+          padding: 0.45rem 0;
           z-index: 100;
           border: 1px solid rgba(0, 0, 0, 0.08);
           overflow: hidden;
@@ -342,19 +346,20 @@ export default function Header() {
         }
 
         .user-info {
-          padding: 1.2rem 1.45rem 1.25rem;
+          padding: 0.9rem 1.1rem 0.95rem;
           border-bottom: 1px solid var(--border);
-          margin-bottom: 0.55rem;
+          margin-bottom: 0.25rem;
         }
 
-        .user-name { font-weight: 700; color: #111827; font-size: 1.08rem; font-family: var(--font-heading); line-height: 1.2; }
+        .user-name { font-weight: 700; color: #111827; font-size: 0.98rem; font-family: var(--font-heading); line-height: 1.2; }
         :global(.dark) .user-name { color: #fff; }
-        .user-email { color: rgba(0, 0, 0, 0.45); font-size: 0.9rem; margin-top: 0.45rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-email { color: rgba(0, 0, 0, 0.45); font-size: 0.82rem; margin-top: 0.3rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         :global(.dark) .user-email { color: rgba(255, 255, 255, 0.45); }
-        .menu-item { display: grid; grid-template-columns: 1.45rem minmax(0, 1fr); align-items: center; column-gap: 1.15rem; padding: 1.05rem 1.45rem; color: rgba(0, 0, 0, 0.75); font-size: 1.06rem; line-height: 1.2; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 650; font-family: var(--font-body); }
-        .menu-item + .menu-item { margin-top: 0.45rem; }
-        .menu-item :global(svg) { width: 1.25rem !important; height: 1.25rem !important; justify-self: center; }
-        .menu-item-label { min-width: 0; }
+        .menu-item { display: flex; align-items: center; gap: 0.85rem; min-height: 2.7rem; padding: 0.62rem 1.1rem; color: rgba(0, 0, 0, 0.75); font-size: 0.96rem; line-height: 1.2; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 650; font-family: var(--font-body); }
+        .menu-item + .menu-item { margin-top: 0.1rem; }
+        .menu-item-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; flex: 0 0 1.15rem; }
+        .menu-item-icon :global(svg) { width: 1.05rem !important; height: 1.05rem !important; display: block !important; }
+        .menu-item-label { display: block; min-width: 0; }
         .menu-item:hover { background-color: rgba(0, 0, 0, 0.04); }
         :global(.dark) .menu-item { color: rgba(255, 255, 255, 0.85); }
         :global(.dark) .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
@@ -362,7 +367,7 @@ export default function Header() {
         .menu-divider {
           height: 1px;
           background: var(--border);
-          margin: 0.45rem 0;
+          margin: 0.25rem 0;
         }
 
         .menu-item--danger {
