@@ -236,6 +236,7 @@ export default function Header() {
           gap: 0.5rem;
           text-decoration: none;
           transition: opacity 0.2s;
+          white-space: nowrap;
         }
 
         .logo:hover {
@@ -243,7 +244,7 @@ export default function Header() {
           text-decoration: none;
         }
 
-        .logo :global(.syllascan-logo) { color: #111827 !important; }
+        .logo :global(.syllascan-logo) { color: #111827 !important; display: inline-block; line-height: 1; }
         :global(.dark) .logo :global(.syllascan-logo) { color: #fff !important; }
         .logo-icon-svg { color: #111827 !important; flex-shrink: 0; }
         :global(.dark) .logo-icon-svg { color: #fff !important; }

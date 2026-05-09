@@ -116,7 +116,7 @@ export default function Home() {
       <nav className="relative z-20 px-4 sm:px-6 pt-4 sm:pt-6">
         <div className="liquid-glass rounded-full px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between max-w-2xl mx-auto">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 whitespace-nowrap">
               <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" />
                 <line x1="16" y1="2" x2="16" y2="6" />
@@ -239,8 +239,8 @@ export default function Home() {
 
       {/* Auth modal */}
       {showAuth && !authenticated && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAuth(false)}>
-          <div onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setShowAuth(false)}>
+          <div className="w-full max-w-[760px]" onClick={(e) => e.stopPropagation()}>
             <AuthForm />
           </div>
         </div>

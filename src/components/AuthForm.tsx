@@ -53,7 +53,7 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
   return (
     <div
       style={{ background:'rgba(10,12,22,0.72)', backdropFilter:'blur(28px) saturate(180%)', WebkitBackdropFilter:'blur(28px) saturate(180%)', border:'1px solid rgba(255,255,255,0.13)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.1), 0 24px 64px rgba(0,0,0,0.65)' }}
-      className="relative rounded-2xl p-8 max-w-md mx-auto w-full"
+      className="auth-shell relative rounded-2xl p-6 sm:p-8 max-w-md mx-auto w-full"
     >
       {/* X close */}
       {onClose && (
@@ -62,6 +62,23 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
         </button>
       )}
 
+      <div className="auth-desktop-copy">
+        <div className="auth-desktop-logo">
+          <svg className="w-7 h-7 text-white flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+            <line x1="7" y1="14" x2="17" y2="14" strokeOpacity="0.5" />
+            <line x1="7" y1="17" x2="13" y2="17" strokeOpacity="0.5" />
+          </svg>
+          <span>SyllaScan</span>
+        </div>
+        <h2>Academic dates, cleaned before they hit your calendar.</h2>
+        <p>Sign in to scan documents, review extracted events, edit them, then sync to Google Calendar.</p>
+      </div>
+
+      <div className="auth-form-stack">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-7">
         <svg className="w-6 h-6 text-white flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -161,6 +178,72 @@ export default function AuthForm({ onClose }: AuthFormProps = {}) {
           {loading ? '...' : mode === 'signin' ? 'Log In' : 'Create Account'}
         </button>
       </form>
+      </div>
+
+      <style jsx>{`
+        .auth-desktop-copy {
+          display: none;
+        }
+
+        .auth-form-stack {
+          min-width: 0;
+        }
+
+        @media (min-width: 768px) {
+          .auth-shell {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1fr);
+            gap: 2rem;
+            max-width: 760px;
+            align-items: center;
+          }
+
+          .auth-desktop-copy {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 28rem;
+            padding-right: 1rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+          }
+
+          .auth-desktop-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            color: white;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            white-space: nowrap;
+          }
+
+          .auth-desktop-copy h2 {
+            max-width: 16rem;
+            margin: 0 0 1rem;
+            color: white;
+            font-size: 1.55rem;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+          }
+
+          .auth-desktop-copy p {
+            max-width: 17rem;
+            margin: 0;
+            color: rgba(255, 255, 255, 0.58);
+            font-size: 0.9rem;
+            line-height: 1.55;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .auth-shell {
+            padding: 1.25rem;
+            border-radius: 1rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

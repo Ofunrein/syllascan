@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event } from '@/lib/openai';
-import { format, parseISO } from 'date-fns';
+import {
+  addDays,
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameDay,
+  parseISO,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from 'date-fns';
 import { useAuth } from '@/components/AuthProvider';
 import toast from 'react-hot-toast';
 import EventEditor from './EventEditor';
@@ -39,7 +51,8 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     height: number;
   } | null>(null);
   const [editorMode, setEditorMode] = useState<EditorMode>(EditorMode.Edit);
-  const [reviewMode, setReviewMode] = useState<'list' | 'calendar' | 'table'>('list');
+  const [reviewMode, setReviewMode] = useState<'list' | 'day' | 'week' | 'month' | 'fourMonth'>('list');
+  const [calendarAnchorDate, setCalendarAnchorDate] = useState(new Date());
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -58,6 +71,15 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   useEffect(() => {
     setLocalEvents(events);
     setSelectedEvents(new Set(events.map((_, i) => i)));
+    const firstDate = events
+      .map(event => event.date || event.startDate)
+      .find(Boolean);
+    if (firstDate) {
+      try {
+        const parsed = parseISO(firstDate);
+        if (!Number.isNaN(parsed.getTime())) setCalendarAnchorDate(parsed);
+      } catch {}
+    }
   }, [events]);
 
   // Handle mouse events for dragging and resizing
@@ -382,17 +404,78 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
       return left.localeCompare(right);
     });
 
-  const calendarPreviewMonths = Array.from(new Set(
-    sortedEvents.map(({ event }) => {
-      const rawDate = event.date || event.startDate;
-      if (!rawDate) return 'Unscheduled';
-      try {
-        return format(parseISO(rawDate), 'MMM yyyy');
-      } catch {
-        return 'Unscheduled';
-      }
-    })
-  ));
+  const getEventDate = (event: Event) => {
+    const rawDate = event.date || event.startDate;
+    if (!rawDate) return null;
+    try {
+      const parsed = parseISO(rawDate);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const eventsForDay = (day: Date) => sortedEvents.filter(({ event }) => {
+    const eventDate = getEventDate(event);
+    return eventDate ? isSameDay(eventDate, day) : false;
+  });
+
+  const calendarTitle = (() => {
+    if (reviewMode === 'day') return format(calendarAnchorDate, 'EEEE, MMM d');
+    if (reviewMode === 'week') return `${format(startOfWeek(calendarAnchorDate), 'MMM d')} - ${format(endOfWeek(calendarAnchorDate), 'MMM d')}`;
+    if (reviewMode === 'fourMonth') return `${format(calendarAnchorDate, 'MMM yyyy')} - ${format(addMonths(calendarAnchorDate, 3), 'MMM yyyy')}`;
+    return format(calendarAnchorDate, 'MMMM yyyy');
+  })();
+
+  const moveCalendar = (direction: -1 | 1) => {
+    if (reviewMode === 'day') setCalendarAnchorDate(addDays(calendarAnchorDate, direction));
+    else if (reviewMode === 'week') setCalendarAnchorDate(addDays(calendarAnchorDate, direction * 7));
+    else if (reviewMode === 'fourMonth') setCalendarAnchorDate(addMonths(calendarAnchorDate, direction * 4));
+    else setCalendarAnchorDate(direction > 0 ? addMonths(calendarAnchorDate, 1) : subMonths(calendarAnchorDate, 1));
+  };
+
+  const renderCalendarEvent = (event: Event, index: number, compact = false) => (
+    <button
+      key={`${event.title}-${index}`}
+      type="button"
+      className={`calendar-event-chip ${selectedEvents.has(index) ? 'selected' : ''} ${compact ? 'compact' : ''}`}
+      onClick={(e) => handleEditEvent(event, index, e)}
+      title="Edit event"
+    >
+      <span>{event.title || 'Untitled Event'}</span>
+      {!compact && <small>{event.isAllDay ? 'All day' : [event.startTime, event.endTime].filter(Boolean).join(' - ') || 'No time'}</small>}
+    </button>
+  );
+
+  const renderMonthGrid = (monthDate: Date, compact = false) => {
+    const gridStart = startOfWeek(startOfMonth(monthDate));
+    const gridEnd = endOfWeek(endOfMonth(monthDate));
+    const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
+
+    return (
+      <div className={`calendar-month ${compact ? 'compact' : ''}`}>
+        <div className="calendar-month-title">{format(monthDate, 'MMMM yyyy')}</div>
+        <div className="calendar-weekdays">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <span key={day}>{day}</span>)}
+        </div>
+        <div className="calendar-grid">
+          {days.map(day => {
+            const dayEvents = eventsForDay(day);
+            const inMonth = day >= startOfMonth(monthDate) && day <= endOfMonth(monthDate);
+            return (
+              <div key={day.toISOString()} className={`calendar-day-cell ${inMonth ? '' : 'muted'}`}>
+                <div className="calendar-day-number">{format(day, 'd')}</div>
+                <div className="calendar-day-events">
+                  {dayEvents.slice(0, compact ? 2 : 3).map(({ event, index }) => renderCalendarEvent(event, index, compact))}
+                  {dayEvents.length > (compact ? 2 : 3) && <span className="calendar-more">+{dayEvents.length - (compact ? 2 : 3)} more</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="event-list-container liquid-glass">
@@ -409,11 +492,17 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             <button type="button" className={reviewMode === 'list' ? 'active' : ''} onClick={() => setReviewMode('list')}>
               List
             </button>
-            <button type="button" className={reviewMode === 'calendar' ? 'active' : ''} onClick={() => setReviewMode('calendar')}>
-              Calendar
+            <button type="button" className={reviewMode === 'day' ? 'active' : ''} onClick={() => setReviewMode('day')}>
+              Day
             </button>
-            <button type="button" className={reviewMode === 'table' ? 'active' : ''} onClick={() => setReviewMode('table')}>
-              Semester
+            <button type="button" className={reviewMode === 'week' ? 'active' : ''} onClick={() => setReviewMode('week')}>
+              Week
+            </button>
+            <button type="button" className={reviewMode === 'month' ? 'active' : ''} onClick={() => setReviewMode('month')}>
+              Month
+            </button>
+            <button type="button" className={reviewMode === 'fourMonth' ? 'active' : ''} onClick={() => setReviewMode('fourMonth')}>
+              4 Month
             </button>
           </div>
         </div>
@@ -529,77 +618,56 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         </div>
       )}
 
-      {reviewMode === 'calendar' && (
-        <div className="calendar-preview">
-          {calendarPreviewMonths.map((month) => (
-            <section key={month} className="calendar-preview-month">
-              <h3>{month}</h3>
-              <div className="calendar-preview-grid">
-                {sortedEvents
-                  .filter(({ event }) => {
-                    const rawDate = event.date || event.startDate;
-                    if (!rawDate) return month === 'Unscheduled';
-                    try {
-                      return format(parseISO(rawDate), 'MMM yyyy') === month;
-                    } catch {
-                      return month === 'Unscheduled';
-                    }
-                  })
-                  .map(({ event, index }) => (
-                    <button
-                      key={`${event.title}-${index}`}
-                      type="button"
-                      className={`calendar-preview-card ${selectedEvents.has(index) ? 'selected' : ''}`}
-                      onClick={(e) => handleEditEvent(event, index, e)}
-                    >
-                      <span className="calendar-preview-date">{formatDate(event.date || event.startDate)}</span>
-                      <span className="calendar-preview-title">{event.title || 'Untitled Event'}</span>
-                      <span className="calendar-preview-meta">{event.isAllDay ? 'All day' : [event.startTime, event.endTime].filter(Boolean).join(' - ') || 'No time'}</span>
-                    </button>
-                  ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+      {reviewMode !== 'list' && (
+        <div className="calendar-review">
+          <div className="calendar-toolbar">
+            <button type="button" onClick={() => moveCalendar(-1)}>Prev</button>
+            <strong>{calendarTitle}</strong>
+            <button type="button" onClick={() => setCalendarAnchorDate(new Date())}>Today</button>
+            <button type="button" onClick={() => moveCalendar(1)}>Next</button>
+          </div>
 
-      {reviewMode === 'table' && (
-        <div className="semester-table-wrap">
-          <table className="semester-table">
-            <thead>
-              <tr>
-                <th>Use</th>
-                <th>Date</th>
-                <th>Event</th>
-                <th>Type</th>
-                <th>Time</th>
-                <th>Edit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedEvents.map(({ event, index }) => (
-                <tr key={`${event.title}-${index}`}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedEvents.has(index)}
-                      onChange={() => toggleEventSelection(index)}
-                      aria-label={`Select ${event.title || 'event'}`}
-                    />
-                  </td>
-                  <td>{formatDate(event.date || event.startDate)}</td>
-                  <td>{event.title || 'Untitled Event'}</td>
-                  <td><span className={`event-type-badge event-type-${event.type}`}>{event.type || 'event'}</span></td>
-                  <td>{event.isAllDay ? 'All day' : [event.startTime, event.endTime].filter(Boolean).join(' - ') || 'No time'}</td>
-                  <td>
-                    <button type="button" className="table-edit-button" onClick={(e) => handleEditEvent(event, index, e)}>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
+          {reviewMode === 'day' && (
+            <div className="calendar-day-view">
+              <div className="day-column">
+                <div className="day-column-title">{format(calendarAnchorDate, 'EEEE')}</div>
+                <div className="day-column-date">{format(calendarAnchorDate, 'MMM d, yyyy')}</div>
+                <div className="day-agenda">
+                  {eventsForDay(calendarAnchorDate).length === 0 ? (
+                    <p>No extracted events for this day.</p>
+                  ) : (
+                    eventsForDay(calendarAnchorDate).map(({ event, index }) => renderCalendarEvent(event, index))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {reviewMode === 'week' && (
+            <div className="calendar-week-view">
+              {eachDayOfInterval({ start: startOfWeek(calendarAnchorDate), end: endOfWeek(calendarAnchorDate) }).map(day => (
+                <div key={day.toISOString()} className="week-day-column">
+                  <div className="week-day-title">{format(day, 'EEE')}</div>
+                  <div className="week-day-date">{format(day, 'd')}</div>
+                  <div className="week-events">
+                    {eventsForDay(day).map(({ event, index }) => renderCalendarEvent(event, index, true))}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
+
+          {reviewMode === 'month' && renderMonthGrid(calendarAnchorDate)}
+
+          {reviewMode === 'fourMonth' && (
+            <div className="four-month-grid">
+              {[0, 1, 2, 3].map(offset => (
+                <div key={offset} className="four-month-card">
+                  {renderMonthGrid(addMonths(calendarAnchorDate, offset), true)}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1050,106 +1118,220 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           align-items: center;
         }
 
-        .calendar-preview {
+        .calendar-review {
           max-height: min(52vh, 520px);
           overflow-y: auto;
           padding: 1rem;
         }
 
-        .calendar-preview-month {
-          margin-bottom: 1rem;
-        }
-
-        .calendar-preview-month h3 {
-          margin: 0 0 0.625rem;
-          color: rgba(255, 255, 255, 0.88);
-          font-size: 0.9rem;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .calendar-preview-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 0.625rem;
-        }
-
-        .calendar-preview-card {
+        .calendar-toolbar {
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.25rem;
-          min-height: 5rem;
-          padding: 0.75rem;
-          border: 1px solid rgba(255, 255, 255, 0.11);
-          border-radius: 0.875rem;
-          background: rgba(255, 255, 255, 0.05);
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-bottom: 0.875rem;
           color: white;
-          text-align: left;
-          cursor: pointer;
         }
 
-        .calendar-preview-card.selected {
-          border-color: rgba(255, 255, 255, 0.34);
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .calendar-preview-date,
-        .calendar-preview-meta {
-          color: rgba(255, 255, 255, 0.58);
-          font-size: 0.76rem;
-          font-weight: 700;
-        }
-
-        .calendar-preview-title {
+        .calendar-toolbar strong {
+          min-width: 13rem;
+          text-align: center;
           font-size: 0.95rem;
-          font-weight: 700;
-          line-height: 1.25;
         }
 
-        .semester-table-wrap {
-          max-height: min(52vh, 520px);
-          overflow: auto;
-          padding: 0.5rem;
-        }
-
-        .semester-table {
-          width: 100%;
-          min-width: 720px;
-          border-collapse: collapse;
-          color: white;
-          font-size: 0.875rem;
-        }
-
-        .semester-table th,
-        .semester-table td {
-          padding: 0.75rem;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          text-align: left;
-          vertical-align: middle;
-        }
-
-        .semester-table th {
-          position: sticky;
-          top: 0;
-          z-index: 1;
-          background: rgba(12, 12, 18, 0.96);
-          color: rgba(255, 255, 255, 0.55);
-          font-size: 0.72rem;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-        }
-
-        .table-edit-button {
-          padding: 0.4rem 0.65rem;
-          border: 1px solid rgba(255, 255, 255, 0.14);
+        .calendar-toolbar button {
+          padding: 0.45rem 0.7rem;
+          border: 1px solid rgba(255, 255, 255, 0.13);
           border-radius: 999px;
           background: rgba(255, 255, 255, 0.06);
           color: white;
           font-size: 0.8rem;
           font-weight: 700;
           cursor: pointer;
+        }
+
+        .calendar-day-view {
+          display: grid;
+          place-items: center;
+        }
+
+        .day-column {
+          width: min(100%, 520px);
+          min-height: 20rem;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 1rem;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 1rem;
+          color: white;
+        }
+
+        .day-column-title {
+          font-size: 1.15rem;
+          font-weight: 800;
+        }
+
+        .day-column-date {
+          color: rgba(255, 255, 255, 0.58);
+          margin-bottom: 1rem;
+        }
+
+        .day-agenda,
+        .week-events,
+        .calendar-day-events {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+        }
+
+        .day-agenda p {
+          color: rgba(255, 255, 255, 0.5);
+          margin-top: 2rem;
+          text-align: center;
+        }
+
+        .calendar-week-view {
+          display: grid;
+          grid-template-columns: repeat(7, minmax(112px, 1fr));
+          overflow-x: auto;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 1rem;
+        }
+
+        .week-day-column {
+          min-height: 22rem;
+          padding: 0.65rem;
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.035);
+        }
+
+        .week-day-column:last-child {
+          border-right: 0;
+        }
+
+        .week-day-title {
+          color: white;
+          font-size: 0.82rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .week-day-date {
+          color: rgba(255, 255, 255, 0.52);
+          margin-bottom: 0.7rem;
+        }
+
+        .calendar-month-title {
+          margin-bottom: 0.6rem;
+          color: white;
+          font-size: 0.95rem;
+          font-weight: 800;
+          text-align: center;
+        }
+
+        .calendar-weekdays,
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
+
+        .calendar-weekdays span {
+          padding: 0.45rem;
+          color: rgba(255, 255, 255, 0.45);
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-align: center;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .calendar-grid {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-left: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 1rem;
+          overflow: hidden;
+        }
+
+        .calendar-day-cell {
+          min-height: 7.5rem;
+          padding: 0.5rem;
+          border-right: 1px solid rgba(255, 255, 255, 0.1);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.035);
+        }
+
+        .calendar-day-cell.muted {
+          opacity: 0.35;
+        }
+
+        .calendar-day-number {
+          margin-bottom: 0.35rem;
+          color: rgba(255, 255, 255, 0.78);
+          font-size: 0.8rem;
+          font-weight: 800;
+        }
+
+        .calendar-event-chip {
+          width: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 0.55rem;
+          background: rgba(255, 255, 255, 0.08);
+          color: white;
+          padding: 0.42rem 0.5rem;
+          text-align: left;
+          cursor: pointer;
+          overflow: hidden;
+        }
+
+        .calendar-event-chip.selected {
+          background: rgba(147, 197, 253, 0.22);
+          border-color: rgba(147, 197, 253, 0.38);
+        }
+
+        .calendar-event-chip span {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 0.78rem;
+          font-weight: 750;
+        }
+
+        .calendar-event-chip small {
+          display: block;
+          color: rgba(255, 255, 255, 0.58);
+          font-size: 0.7rem;
+          margin-top: 0.1rem;
+        }
+
+        .calendar-event-chip.compact {
+          padding: 0.28rem 0.36rem;
+        }
+
+        .calendar-event-chip.compact span {
+          font-size: 0.68rem;
+        }
+
+        .calendar-more {
+          color: rgba(255, 255, 255, 0.48);
+          font-size: 0.7rem;
+          font-weight: 700;
+        }
+
+        .four-month-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+        }
+
+        .calendar-month.compact .calendar-day-cell {
+          min-height: 5.4rem;
+          padding: 0.36rem;
+        }
+
+        .calendar-month.compact .calendar-weekdays span {
+          padding: 0.3rem;
+          font-size: 0.62rem;
         }
 
         :global(.dark) .event-list-footer {
@@ -1309,10 +1491,11 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           .review-mode-toggle {
             width: 100%;
             justify-content: space-between;
+            overflow-x: auto;
           }
 
           .review-mode-toggle button {
-            flex: 1;
+            flex: 1 0 auto;
           }
 
           .event-item {
@@ -1324,6 +1507,27 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             left: 12px !important;
             width: calc(100vw - 24px) !important;
             height: calc(100dvh - 24px) !important;
+          }
+
+          .calendar-toolbar {
+            justify-content: flex-start;
+            overflow-x: auto;
+          }
+
+          .calendar-toolbar strong {
+            min-width: 10rem;
+          }
+
+          .calendar-week-view {
+            grid-template-columns: repeat(7, minmax(9rem, 1fr));
+          }
+
+          .calendar-grid {
+            min-width: 720px;
+          }
+
+          .four-month-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
