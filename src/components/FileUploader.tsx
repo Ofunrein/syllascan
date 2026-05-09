@@ -25,6 +25,16 @@ interface FileWithPreview {
   isLoading: boolean;
 }
 
+function getExtractionToastMessage(data: any): string {
+  if (data?.errors?.length > 0) {
+    const first = data.errors[0];
+    const file = first.file ? `${first.file}: ` : '';
+    return `${file}${first.error || 'Extraction failed'}`;
+  }
+
+  return data?.message || 'No events found in the uploaded files';
+}
+
 export default function FileUploader({
   onEventsExtracted,
   isProcessing,
@@ -270,10 +280,9 @@ export default function FileUploader({
         effectiveSetFiles([]);
         toast.success(`Successfully extracted ${data.events.length} events`, { id: toastId });
       } else if (data.errors?.length > 0) {
-        // Show the actual server error so we know what went wrong
-        toast.error(`Extraction failed: ${data.errors[0].error}`, { id: toastId, duration: 6000 });
+        toast.error(getExtractionToastMessage(data), { id: toastId, duration: 5000 });
       } else {
-        toast.error(data.message || 'No events found in the uploaded files', { id: toastId });
+        toast.error(getExtractionToastMessage(data), { id: toastId });
       }
     } catch (error) {
       console.error('Error extracting events:', error);

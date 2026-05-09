@@ -39,6 +39,8 @@ export default function RootLayout({
               fontFamily: "'Inter', sans-serif",
               backdropFilter: 'blur(8px)',
               cursor: 'pointer',
+              maxWidth: 'min(92vw, 28rem)',
+              overflowWrap: 'anywhere',
             },
             success: { duration: 1500 },
             error: { duration: 2000 },

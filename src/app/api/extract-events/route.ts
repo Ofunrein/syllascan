@@ -26,6 +26,21 @@ function isAcceptedType(mimeType: string): boolean {
   return ACCEPTED_MIME_TYPES.has(mimeType);
 }
 
+function getPublicExtractionError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+
+  if (lower.includes('api key') || lower.includes('authentication') || lower.includes('unauthorized')) {
+    return 'AI extraction is not configured correctly. Please try again after the server key is fixed.';
+  }
+
+  if (lower.includes('rate limit') || lower.includes('quota')) {
+    return 'AI extraction is temporarily rate limited. Please try again shortly.';
+  }
+
+  return 'AI extraction failed for this file. Please try again or upload a clearer document.';
+}
+
 function classifyCategory(eventType: string): string {
   switch (eventType) {
     case 'exam':
@@ -217,7 +232,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (extractError: any) {
         console.error(`Error extracting events from ${fileName}:`, extractError);
-        errors.push({ file: fileName, error: 'Failed to extract events: ' + (extractError.message || 'Unknown error') });
+        errors.push({ file: fileName, error: getPublicExtractionError(extractError) });
         continue;
       }
 
