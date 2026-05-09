@@ -227,7 +227,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
             
               <div className="form-field">
                 <label htmlFor="description" className="form-label">
-                  <DocumentTextIcon className="form-label-icon" />
+                  <DocumentTextIcon className="form-label-icon h-4 w-4 shrink-0" />
                   <span className="form-label-text">Description</span>
               </label>
                 <div className="form-input-wrapper">
@@ -244,7 +244,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
             
               <div className="form-field">
                 <label htmlFor="location" className="form-label">
-                  <MapPinIcon className="form-label-icon" />
+                  <MapPinIcon className="form-label-icon h-4 w-4 shrink-0" />
                   <span className="form-label-text">Location</span>
               </label>
                 <div className="form-input-wrapper">
@@ -268,7 +268,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
                   className="form-checkbox"
               />
                 <label htmlFor="isAllDay" className="form-checkbox-label">
-                  <ClockIcon className="form-label-icon" />
+                  <ClockIcon className="form-label-icon h-4 w-4 shrink-0" />
                   <span>All day event</span>
               </label>
             </div>
@@ -276,7 +276,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
               <div className="form-field-group">
                 <div className="form-field">
                   <label htmlFor="startDate" className="form-label">
-                    <CalendarIcon className="form-label-icon" />
+                    <CalendarIcon className="form-label-icon h-4 w-4 shrink-0" />
                     <span className="form-label-text">Start Date *</span>
                 </label>
                   <div className="form-input-wrapper">
@@ -294,7 +294,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
               {!isAllDay && (
                   <div className="form-field">
                     <label htmlFor="startTime" className="form-label">
-                      <ClockIcon className="form-label-icon" />
+                      <ClockIcon className="form-label-icon h-4 w-4 shrink-0" />
                       <span className="form-label-text">Start Time *</span>
                   </label>
                     <div className="form-input-wrapper">
@@ -312,7 +312,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
                 
                 <div className="form-field">
                   <label htmlFor="endDate" className="form-label">
-                    <CalendarIcon className="form-label-icon" />
+                    <CalendarIcon className="form-label-icon h-4 w-4 shrink-0" />
                     <span className="form-label-text">End Date</span>
                 </label>
                   <div className="form-input-wrapper">
@@ -329,7 +329,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
               {!isAllDay && (
                   <div className="form-field">
                     <label htmlFor="endTime" className="form-label">
-                      <ClockIcon className="form-label-icon" />
+                      <ClockIcon className="form-label-icon h-4 w-4 shrink-0" />
                       <span className="form-label-text">End Time</span>
                   </label>
                     <div className="form-input-wrapper">
@@ -438,14 +438,16 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
           flex-direction: column;
           height: 100%;
           overflow: hidden;
+          color: white;
         }
         
         .editor-tabs {
           display: flex;
-          border-bottom: 1px solid var(--border);
-          background-color: rgba(var(--primary-rgb), 0.06);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          background-color: rgba(255, 255, 255, 0.04);
           flex-shrink: 0;
-          padding: 0.5rem 0.5rem 0;
+          padding: 0.45rem;
+          gap: 0.35rem;
         }
         
         .editor-content {
@@ -464,29 +466,32 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         .form-scrollable-content {
           flex: 1;
           overflow-y: auto;
-          padding: 1.25rem;
+          padding: 1rem;
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.75rem;
+          min-height: 0;
         }
         
         .form-field {
-          margin-bottom: 1rem;
+          margin-bottom: 0;
         }
         
         .form-label {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.4rem;
           font-weight: 500;
-          color: var(--foreground);
+          color: rgba(255, 255, 255, 0.86);
+          font-size: 0.82rem;
         }
         
         .form-label-icon {
-          width: 1rem;
-          height: 1rem;
-          color: var(--primary);
+          width: 1rem !important;
+          height: 1rem !important;
+          color: rgba(255, 255, 255, 0.62);
+          flex-shrink: 0;
         }
         
         .form-input-wrapper {
@@ -495,26 +500,30 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         
         .form-input {
           width: 100%;
-          padding: 0.625rem;
-          border: 1px solid var(--border);
-          border-radius: 0.375rem;
-          background-color: var(--background);
-          color: var(--foreground);
+          padding: 0.58rem 0.7rem;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 0.55rem;
+          background-color: rgba(8, 10, 18, 0.72);
+          color: white;
           font-size: 0.875rem;
           transition: all 0.2s;
+        }
+
+        .form-input::placeholder {
+          color: rgba(255, 255, 255, 0.38);
         }
         
         .form-input:focus {
           outline: none;
-          border-color: var(--primary);
-          box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+          border-color: rgba(147, 197, 253, 0.7);
+          box-shadow: 0 0 0 2px rgba(147, 197, 253, 0.16);
         }
         
         .form-field-checkbox {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          margin-bottom: 1rem;
+          margin: 0.1rem 0;
         }
         
         .form-checkbox {
@@ -537,21 +546,22 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
           gap: 0.5rem;
           font-size: 0.875rem;
           cursor: pointer;
+          color: rgba(255, 255, 255, 0.86);
         }
         
         .form-field-group {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1rem;
-          margin-bottom: 1rem;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.75rem;
+          margin-bottom: 0;
         }
         
         .form-actions {
           display: flex;
           justify-content: space-between;
-          padding: 1rem;
-          border-top: 1px solid var(--border);
-          background-color: rgba(var(--primary-rgb), 0.05);
+          padding: 0.8rem 1rem;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          background-color: rgba(8, 10, 18, 0.72);
           flex-shrink: 0;
         }
         
@@ -559,9 +569,9 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.5rem 1.25rem;
-          background-color: var(--primary);
-          color: white;
+          padding: 0.58rem 1.05rem;
+          background-color: rgba(147, 197, 253, 0.95);
+          color: #08111f;
           border: none;
           border-radius: 0.375rem;
           font-weight: 500;
@@ -585,10 +595,10 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.5rem 1.25rem;
+          padding: 0.58rem 1.05rem;
           background-color: transparent;
-          color: var(--foreground);
-          border: 1px solid var(--border);
+          color: rgba(255, 255, 255, 0.86);
+          border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 0.375rem;
           font-weight: 500;
           cursor: pointer;
@@ -690,8 +700,8 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         
         .ai-chat-input-container {
           padding: 0.75rem;
-          border-top: 1px solid var(--border);
-          background-color: rgba(var(--primary-rgb), 0.03);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          background-color: rgba(8, 10, 18, 0.72);
         }
         
         .ai-chat-form {
@@ -703,10 +713,10 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         .ai-chat-input {
           flex: 1;
           padding: 0.625rem 0.75rem;
-          border: 1px solid var(--border);
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 1.5rem;
-          background-color: var(--background);
-          color: var(--foreground);
+          background-color: rgba(8, 10, 18, 0.72);
+          color: white;
           font-size: 0.875rem;
         }
         
@@ -754,18 +764,17 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.75rem 1.25rem;
+          padding: 0.5rem 0.7rem;
           font-size: 0.875rem;
           font-weight: 600;
-          color: var(--foreground);
+          color: rgba(255, 255, 255, 0.76);
           opacity: 0.7;
           background: none;
           border: none;
           border-bottom: 2px solid transparent;
           cursor: pointer;
           transition: all 0.2s ease;
-          border-top-left-radius: 0.5rem;
-          border-top-right-radius: 0.5rem;
+          border-radius: 0.65rem;
           position: relative;
           bottom: -1px;
         }
@@ -774,17 +783,17 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 2.5rem;
-          height: 2.5rem;
+          width: 2rem;
+          height: 2rem;
           border-radius: 0.5rem;
-          background-color: rgba(var(--primary-rgb), 0.1);
+          background-color: rgba(147, 197, 253, 0.12);
           transition: all 0.2s ease;
         }
         
         .editor-tab-icon {
-          width: 1.25rem;
-          height: 1.25rem;
-          color: var(--primary);
+          width: 1rem;
+          height: 1rem;
+          color: rgba(147, 197, 253, 0.9);
           transition: all 0.2s ease;
         }
         
@@ -798,14 +807,13 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         
         .editor-tab.active {
           opacity: 1;
-          border-bottom-color: var(--primary);
-          background-color: var(--card);
+          background-color: rgba(255, 255, 255, 0.1);
           border-bottom: none;
           box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
         }
         
         .editor-tab.active .tab-icon-container {
-          background-color: var(--primary);
+          background-color: rgba(147, 197, 253, 0.95);
         }
         
         .editor-tab.active .editor-tab-icon {
@@ -818,6 +826,38 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         
         :global(.dark) .editor-tab.active .tab-icon-container {
           background-color: var(--primary-light);
+        }
+
+        @media (max-width: 640px) {
+          .editor-tabs {
+            padding: 0.35rem;
+          }
+
+          .editor-tab {
+            flex: 1;
+            justify-content: center;
+            padding: 0.45rem 0.35rem;
+            font-size: 0.78rem;
+          }
+
+          .tab-icon-container {
+            width: 1.75rem;
+            height: 1.75rem;
+          }
+
+          .form-field-group {
+            grid-template-columns: 1fr;
+          }
+
+          .form-actions {
+            gap: 0.6rem;
+          }
+
+          .form-button-primary,
+          .form-button-secondary {
+            flex: 1;
+            justify-content: center;
+          }
         }
       `}</style>
     </div>

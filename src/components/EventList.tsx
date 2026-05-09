@@ -39,6 +39,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     height: number;
   } | null>(null);
   const [editorMode, setEditorMode] = useState<EditorMode>(EditorMode.Edit);
+  const [reviewMode, setReviewMode] = useState<'list' | 'calendar' | 'table'>('list');
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -211,13 +212,11 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   const handleEditEvent = (event: Event, index: number, e: React.MouseEvent) => {
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
 
-    // Calculate initial position - centered in viewport with larger default size
-    const width = Math.min(windowWidth - 40, 600); // Max width of 600px or window width - 40px
-    const height = Math.min(windowHeight - 40, 700); // Max height of 700px or window height - 40px
+    const width = Math.min(windowWidth - 32, 560);
+    const height = Math.min(windowHeight - 48, 620);
     const left = (windowWidth - width) / 2;
-    const top = scrollTop + (windowHeight - height) / 2;
+    const top = Math.max(24, (windowHeight - height) / 2);
 
     setEditorPosition({
       top,
@@ -241,13 +240,11 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
 
-    // Calculate initial position - centered in viewport with larger default size
-    const width = Math.min(windowWidth - 40, 600); // Max width of 600px or window width - 40px
-    const height = Math.min(windowHeight - 40, 700); // Max height of 700px or window height - 40px
+    const width = Math.min(windowWidth - 32, 560);
+    const height = Math.min(windowHeight - 48, 620);
     const left = (windowWidth - width) / 2;
-    const top = scrollTop + (windowHeight - height) / 2;
+    const top = Math.max(24, (windowHeight - height) / 2);
 
     setEditorPosition({
       top,
@@ -268,6 +265,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     if (editorMode === EditorMode.Add) {
       // Add the new event to the list
       newEvents.push(updatedEvent);
+      setSelectedEvents(new Set([...selectedEvents, newEvents.length - 1]));
       toast.success('Event added successfully');
     } else {
       // Update existing event
@@ -376,12 +374,49 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     return null;
   }
 
+  const sortedEvents = localEvents
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => {
+      const left = a.event.date || a.event.startDate || '';
+      const right = b.event.date || b.event.startDate || '';
+      return left.localeCompare(right);
+    });
+
+  const calendarPreviewMonths = Array.from(new Set(
+    sortedEvents.map(({ event }) => {
+      const rawDate = event.date || event.startDate;
+      if (!rawDate) return 'Unscheduled';
+      try {
+        return format(parseISO(rawDate), 'MMM yyyy');
+      } catch {
+        return 'Unscheduled';
+      }
+    })
+  ));
+
   return (
     <div className="event-list-container liquid-glass">
       <div className="event-list-header">
-        <h2 className="event-list-title">
-          Extracted Events ({localEvents.length})
-        </h2>
+        <div className="event-list-heading-row">
+          <div>
+            <p className="event-list-kicker">Review before sync</p>
+            <h2 className="event-list-title">
+              Extracted Events ({localEvents.length})
+            </h2>
+          </div>
+
+          <div className="review-mode-toggle" aria-label="Review display mode">
+            <button type="button" className={reviewMode === 'list' ? 'active' : ''} onClick={() => setReviewMode('list')}>
+              List
+            </button>
+            <button type="button" className={reviewMode === 'calendar' ? 'active' : ''} onClick={() => setReviewMode('calendar')}>
+              Calendar
+            </button>
+            <button type="button" className={reviewMode === 'table' ? 'active' : ''} onClick={() => setReviewMode('table')}>
+              Semester
+            </button>
+          </div>
+        </div>
 
         <div className="event-list-actions">
           <button
@@ -413,9 +448,10 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         </div>
       </div>
 
-      <div className="event-list">
-        {localEvents.map((event, index) => (
-          <div key={index} className="event-item">
+      {reviewMode === 'list' && (
+        <div className="event-list">
+          {localEvents.map((event, index) => (
+            <div key={index} className="event-item">
             <div className="event-checkbox">
               <input
                 type="checkbox"
@@ -489,8 +525,83 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
               <PencilIcon className="edit-icon" />
             </button>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {reviewMode === 'calendar' && (
+        <div className="calendar-preview">
+          {calendarPreviewMonths.map((month) => (
+            <section key={month} className="calendar-preview-month">
+              <h3>{month}</h3>
+              <div className="calendar-preview-grid">
+                {sortedEvents
+                  .filter(({ event }) => {
+                    const rawDate = event.date || event.startDate;
+                    if (!rawDate) return month === 'Unscheduled';
+                    try {
+                      return format(parseISO(rawDate), 'MMM yyyy') === month;
+                    } catch {
+                      return month === 'Unscheduled';
+                    }
+                  })
+                  .map(({ event, index }) => (
+                    <button
+                      key={`${event.title}-${index}`}
+                      type="button"
+                      className={`calendar-preview-card ${selectedEvents.has(index) ? 'selected' : ''}`}
+                      onClick={(e) => handleEditEvent(event, index, e)}
+                    >
+                      <span className="calendar-preview-date">{formatDate(event.date || event.startDate)}</span>
+                      <span className="calendar-preview-title">{event.title || 'Untitled Event'}</span>
+                      <span className="calendar-preview-meta">{event.isAllDay ? 'All day' : [event.startTime, event.endTime].filter(Boolean).join(' - ') || 'No time'}</span>
+                    </button>
+                  ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {reviewMode === 'table' && (
+        <div className="semester-table-wrap">
+          <table className="semester-table">
+            <thead>
+              <tr>
+                <th>Use</th>
+                <th>Date</th>
+                <th>Event</th>
+                <th>Type</th>
+                <th>Time</th>
+                <th>Edit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedEvents.map(({ event, index }) => (
+                <tr key={`${event.title}-${index}`}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedEvents.has(index)}
+                      onChange={() => toggleEventSelection(index)}
+                      aria-label={`Select ${event.title || 'event'}`}
+                    />
+                  </td>
+                  <td>{formatDate(event.date || event.startDate)}</td>
+                  <td>{event.title || 'Untitled Event'}</td>
+                  <td><span className={`event-type-badge event-type-${event.type}`}>{event.type || 'event'}</span></td>
+                  <td>{event.isAllDay ? 'All day' : [event.startTime, event.endTime].filter(Boolean).join(' - ') || 'No time'}</td>
+                  <td>
+                    <button type="button" className="table-edit-button" onClick={(e) => handleEditEvent(event, index, e)}>
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="event-list-footer">
         <button
@@ -638,11 +749,55 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
+        .event-list-heading-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .event-list-kicker {
+          margin: 0 0 0.25rem;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.46);
+        }
+
         .event-list-title {
           font-size: 1.25rem;
           font-weight: 600;
-          margin-bottom: 1rem;
+          margin: 0;
           color: white;
+        }
+
+        .review-mode-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.25rem;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.05);
+          flex-shrink: 0;
+        }
+
+        .review-mode-toggle button {
+          border: 0;
+          border-radius: 999px;
+          padding: 0.45rem 0.7rem;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.68);
+          font-size: 0.8rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .review-mode-toggle button.active {
+          background: white;
+          color: black;
         }
 
         .event-list-actions {
@@ -698,7 +853,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         }
 
         .event-list {
-          max-height: 500px;
+          max-height: min(52vh, 520px);
           overflow-y: auto;
           padding: 0.5rem;
         }
@@ -895,6 +1050,108 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           align-items: center;
         }
 
+        .calendar-preview {
+          max-height: min(52vh, 520px);
+          overflow-y: auto;
+          padding: 1rem;
+        }
+
+        .calendar-preview-month {
+          margin-bottom: 1rem;
+        }
+
+        .calendar-preview-month h3 {
+          margin: 0 0 0.625rem;
+          color: rgba(255, 255, 255, 0.88);
+          font-size: 0.9rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .calendar-preview-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.625rem;
+        }
+
+        .calendar-preview-card {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+          min-height: 5rem;
+          padding: 0.75rem;
+          border: 1px solid rgba(255, 255, 255, 0.11);
+          border-radius: 0.875rem;
+          background: rgba(255, 255, 255, 0.05);
+          color: white;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .calendar-preview-card.selected {
+          border-color: rgba(255, 255, 255, 0.34);
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .calendar-preview-date,
+        .calendar-preview-meta {
+          color: rgba(255, 255, 255, 0.58);
+          font-size: 0.76rem;
+          font-weight: 700;
+        }
+
+        .calendar-preview-title {
+          font-size: 0.95rem;
+          font-weight: 700;
+          line-height: 1.25;
+        }
+
+        .semester-table-wrap {
+          max-height: min(52vh, 520px);
+          overflow: auto;
+          padding: 0.5rem;
+        }
+
+        .semester-table {
+          width: 100%;
+          min-width: 720px;
+          border-collapse: collapse;
+          color: white;
+          font-size: 0.875rem;
+        }
+
+        .semester-table th,
+        .semester-table td {
+          padding: 0.75rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          text-align: left;
+          vertical-align: middle;
+        }
+
+        .semester-table th {
+          position: sticky;
+          top: 0;
+          z-index: 1;
+          background: rgba(12, 12, 18, 0.96);
+          color: rgba(255, 255, 255, 0.55);
+          font-size: 0.72rem;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .table-edit-button {
+          padding: 0.4rem 0.65rem;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.06);
+          color: white;
+          font-size: 0.8rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
         :global(.dark) .event-list-footer {
           border-top-color: rgba(255, 255, 255, 0.1);
         }
@@ -974,13 +1231,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
           z-index: 100;
           overflow: hidden;
-          resize: both;
           display: flex;
           flex-direction: column;
-          min-width: 400px;
-          min-height: 600px;
-          max-width: 90vw;
-          max-height: 90vh;
+          min-width: min(360px, calc(100vw - 32px));
+          min-height: 0;
+          max-width: calc(100vw - 32px);
+          max-height: calc(100dvh - 48px);
         }
 
         .editor-drag-handle {
@@ -1039,6 +1295,36 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
         :global(.dark) .editor-close-button:hover {
           background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .resize-handle {
+          display: none;
+        }
+
+        @media (max-width: 760px) {
+          .event-list-heading-row {
+            flex-direction: column;
+          }
+
+          .review-mode-toggle {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .review-mode-toggle button {
+            flex: 1;
+          }
+
+          .event-item {
+            padding: 0.875rem 0.75rem;
+          }
+
+          .event-editor-container {
+            top: 12px !important;
+            left: 12px !important;
+            width: calc(100vw - 24px) !important;
+            height: calc(100dvh - 24px) !important;
+          }
         }
       `}</style>
     </div>
