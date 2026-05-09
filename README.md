@@ -128,10 +128,6 @@ This section is an extension to the original README. It exists to document the p
 
 ![SyllaScan scan workspace](public/readme/scan-workspace.png)
 
-### Dashboard
-
-![SyllaScan dashboard](public/readme/dashboard.png)
-
 ## Product Overview
 
 SyllaScan is an academic workflow product for students who want to turn messy course documents into usable calendar data.
