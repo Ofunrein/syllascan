@@ -17,20 +17,22 @@ export default function GoogleUserProfile() {
   if (!profile) return null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 items-center gap-3">
       {profile.avatar_url ? (
         <img
           src={profile.avatar_url}
           alt={profile.display_name || ''}
-          className="w-8 h-8 rounded-full"
+          className="h-8 w-8 flex-shrink-0 rounded-full"
           referrerPolicy="no-referrer"
         />
       ) : (
-        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-medium text-white">
           {(profile.display_name || profile.email)?.[0]?.toUpperCase()}
         </div>
       )}
-      <span className="text-white/80 text-sm">{profile.display_name || profile.email}</span>
+      <span className="min-w-0 truncate text-sm text-white/80">
+        {profile.display_name || profile.email}
+      </span>
     </div>
   );
 }

@@ -220,11 +220,14 @@ export default function Header() {
           align-items: center;
           justify-content: space-between;
           height: 4rem;
+          gap: 0.75rem;
+          min-width: 0;
         }
 
         .logo-container {
           display: flex;
           align-items: center;
+          flex-shrink: 0;
         }
 
         .logo {
@@ -249,6 +252,7 @@ export default function Header() {
           display: flex;
           align-items: center;
           gap: 0.5rem;
+          flex-shrink: 0;
         }
 
         .user-placeholder {

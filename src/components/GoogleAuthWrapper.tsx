@@ -59,23 +59,6 @@ export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) 
     }
   }, [searchParams, refreshProfile]);
 
-  // Auto-redirect to calendar OAuth when signed in but tokens are missing.
-  // google_calendar_connected is set true on any Google sign-in (scopes always requested),
-  // but the actual tokens need a separate exchange due to Supabase PKCE limitations.
-  useEffect(() => {
-    if (
-      authenticated &&
-      googleCalendarConnected &&
-      profile !== null &&
-      !profile.google_tokens &&
-      !autoConnecting &&
-      !error
-    ) {
-      setAutoConnecting(true);
-      connectCalendar();
-    }
-  }, [authenticated, googleCalendarConnected, profile, autoConnecting, error, connectCalendar]);
-
   if (!authenticated) {
     return (
       <div className="liquid-glass rounded-2xl p-6 text-white">
@@ -109,14 +92,24 @@ export default function GoogleAuthWrapper({ children }: GoogleAuthWrapperProps) 
     );
   }
 
-  // Tokens missing — auto-connecting in progress
+  // Signed in through Google but calendar tokens are still missing.
   if (authenticated && googleCalendarConnected && profile !== null && !profile.google_tokens) {
     return (
       <div className="liquid-glass rounded-2xl p-6 text-white">
-        <div className="flex items-center gap-3">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white/80" />
-          <p className="text-white/70">Connecting to Google Calendar…</p>
-        </div>
+        <h2 className="text-xl font-semibold mb-4">Finish Google Calendar Connection</h2>
+        <p className="mb-4 text-white/65">
+          Your account is signed in, but calendar access has not been fully linked yet.
+        </p>
+        <button
+          onClick={() => connectCalendar()}
+          disabled={autoConnecting}
+          className="px-4 py-2 bg-white text-black rounded-full hover:bg-white/85 transition flex items-center"
+        >
+          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" fill="currentColor"/>
+          </svg>
+          {autoConnecting ? 'Opening Google...' : 'Connect Google Calendar'}
+        </button>
       </div>
     );
   }

@@ -118,12 +118,13 @@ export default function ScanPage() {
           </div>
 
           <div className="mb-6 flex justify-center">
-            <div className="liquid-glass inline-flex max-w-full flex-wrap justify-center gap-1 rounded-full p-1">
+            <div className="max-w-full overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="liquid-glass inline-flex min-w-max flex-nowrap justify-center gap-1 rounded-full p-1">
             {tabs.map(({ id, label, Icon, badge }) => (
               <button
                 key={id}
                 onClick={() => handleTabClick(id)}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                   activeTab === id
                     ? 'bg-white text-black'
                     : 'text-white/55 hover:bg-white/5 hover:text-white'
@@ -138,6 +139,7 @@ export default function ScanPage() {
                 ) : null}
               </button>
             ))}
+            </div>
             </div>
           </div>
 

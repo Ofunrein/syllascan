@@ -256,6 +256,8 @@ a:hover {
   height: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .desktop-nav .nav-link {
@@ -292,6 +294,12 @@ a:hover {
 .desktop-nav .nav-link.active { opacity: 1; color: #111827; background-color: rgba(0, 0, 0, 0.06); }
 
 .dark .desktop-nav .nav-link.active { color: #fff; background-color: rgba(255, 255, 255, 0.1); }
+
+@media (max-width: 900px) {
+  .desktop-nav {
+    display: none;
+  }
+}
 
 /* ── Hide any unwanted bare SVGs ────────────────────────── */
 svg:not([class]) {
