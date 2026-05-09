@@ -59,6 +59,30 @@ function eventToDb(event: Event, userId: string): Partial<CalendarEvent> {
   };
 }
 
+function eventKey(event: Event) {
+  return [
+    (event.title || '').trim().toLowerCase(),
+    event.date || event.startDate || '',
+    event.startTime || '',
+  ].join('|');
+}
+
+function mergeEventsByKey(currentEvents: Event[], incomingEvents: Event[]) {
+  const merged = new Map<string, Event>();
+
+  for (const event of currentEvents) {
+    merged.set(event.id || eventKey(event), event);
+  }
+
+  for (const event of incomingEvents) {
+    const stableKey = eventKey(event);
+    const existingKey = [...merged.entries()].find(([, existing]) => eventKey(existing) === stableKey)?.[0];
+    merged.set(existingKey || event.id || stableKey, event);
+  }
+
+  return Array.from(merged.values());
+}
+
 interface EventStore {
   events: Event[];
   loading: boolean;
@@ -81,8 +105,8 @@ export const useEventStore = create<EventStore>((set) => ({
   loading: false,
 
   // Local-only operations (for immediate UI updates)
-  setEvents: (events) => set({ events }),
-  addEvent: (event) => set((state) => ({ events: [...state.events, event] })),
+  setEvents: (events) => set({ events: mergeEventsByKey([], events) }),
+  addEvent: (event) => set((state) => ({ events: mergeEventsByKey(state.events, [event]) })),
   updateEvent: (updatedEvent) => set((state) => ({
     events: state.events.map(event => event.id === updatedEvent.id ? updatedEvent : event)
   })),
@@ -123,7 +147,7 @@ export const useEventStore = create<EventStore>((set) => ({
 
       if (error) throw error;
       const savedEvent = dbToEvent(data);
-      set((state) => ({ events: [...state.events, savedEvent] }));
+      set((state) => ({ events: mergeEventsByKey(state.events, [savedEvent]) }));
       return savedEvent;
     } catch (error) {
       console.error('Error saving event:', error);
@@ -142,7 +166,7 @@ export const useEventStore = create<EventStore>((set) => ({
 
       if (error) throw error;
       const savedEvents = (data || []).map(dbToEvent);
-      set((state) => ({ events: [...state.events, ...savedEvents] }));
+      set((state) => ({ events: mergeEventsByKey(state.events, savedEvents) }));
     } catch (error) {
       console.error('Error saving events:', error);
     }

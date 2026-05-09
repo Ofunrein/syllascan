@@ -73,6 +73,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
     }
 
     const updatedEvent: Event = {
+      ...event,
       title: eventTitle,
       description: description || undefined,
       startDate: formattedStartDate,

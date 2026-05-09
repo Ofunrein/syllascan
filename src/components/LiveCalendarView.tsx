@@ -60,7 +60,11 @@ export default function LiveCalendarView() {
 
         if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch calendar events');
+        const nextError = new Error(errorData.error || 'Failed to fetch calendar events');
+        if (errorData.reconnectRequired) {
+          nextError.name = 'ReconnectRequired';
+        }
+        throw nextError;
         }
 
         const data = await response.json();
@@ -102,7 +106,7 @@ export default function LiveCalendarView() {
       setIsLoading(false);
 
       // If unauthorized, clear the googleAuthenticated state
-      if (errorMessage.includes('Unauthorized') || errorMessage.includes('Authentication failed')) {
+      if (errorMessage.includes('Unauthorized') || errorMessage.includes('Authentication failed') || errorMessage.includes('updated permission')) {
         toast.error('Google Calendar authorization expired. Please reconnect your calendar.');
       }
     }
@@ -151,9 +155,9 @@ export default function LiveCalendarView() {
   // Add this useEffect right after the other useEffect hooks
   useEffect(() => {
     // Check if error includes Unauthorized and update the error message
-    if (error && (error.includes('Unauthorized') || error.includes('Authentication failed'))) {
+    if (error && (error.includes('Unauthorized') || error.includes('Authentication failed') || error.includes('updated permission') || error.includes('Insufficient Permission'))) {
       // Update the error state to include information about the authorization
-      setError('Google Calendar authorization expired. Please reconnect to continue.');
+      setError('Google Calendar needs updated permission. Reconnect once to grant calendar access.');
     }
   }, [error]);
 
@@ -318,7 +322,7 @@ export default function LiveCalendarView() {
         <h2 className="text-xl font-semibold mb-4 text-red-500">Error</h2>
         <p className="mb-4 text-white/70">{error}</p>
 
-        {error.includes('authorization expired') || error.includes('reconnect') ? (
+        {error.includes('authorization expired') || error.includes('reconnect') || error.includes('updated permission') || error.includes('calendar access') ? (
           <div className="flex space-x-2">
             <button
               onClick={handleConnectGoogleCalendar}

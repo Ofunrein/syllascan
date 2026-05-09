@@ -153,4 +153,6 @@ export interface Event {
   recurrencePattern?: string;
   confidence?: number;
   google_event_id?: string;
+  sourceFile?: string;
+  sourceFileType?: string;
 }

@@ -164,6 +164,20 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      const apiErrorMessage = apiError.message || apiError.response?.data?.error_description || '';
+      const needsScopeReconnect =
+        apiError.code === 403 &&
+        (apiErrorMessage.toLowerCase().includes('insufficient') ||
+          apiErrorMessage.toLowerCase().includes('permission') ||
+          apiError.errors?.some((entry: any) => entry.reason === 'insufficientPermissions'));
+
+      if (needsScopeReconnect) {
+        return NextResponse.json(
+          { error: 'Google Calendar needs updated permission. Please reconnect your calendar.', reconnectRequired: true },
+          { status: 403 }
+        );
+      }
+
       // If we couldn't refresh or it's not an auth error, return the original error
       if (apiError.code === 401 || (apiError.response && apiError.response.status === 401)) {
         return NextResponse.json(

@@ -21,7 +21,7 @@ export default function ScanPage() {
   const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
   const [isCalendarExpired, setIsCalendarExpired] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
-  const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents, fetchEvents } = useEventStore();
+  const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents, fetchEvents, saveEvents, removeEvent } = useEventStore();
   const { user, authenticated } = useAuth();
 
   // Load all saved events from Supabase on mount
@@ -33,18 +33,66 @@ export default function ScanPage() {
 
   // Sync local events with store
   useEffect(() => {
-    if (storedEvents.length > 0) {
-      setEvents(storedEvents);
+    const reviewEvents = storedEvents.filter(event => !event.google_event_id);
+    if (reviewEvents.length > 0) {
+      setEvents(reviewEvents);
+      const hash = window.location.hash.replace('#', '');
+      if (!hash || hash === 'upload' || hash === 'events') {
+        setActiveTab('events');
+      }
     }
   }, [storedEvents]);
 
-  const handleEventsExtracted = (extractedEvents: Event[]) => {
-    setEvents(extractedEvents);
-    setStoredEvents(extractedEvents);
+  const eventKey = (event: Event) => [
+    (event.title || '').trim().toLowerCase(),
+    event.date || event.startDate || '',
+    event.startTime || '',
+  ].join('|');
+
+  const mergeEvents = (baseEvents: Event[], incomingEvents: Event[]) => {
+    const merged = [...baseEvents];
+    const existingKeys = new Set(merged.map(eventKey));
+    const newEvents: Event[] = [];
+
+    for (const event of incomingEvents) {
+      const keyed = eventKey(event);
+      if (!existingKeys.has(keyed)) {
+        merged.push(event);
+        newEvents.push(event);
+        existingKeys.add(keyed);
+      }
+    }
+
+    return { mergedEvents: merged, newEvents };
+  };
+
+  const handleEventsExtracted = async (extractedEvents: Event[]) => {
+    const normalizedExtracted = extractedEvents.map(event => ({
+      ...event,
+      source: 'extraction',
+    }));
+    const { mergedEvents, newEvents } = mergeEvents(events, normalizedExtracted);
+    setEvents(mergedEvents);
+    setStoredEvents(mergedEvents);
+    if (user && newEvents.length > 0) {
+      await saveEvents(newEvents, user.id);
+    }
     setActiveTab('events');
   };
 
-  const handleClearEvents = () => {
+  const handleEventsChange = (updatedEvents: Event[]) => {
+    setEvents(updatedEvents);
+    setStoredEvents(updatedEvents);
+  };
+
+  const handleClearEvents = async (deleteFromDatabase = true) => {
+    if (deleteFromDatabase && user) {
+      await Promise.all(
+        events
+          .filter(event => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(event.id))
+          .map(event => removeEvent(event.id, user.id))
+      );
+    }
     setEvents([]);
     clearStoredEvents();
     setActiveTab('upload');
@@ -78,7 +126,7 @@ export default function ScanPage() {
   ];
 
   return (
-    <div className="dark min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="dark min-h-screen bg-black text-white relative overflow-hidden flex flex-col">
       <div className="pointer-events-none absolute inset-0 opacity-25">
         <video
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
@@ -95,18 +143,18 @@ export default function ScanPage() {
         <Header />
       </div>
 
-      <main className="relative z-10 py-10 md:py-14">
-        <div className="container">
-          <div className="mb-10 text-center">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-white/45">
+      <main className="relative z-10 flex-1 overflow-hidden py-4 md:py-6">
+        <div className="container flex h-full min-h-0 flex-col">
+          <div className="mb-5 text-center md:mb-6">
+            <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-white/45 md:text-xs">
               Academic calendar intelligence
             </p>
             <h1
               className="text-white"
               style={{
                 fontFamily: "'Instrument Serif', serif",
-                fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-                marginBottom: '0.75rem',
+                fontSize: 'clamp(1.8rem, 4.2vw, 3.15rem)',
+                marginBottom: '0.55rem',
                 letterSpacing: '-0.02em',
               }}
             >
@@ -117,7 +165,7 @@ export default function ScanPage() {
             </p>
           </div>
 
-          <div className="mb-6 flex justify-center">
+          <div className="mb-4 flex justify-center md:mb-5">
             <div className="max-w-full overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="liquid-glass inline-flex min-w-max flex-nowrap justify-center gap-1 rounded-full p-1">
             {tabs.map(({ id, label, Icon, badge }) => (
@@ -143,7 +191,7 @@ export default function ScanPage() {
             </div>
           </div>
 
-          <div className="liquid-glass rounded-[1.25rem] p-4 md:p-6">
+          <div className="liquid-glass min-h-0 flex-1 overflow-hidden rounded-[1.25rem] p-3 md:p-5">
             {activeTab === 'upload' && (
               <FileUploader
                 onEventsExtracted={handleEventsExtracted}
@@ -155,7 +203,7 @@ export default function ScanPage() {
               />
             )}
             {activeTab === 'events' && (
-              <EventList events={events} onClearEvents={handleClearEvents} />
+              <EventList events={events} onClearEvents={handleClearEvents} onEventsChange={handleEventsChange} />
             )}
             {activeTab === 'live-calendar' && (
               <GoogleAuthWrapper>
@@ -171,9 +219,7 @@ export default function ScanPage() {
         </div>
       </main>
 
-      <footer
-        className="relative z-10 mt-6 border-t border-white/5 px-6 py-8 text-center text-sm text-white/35"
-      >
+      <footer className="relative z-10 mt-auto border-t border-white/5 px-6 py-4 text-center text-sm text-white/35">
         <a href="/" className="text-white/50 hover:text-white transition-colors mr-4">← Home</a>
         {new Date().getFullYear()} SyllaScan.{' '}
         <a href="/privacy-policy" className="text-white/45 hover:text-white">Privacy Policy</a>

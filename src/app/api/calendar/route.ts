@@ -4,6 +4,41 @@ import { addEventsToCalendar } from '@/lib/googleCalendar';
 import { Event } from '@/lib/openai';
 import { recordProcessingHistory } from '@/lib/processingHistory';
 
+function isUuid(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+async function recordCalendarSyncs(userId: string, events: Event[], googleEventIds: string[]) {
+  const serviceClient = await createServiceRoleClient();
+  const db = serviceClient as any;
+  const syncRows = [];
+
+  for (let index = 0; index < events.length; index += 1) {
+    const eventId = events[index]?.id;
+    const googleEventId = googleEventIds[index];
+
+    if (!isUuid(eventId) || !googleEventId) continue;
+
+    await db
+      .from('events')
+      .update({ google_event_id: googleEventId })
+      .eq('id', eventId)
+      .eq('user_id', userId);
+
+    syncRows.push({
+      user_id: userId,
+      event_id: eventId,
+      google_event_id: googleEventId,
+      sync_direction: 'to_google' as const,
+      status: 'success' as const,
+    });
+  }
+
+  if (syncRows.length > 0) {
+    await db.from('calendar_syncs').insert(syncRows);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -60,6 +95,8 @@ export async function POST(request: NextRequest) {
 
       // Record processing history if we have a user ID
       if (userId) {
+        await recordCalendarSyncs(userId, events, eventIds);
+
         const fileGroups = new Map<string, Event[]>();
 
         for (const event of events) {
@@ -130,6 +167,8 @@ export async function POST(request: NextRequest) {
 
           // Record processing history if we have a user ID
           if (userId) {
+            await recordCalendarSyncs(userId, events, eventIds);
+
             const fileGroups = new Map<string, Event[]>();
 
             for (const event of events) {

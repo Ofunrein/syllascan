@@ -10,6 +10,7 @@ import {
   isSameDay,
   parseISO,
   startOfMonth,
+  startOfYear,
   startOfWeek,
   subMonths,
 } from 'date-fns';
@@ -17,6 +18,7 @@ import { useAuth } from '@/components/AuthProvider';
 import toast from 'react-hot-toast';
 import EventEditor from './EventEditor';
 import { PencilIcon, PlusIcon, TrashIcon, CheckIcon, CalendarIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useEventStore } from '@/lib/stores/eventStore';
 
 // Enum for resize directions
 enum ResizeDirection {
@@ -34,11 +36,13 @@ enum EditorMode {
 
 interface EventListProps {
   events: Event[];
-  onClearEvents: () => void;
+  onClearEvents: (deleteFromDatabase?: boolean) => void;
+  onEventsChange?: (events: Event[]) => void;
 }
 
-export default function EventList({ events, onClearEvents }: EventListProps) {
+export default function EventList({ events, onClearEvents, onEventsChange }: EventListProps) {
   const { user, authenticated, googleCalendarConnected } = useAuth();
+  const { saveEvent, updateEventInDb } = useEventStore();
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
@@ -51,7 +55,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     height: number;
   } | null>(null);
   const [editorMode, setEditorMode] = useState<EditorMode>(EditorMode.Edit);
-  const [reviewMode, setReviewMode] = useState<'list' | 'day' | 'week' | 'month' | 'fourMonth'>('list');
+  const [reviewMode, setReviewMode] = useState<'list' | 'day' | 'week' | 'month' | 'year'>('list');
   const [calendarAnchorDate, setCalendarAnchorDate] = useState(new Date());
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -77,10 +81,26 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     if (firstDate) {
       try {
         const parsed = parseISO(firstDate);
-        if (!Number.isNaN(parsed.getTime())) setCalendarAnchorDate(parsed);
+        if (!Number.isNaN(parsed.getTime())) {
+          setCalendarAnchorDate(parsed);
+        }
       } catch {}
     }
   }, [events]);
+
+  const jumpToFirstEvent = (mode: typeof reviewMode) => {
+    const firstEventDate = sortedEvents
+      .map(({ event }) => getEventDate(event))
+      .find((date): date is Date => Boolean(date));
+
+    if (!firstEventDate) return;
+    setCalendarAnchorDate(mode === 'year' ? startOfYear(firstEventDate) : firstEventDate);
+  };
+
+  const changeReviewMode = (mode: typeof reviewMode) => {
+    setReviewMode(mode);
+    if (mode !== 'list') jumpToFirstEvent(mode);
+  };
 
   // Handle mouse events for dragging and resizing
   useEffect(() => {
@@ -254,10 +274,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   const handleAddNewEvent = () => {
     // Create a blank event template
     const newEvent: Event = {
+      id: `manual-${Date.now()}`,
       title: '',
       description: '',
       startDate: new Date().toISOString(),
-      isAllDay: false
+      isAllDay: false,
+      source: 'manual',
     };
 
     const windowHeight = window.innerHeight;
@@ -279,23 +301,41 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
     setEditingEvent({ event: newEvent, index: -1 });
   };
 
-  const handleSaveEdit = (updatedEvent: Event) => {
+  const isPersistedEvent = (event: Event) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(event.id);
+
+  const handleSaveEdit = async (updatedEvent: Event) => {
     if (editingEvent === null) return;
 
     const newEvents = [...localEvents];
+    let eventToStore = updatedEvent;
 
     if (editorMode === EditorMode.Add) {
+      if (user) {
+        const savedEvent = await saveEvent({ ...updatedEvent, source: 'manual' }, user.id);
+        if (savedEvent) eventToStore = savedEvent;
+      }
+
       // Add the new event to the list
-      newEvents.push(updatedEvent);
+      newEvents.push(eventToStore);
       setSelectedEvents(new Set([...selectedEvents, newEvents.length - 1]));
       toast.success('Event added successfully');
     } else {
+      if (user) {
+        if (isPersistedEvent(updatedEvent)) {
+          await updateEventInDb(updatedEvent, user.id);
+        } else {
+          const savedEvent = await saveEvent({ ...updatedEvent, source: updatedEvent.source || 'manual' }, user.id);
+          if (savedEvent) eventToStore = savedEvent;
+        }
+      }
+
       // Update existing event
-      newEvents[editingEvent.index] = updatedEvent;
+      newEvents[editingEvent.index] = eventToStore;
       toast.success('Event updated successfully');
     }
 
     setLocalEvents(newEvents);
+    onEventsChange?.(newEvents);
     setEditingEvent(null);
     setEditorPosition(null);
   };
@@ -347,7 +387,7 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
       toast.success(`Successfully added ${data.eventIds.length} events to your calendar!`, { id: toastId });
 
       // Clear events and redirect to live calendar tab instead of upload tab
-      onClearEvents();
+      onClearEvents(false);
 
       // Use window location to redirect to the live calendar tab
       const currentUrl = window.location.href.split('#')[0];
@@ -423,14 +463,14 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
   const calendarTitle = (() => {
     if (reviewMode === 'day') return format(calendarAnchorDate, 'EEEE, MMM d');
     if (reviewMode === 'week') return `${format(startOfWeek(calendarAnchorDate), 'MMM d')} - ${format(endOfWeek(calendarAnchorDate), 'MMM d')}`;
-    if (reviewMode === 'fourMonth') return `${format(calendarAnchorDate, 'MMM yyyy')} - ${format(addMonths(calendarAnchorDate, 3), 'MMM yyyy')}`;
+    if (reviewMode === 'year') return format(calendarAnchorDate, 'yyyy');
     return format(calendarAnchorDate, 'MMMM yyyy');
   })();
 
   const moveCalendar = (direction: -1 | 1) => {
     if (reviewMode === 'day') setCalendarAnchorDate(addDays(calendarAnchorDate, direction));
     else if (reviewMode === 'week') setCalendarAnchorDate(addDays(calendarAnchorDate, direction * 7));
-    else if (reviewMode === 'fourMonth') setCalendarAnchorDate(addMonths(calendarAnchorDate, direction * 4));
+    else if (reviewMode === 'year') setCalendarAnchorDate(addMonths(calendarAnchorDate, direction * 12));
     else setCalendarAnchorDate(direction > 0 ? addMonths(calendarAnchorDate, 1) : subMonths(calendarAnchorDate, 1));
   };
 
@@ -489,20 +529,20 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           </div>
 
           <div className="review-mode-toggle" aria-label="Review display mode">
-            <button type="button" className={reviewMode === 'list' ? 'active' : ''} onClick={() => setReviewMode('list')}>
+            <button type="button" className={reviewMode === 'list' ? 'active' : ''} onClick={() => changeReviewMode('list')}>
               List
             </button>
-            <button type="button" className={reviewMode === 'day' ? 'active' : ''} onClick={() => setReviewMode('day')}>
+            <button type="button" className={reviewMode === 'day' ? 'active' : ''} onClick={() => changeReviewMode('day')}>
               Day
             </button>
-            <button type="button" className={reviewMode === 'week' ? 'active' : ''} onClick={() => setReviewMode('week')}>
+            <button type="button" className={reviewMode === 'week' ? 'active' : ''} onClick={() => changeReviewMode('week')}>
               Week
             </button>
-            <button type="button" className={reviewMode === 'month' ? 'active' : ''} onClick={() => setReviewMode('month')}>
+            <button type="button" className={reviewMode === 'month' ? 'active' : ''} onClick={() => changeReviewMode('month')}>
               Month
             </button>
-            <button type="button" className={reviewMode === 'fourMonth' ? 'active' : ''} onClick={() => setReviewMode('fourMonth')}>
-              4 Month
+            <button type="button" className={reviewMode === 'year' ? 'active' : ''} onClick={() => changeReviewMode('year')}>
+              Year
             </button>
           </div>
         </div>
@@ -659,10 +699,10 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
 
           {reviewMode === 'month' && renderMonthGrid(calendarAnchorDate)}
 
-          {reviewMode === 'fourMonth' && (
-            <div className="four-month-grid">
-              {[0, 1, 2, 3].map(offset => (
-                <div key={offset} className="four-month-card">
+          {reviewMode === 'year' && (
+            <div className="year-grid">
+              {Array.from({ length: 12 }, (_, offset) => (
+                <div key={offset} className="year-month-card">
                   {renderMonthGrid(addMonths(calendarAnchorDate, offset), true)}
                 </div>
               ))}
@@ -810,6 +850,10 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         .event-list-container {
           border-radius: 1rem;
           overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          max-height: calc(100dvh - 18rem);
+          min-height: 0;
         }
 
         .event-list-header {
@@ -921,7 +965,8 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         }
 
         .event-list {
-          max-height: min(52vh, 520px);
+          flex: 1 1 auto;
+          min-height: 0;
           overflow-y: auto;
           padding: 0.5rem;
         }
@@ -1116,15 +1161,17 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           display: flex;
           flex-direction: column;
           align-items: center;
+          flex-shrink: 0;
         }
 
-        .calendar-review {
-          max-height: min(52vh, 520px);
+        :global(.calendar-review) {
+          flex: 1 1 auto;
+          min-height: 0;
           overflow-y: auto;
           padding: 1rem;
         }
 
-        .calendar-toolbar {
+        :global(.calendar-toolbar) {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1133,13 +1180,13 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           color: white;
         }
 
-        .calendar-toolbar strong {
+        :global(.calendar-toolbar strong) {
           min-width: 13rem;
           text-align: center;
           font-size: 0.95rem;
         }
 
-        .calendar-toolbar button {
+        :global(.calendar-toolbar button) {
           padding: 0.45rem 0.7rem;
           border: 1px solid rgba(255, 255, 255, 0.13);
           border-radius: 999px;
@@ -1150,12 +1197,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           cursor: pointer;
         }
 
-        .calendar-day-view {
+        :global(.calendar-day-view) {
           display: grid;
           place-items: center;
         }
 
-        .day-column {
+        :global(.day-column) {
           width: min(100%, 520px);
           min-height: 20rem;
           border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1165,31 +1212,31 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           color: white;
         }
 
-        .day-column-title {
+        :global(.day-column-title) {
           font-size: 1.15rem;
           font-weight: 800;
         }
 
-        .day-column-date {
+        :global(.day-column-date) {
           color: rgba(255, 255, 255, 0.58);
           margin-bottom: 1rem;
         }
 
-        .day-agenda,
-        .week-events,
-        .calendar-day-events {
+        :global(.day-agenda),
+        :global(.week-events),
+        :global(.calendar-day-events) {
           display: flex;
           flex-direction: column;
           gap: 0.35rem;
         }
 
-        .day-agenda p {
+        :global(.day-agenda p) {
           color: rgba(255, 255, 255, 0.5);
           margin-top: 2rem;
           text-align: center;
         }
 
-        .calendar-week-view {
+        :global(.calendar-week-view) {
           display: grid;
           grid-template-columns: repeat(7, minmax(112px, 1fr));
           overflow-x: auto;
@@ -1197,18 +1244,18 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           border-radius: 1rem;
         }
 
-        .week-day-column {
+        :global(.week-day-column) {
           min-height: 22rem;
           padding: 0.65rem;
           border-right: 1px solid rgba(255, 255, 255, 0.08);
           background: rgba(255, 255, 255, 0.035);
         }
 
-        .week-day-column:last-child {
+        :global(.week-day-column:last-child) {
           border-right: 0;
         }
 
-        .week-day-title {
+        :global(.week-day-title) {
           color: white;
           font-size: 0.82rem;
           font-weight: 700;
@@ -1216,12 +1263,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           letter-spacing: 0.08em;
         }
 
-        .week-day-date {
+        :global(.week-day-date) {
           color: rgba(255, 255, 255, 0.52);
           margin-bottom: 0.7rem;
         }
 
-        .calendar-month-title {
+        :global(.calendar-month-title) {
           margin-bottom: 0.6rem;
           color: white;
           font-size: 0.95rem;
@@ -1229,13 +1276,13 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           text-align: center;
         }
 
-        .calendar-weekdays,
-        .calendar-grid {
+        :global(.calendar-weekdays),
+        :global(.calendar-grid) {
           display: grid;
           grid-template-columns: repeat(7, minmax(0, 1fr));
         }
 
-        .calendar-weekdays span {
+        :global(.calendar-weekdays span) {
           padding: 0.45rem;
           color: rgba(255, 255, 255, 0.45);
           font-size: 0.72rem;
@@ -1245,14 +1292,14 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           letter-spacing: 0.08em;
         }
 
-        .calendar-grid {
+        :global(.calendar-grid) {
           border-top: 1px solid rgba(255, 255, 255, 0.1);
           border-left: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 1rem;
           overflow: hidden;
         }
 
-        .calendar-day-cell {
+        :global(.calendar-day-cell) {
           min-height: 7.5rem;
           padding: 0.5rem;
           border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -1260,18 +1307,18 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           background: rgba(255, 255, 255, 0.035);
         }
 
-        .calendar-day-cell.muted {
+        :global(.calendar-day-cell.muted) {
           opacity: 0.35;
         }
 
-        .calendar-day-number {
+        :global(.calendar-day-number) {
           margin-bottom: 0.35rem;
           color: rgba(255, 255, 255, 0.78);
           font-size: 0.8rem;
           font-weight: 800;
         }
 
-        .calendar-event-chip {
+        :global(.calendar-event-chip) {
           width: 100%;
           border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 0.55rem;
@@ -1283,12 +1330,12 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           overflow: hidden;
         }
 
-        .calendar-event-chip.selected {
+        :global(.calendar-event-chip.selected) {
           background: rgba(147, 197, 253, 0.22);
           border-color: rgba(147, 197, 253, 0.38);
         }
 
-        .calendar-event-chip span {
+        :global(.calendar-event-chip span) {
           display: block;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -1297,39 +1344,39 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
           font-weight: 750;
         }
 
-        .calendar-event-chip small {
+        :global(.calendar-event-chip small) {
           display: block;
           color: rgba(255, 255, 255, 0.58);
           font-size: 0.7rem;
           margin-top: 0.1rem;
         }
 
-        .calendar-event-chip.compact {
+        :global(.calendar-event-chip.compact) {
           padding: 0.28rem 0.36rem;
         }
 
-        .calendar-event-chip.compact span {
+        :global(.calendar-event-chip.compact span) {
           font-size: 0.68rem;
         }
 
-        .calendar-more {
+        :global(.calendar-more) {
           color: rgba(255, 255, 255, 0.48);
           font-size: 0.7rem;
           font-weight: 700;
         }
 
-        .four-month-grid {
+        :global(.year-grid) {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
         }
 
-        .calendar-month.compact .calendar-day-cell {
+        :global(.calendar-month.compact .calendar-day-cell) {
           min-height: 5.4rem;
           padding: 0.36rem;
         }
 
-        .calendar-month.compact .calendar-weekdays span {
+        :global(.calendar-month.compact .calendar-weekdays span) {
           padding: 0.3rem;
           font-size: 0.62rem;
         }
@@ -1484,6 +1531,15 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
         }
 
         @media (max-width: 760px) {
+          .event-list-container {
+            max-height: calc(100dvh - 13.5rem);
+          }
+
+          .event-list-header,
+          .event-list-footer {
+            padding: 0.9rem;
+          }
+
           .event-list-heading-row {
             flex-direction: column;
           }
@@ -1509,24 +1565,24 @@ export default function EventList({ events, onClearEvents }: EventListProps) {
             height: calc(100dvh - 24px) !important;
           }
 
-          .calendar-toolbar {
+          :global(.calendar-toolbar) {
             justify-content: flex-start;
             overflow-x: auto;
           }
 
-          .calendar-toolbar strong {
+          :global(.calendar-toolbar strong) {
             min-width: 10rem;
           }
 
-          .calendar-week-view {
+          :global(.calendar-week-view) {
             grid-template-columns: repeat(7, minmax(9rem, 1fr));
           }
 
-          .calendar-grid {
+          :global(.calendar-grid) {
             min-width: 720px;
           }
 
-          .four-month-grid {
+          :global(.year-grid) {
             grid-template-columns: 1fr;
           }
         }

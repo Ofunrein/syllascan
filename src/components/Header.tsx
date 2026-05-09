@@ -113,16 +113,16 @@ export default function Header() {
                     </div>
                     <Link href="/scan#events" className="menu-item" onClick={() => setUserMenuOpen(false)}>
                       <LayoutDashboard size={15} strokeWidth={2} />
-                      My Events
+                      <span className="menu-item-label">My Events</span>
                     </Link>
                     <Link href="/settings" className="menu-item" onClick={() => setUserMenuOpen(false)}>
                       <Settings size={15} strokeWidth={2} />
-                      Settings
+                      <span className="menu-item-label">Settings</span>
                     </Link>
                     <div className="menu-divider" />
                     <button onClick={signOut} className="menu-item menu-item--danger">
                       <LogOut size={15} strokeWidth={2} />
-                      Sign out
+                      <span className="menu-item-label">Sign out</span>
                     </button>
                   </div>
                 )}
@@ -226,13 +226,16 @@ export default function Header() {
 
         .logo-container {
           display: flex;
+          flex-direction: row !important;
           align-items: center;
           flex-shrink: 0;
         }
 
         .logo {
           display: flex;
+          flex-direction: row !important;
           align-items: center;
+          justify-content: flex-start;
           gap: 0.5rem;
           text-decoration: none;
           transition: opacity 0.2s;
@@ -318,15 +321,16 @@ export default function Header() {
 
         .dropdown-menu {
           position: absolute;
-          top: calc(100% + 0.5rem);
+          top: calc(100% + 0.85rem);
           right: 0;
-          width: 220px;
+          width: 320px;
+          max-width: calc(100vw - 2rem);
           background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-radius: 0.625rem;
+          border-radius: 1rem;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-          padding: 0.375rem 0;
+          padding: 0.8rem 0;
           z-index: 100;
           border: 1px solid rgba(0, 0, 0, 0.08);
           overflow: hidden;
@@ -338,16 +342,19 @@ export default function Header() {
         }
 
         .user-info {
-          padding: 0.75rem 1rem;
+          padding: 1.2rem 1.45rem 1.25rem;
           border-bottom: 1px solid var(--border);
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.55rem;
         }
 
-        .user-name { font-weight: 600; color: #111827; font-size: 0.875rem; font-family: var(--font-heading); }
+        .user-name { font-weight: 700; color: #111827; font-size: 1.08rem; font-family: var(--font-heading); line-height: 1.2; }
         :global(.dark) .user-name { color: #fff; }
-        .user-email { color: rgba(0, 0, 0, 0.45); font-size: 0.75rem; margin-top: 0.125rem; }
+        .user-email { color: rgba(0, 0, 0, 0.45); font-size: 0.9rem; margin-top: 0.45rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         :global(.dark) .user-email { color: rgba(255, 255, 255, 0.45); }
-        .menu-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; color: rgba(0, 0, 0, 0.75); font-size: 0.875rem; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 500; font-family: var(--font-body); }
+        .menu-item { display: grid; grid-template-columns: 1.45rem minmax(0, 1fr); align-items: center; column-gap: 1.15rem; padding: 1.05rem 1.45rem; color: rgba(0, 0, 0, 0.75); font-size: 1.06rem; line-height: 1.2; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 650; font-family: var(--font-body); }
+        .menu-item + .menu-item { margin-top: 0.45rem; }
+        .menu-item :global(svg) { width: 1.25rem !important; height: 1.25rem !important; justify-self: center; }
+        .menu-item-label { min-width: 0; }
         .menu-item:hover { background-color: rgba(0, 0, 0, 0.04); }
         :global(.dark) .menu-item { color: rgba(255, 255, 255, 0.85); }
         :global(.dark) .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
@@ -355,7 +362,7 @@ export default function Header() {
         .menu-divider {
           height: 1px;
           background: var(--border);
-          margin: 0.25rem 0;
+          margin: 0.45rem 0;
         }
 
         .menu-item--danger {

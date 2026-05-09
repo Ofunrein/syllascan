@@ -10,6 +10,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [usage, setUsage] = useState<{ extraction_count: number; chat_count: number } | null>(null);
+  const [eventSummary, setEventSummary] = useState<{ total: number; extracted: number; manual: number; synced: number } | null>(null);
   const [usageLoading, setUsageLoading] = useState(true);
 
   useEffect(() => { setMounted(true); }, []);
@@ -24,13 +25,25 @@ export default function SettingsPage() {
 
       try {
         setUsageLoading(true);
-        const res = await fetch('/api/settings/usage', { credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to load usage');
-        const data = await res.json();
-        setUsage(data);
+        const [usageRes, eventSummaryRes] = await Promise.all([
+          fetch('/api/settings/usage', { credentials: 'include' }),
+          fetch('/api/settings/event-summary', { credentials: 'include' }),
+        ]);
+
+        if (!usageRes.ok) throw new Error('Failed to load usage');
+        const usageData = await usageRes.json();
+        setUsage(usageData);
+
+        if (eventSummaryRes.ok) {
+          const eventSummaryData = await eventSummaryRes.json();
+          setEventSummary(eventSummaryData);
+        } else {
+          setEventSummary({ total: 0, extracted: 0, manual: 0, synced: 0 });
+        }
       } catch (error) {
         console.error('Failed to load usage:', error);
         setUsage({ extraction_count: 0, chat_count: 0 });
+        setEventSummary({ total: 0, extracted: 0, manual: 0, synced: 0 });
       } finally {
         setUsageLoading(false);
       }
@@ -104,6 +117,27 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Event Library Section */}
+        <div className="liquid-glass rounded-2xl p-6 mb-4">
+          <h2 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Event Library</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.75rem' }}>
+            {[
+              ['Total events', eventSummary?.total ?? 0],
+              ['Extracted', eventSummary?.extracted ?? 0],
+              ['Manual', eventSummary?.manual ?? 0],
+              ['Synced', eventSummary?.synced ?? 0],
+            ].map(([label, value]) => (
+              <div key={label} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                <p style={{ fontSize: '0.72rem', opacity: 0.55, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>{label}</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 600 }}>{usageLoading ? '—' : value}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: '0.82rem', opacity: 0.48, marginTop: '0.9rem' }}>
+            Extracted, manually added, and Google-synced events are tracked from the same Supabase event table.
+          </p>
         </div>
 
         {/* Preferences Section */}
