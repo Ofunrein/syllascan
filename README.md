@@ -118,14 +118,7 @@ Thanks to OpenAI for the Vision API, Google for the Calendar API, and the Next.j
 
 This section is an extension to the original README. It exists to document the product, architecture, and repo shape in more concrete detail without replacing the simpler overview above.
 
-## Screenshots
-
-### Landing page
-
-![SyllaScan landing page](public/readme/homepage-hero.png)
-
 ### Scan workspace
-
 ![SyllaScan scan workspace](public/readme/scan-workspace.png)
 
 ## Product Overview
