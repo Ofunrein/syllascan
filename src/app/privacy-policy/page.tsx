@@ -15,7 +15,7 @@ export default function PrivacyPolicy() {
             
             <div className="max-w-3xl mx-auto space-y-8">
               <div className="mb-6">
-                <p className="text-base mb-6">Effective Date: June 15, 2024</p>
+                <p className="text-base mb-6">Effective Date: May 8, 2026</p>
                 <p className="text-base leading-relaxed">
                   This Privacy Policy describes how your personal information is collected, used, and shared 
                   when you use SyllaScan, our syllabus parsing and organization service. By using any of SyllaScan's Services, 
@@ -43,6 +43,12 @@ export default function PrivacyPolicy() {
                   <strong>Usage Information:</strong> We collect information about how you interact with our service, including the features you use, 
                   the time spent on the platform, and your interactions with syllabi and extracted data.
                 </p>
+
+                <p className="text-base leading-relaxed mt-3 pl-6">
+                  <strong>Google Account and Calendar Information:</strong> If you connect Google Calendar, we request access to your Google profile,
+                  email address, calendar event metadata, and calendar event creation permissions so SyllaScan can show calendar events and create
+                  events you approve from extracted syllabus dates.
+                </p>
               </section>
 
               <section className="mb-8">
@@ -57,11 +63,27 @@ export default function PrivacyPolicy() {
                   <li className="text-base">Communicate with you about service updates and changes</li>
                   <li className="text-base">Monitor and analyze usage patterns and trends</li>
                   <li className="text-base">Detect, prevent, and address technical issues</li>
+                  <li className="text-base">Read and create Google Calendar events only for calendar features you use</li>
                 </ul>
               </section>
 
               <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">3. Information Sharing</h2>
+                <h2 className="text-xl font-semibold mb-4">3. Google API Services User Data</h2>
+                <p className="text-base leading-relaxed mb-4">
+                  SyllaScan's use and transfer of information received from Google APIs will adhere to the Google API Services User Data Policy,
+                  including the Limited Use requirements.
+                </p>
+                <ul className="pl-6 list-disc space-y-2">
+                  <li className="text-base">We use Google Calendar data only to display your calendar and create events you choose to sync.</li>
+                  <li className="text-base">We do not sell Google user data.</li>
+                  <li className="text-base">We do not use Google user data for advertising.</li>
+                  <li className="text-base">We do not use Google user data to train generalized AI or machine learning models.</li>
+                  <li className="text-base">You can revoke access at any time from your Google Account permissions page.</li>
+                </ul>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-xl font-semibold mb-4">4. Information Sharing</h2>
                 <p className="text-base leading-relaxed mb-4">
                   We do not sell or rent your personal information to third parties. We may share your information in the following circumstances:
                 </p>
@@ -83,7 +105,7 @@ export default function PrivacyPolicy() {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">4. Data Security</h2>
+                <h2 className="text-xl font-semibold mb-4">5. Data Security</h2>
                 <p className="text-base leading-relaxed">
                   We implement appropriate technical and organizational measures to protect the security of your personal information. 
                   While we strive to use commercially acceptable means to protect your personal information, no method of 
@@ -92,7 +114,7 @@ export default function PrivacyPolicy() {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">5. Your Rights and Choices</h2>
+                <h2 className="text-xl font-semibold mb-4">6. Your Rights and Choices</h2>
                 <p className="text-base leading-relaxed mb-4">
                   Depending on your location, you may have certain rights regarding your personal information, including:
                 </p>
@@ -105,13 +127,13 @@ export default function PrivacyPolicy() {
                 </ul>
                 
                 <p className="text-base leading-relaxed mt-4">
-                  To exercise any of these rights, please contact us at privacy@syllascan.com. We will respond to your request 
+                  To exercise any of these rights, please contact us at ofunrein123@gmail.com. We will respond to your request 
                   within a reasonable timeframe, typically within 30 days.
                 </p>
               </section>
 
               <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">6. Data Retention</h2>
+                <h2 className="text-xl font-semibold mb-4">7. Data Retention</h2>
                 <p className="text-base leading-relaxed">
                   We retain your personal information for as long as necessary to provide you with our services and as needed 
                   to comply with our legal obligations, resolve disputes, and enforce our agreements. When we no longer need 
@@ -120,7 +142,7 @@ export default function PrivacyPolicy() {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">7. Children's Privacy</h2>
+                <h2 className="text-xl font-semibold mb-4">8. Children's Privacy</h2>
                 <p className="text-base leading-relaxed">
                   Our service is not intended for children under the age of 13. We do not knowingly collect personal information 
                   from children under 13. If you are a parent or guardian and you are aware that your child has provided us with 
@@ -129,7 +151,7 @@ export default function PrivacyPolicy() {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">8. Changes to this Privacy Policy</h2>
+                <h2 className="text-xl font-semibold mb-4">9. Changes to this Privacy Policy</h2>
                 <p className="text-base leading-relaxed">
                   We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new 
                   Privacy Policy on this page and updating the "Effective Date" at the top. You are advised to review this 
@@ -138,11 +160,11 @@ export default function PrivacyPolicy() {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">9. Contact Us</h2>
+                <h2 className="text-xl font-semibold mb-4">10. Contact Us</h2>
                 <p className="text-base leading-relaxed mb-4">
                   If you have any questions about this Privacy Policy, please contact us at:
                 </p>
-                <p className="text-base">privacy@syllascan.com</p>
+                <p className="text-base">ofunrein123@gmail.com</p>
               </section>
             </div>
           </div>

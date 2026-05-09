@@ -15,7 +15,7 @@ export default function TermsOfService() {
             
             <div className="max-w-3xl mx-auto space-y-8">
               <div className="mb-6">
-                <p className="text-base mb-6">Effective Date: June 15, 2024</p>
+                <p className="text-base mb-6">Effective Date: May 8, 2026</p>
                 <p className="text-base leading-relaxed">
                   Please read these Terms of Service ("Terms") carefully before using the SyllaScan 
                   service. By accessing or using the service, you agree to be bound by these Terms.
@@ -163,7 +163,7 @@ export default function TermsOfService() {
                 <p className="text-base leading-relaxed mb-4">
                   If you have any questions about these Terms, please contact us at:
                 </p>
-                <p className="text-base">terms@syllascan.com</p>
+                <p className="text-base">ofunrein123@gmail.com</p>
               </section>
             </div>
           </div>
