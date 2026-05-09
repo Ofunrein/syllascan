@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Event } from '@/lib/openai';
 import { format, parseISO } from 'date-fns';
-import { PaperAirplaneIcon, XMarkIcon, CalendarIcon, MapPinIcon, ClockIcon, DocumentTextIcon, PencilIcon, SparklesIcon, CheckIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, CalendarIcon, MapPinIcon, ClockIcon, DocumentTextIcon, CheckIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 // Enum for editor mode - must match the one in EventList.tsx
 enum EditorMode {
@@ -32,7 +32,6 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
     {role: 'assistant', content: 'How would you like to modify this event? You can say things like "Change the title to Workshop on AI" or "Move the event to next Monday at 2pm".'}
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'form' | 'ai'>('form');
 
   // Parse ISO dates into date and time components for the form
   useEffect(() => {
@@ -56,9 +55,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
     }
   }, [event]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const saveEventFromFields = () => {
     // Combine date and time into ISO strings
     let formattedStartDate = startDate;
     let formattedEndDate = endDate || startDate;
@@ -84,7 +81,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
 
     onSave(updatedEvent);
   };
-  
+
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -174,41 +171,15 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
 
   return (
     <div className="event-editor-wrapper">
-      {/* Tab Navigation */}
-      <div className="editor-tabs">
-        <button
-          className={`editor-tab ${activeTab === 'form' ? 'active' : ''}`}
-          onClick={() => setActiveTab('form')}
-        >
-          <div className="tab-icon-container">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="editor-tab-icon">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-          </div>
-          <span>Edit Form</span>
-        </button>
-        <button
-          className={`editor-tab ${activeTab === 'ai' ? 'active' : ''}`}
-          onClick={() => setActiveTab('ai')}
-        >
-          <div className="tab-icon-container">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="editor-tab-icon">
-              <path d="M15 2l5 5L8 19l-5-5L15 2z"></path>
-              <path d="M18 13l2 2-2 2-2-2 2-2z"></path>
-              <path d="M6 17l2 2-2 2-2-2 2-2z"></path>
-              <path d="M14 8l2-2-2-2-2 2 2 2z"></path>
-            </svg>
-          </div>
-          <span>AI Assistant</span>
-        </button>
-      </div>
-
-      {/* Content area - takes remaining height */}
       <div className="editor-content">
-        {activeTab === 'form' ? (
-          <form onSubmit={handleSubmit} className="event-form">
-            <div className="form-scrollable-content">
+        <div className="event-form">
+          <div className="form-scrollable-content">
+            <section className="manual-edit-section">
+              <div className="section-heading">
+                <span>Manual edit</span>
+                <small>Change the event details directly.</small>
+              </div>
+
               <div className="form-field">
                 <label htmlFor="title" className="form-label">
                   <span className="form-label-text">Title *</span>
@@ -345,31 +316,16 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
                 </div>
               )}
               </div>
-            </div>
+            </section>
 
-            <div className="form-actions">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="form-button-secondary"
-              >
-                <ArrowLeftIcon className="button-icon" />
-                <span>Cancel</span>
-              </button>
-              <button
-                type="submit"
-                className="form-button-primary"
-              >
-                <CheckIcon className="button-icon" />
-                <span>{getButtonText()}</span>
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="ai-assistant-wrapper">
-            <div className="ai-chat-messages">
-              {chatMessages.map((message, index) => (
-                <div
+            <section className="ai-assistant-wrapper">
+              <div className="section-heading">
+                <span>AI assistant</span>
+                <small>Ask for natural-language edits, then save once.</small>
+              </div>
+              <div className="ai-chat-messages">
+                {chatMessages.map((message, index) => (
+                  <div
                   key={index}
                   className={`chat-message ${message.role === 'user' ? 'user' : 'assistant'}`}
                 >
@@ -410,27 +366,28 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
                 </button>
               </form>
             </div>
-            
-            <div className="form-actions ai-actions">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="form-button-secondary"
-              >
-                <ArrowLeftIcon className="button-icon" />
-                <span>Cancel</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                className="form-button-primary"
-              >
-                <CheckIcon className="button-icon" />
-                <span>{getButtonText()}</span>
-              </button>
-            </div>
+            </section>
           </div>
-        )}
+
+          <div className="form-actions">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="form-button-secondary"
+            >
+              <ArrowLeftIcon className="button-icon" />
+              <span>Cancel</span>
+            </button>
+            <button
+              type="button"
+              onClick={saveEventFromFields}
+              className="form-button-primary"
+            >
+              <CheckIcon className="button-icon" />
+              <span>{getButtonText()}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <style jsx>{`
@@ -467,11 +424,42 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         .form-scrollable-content {
           flex: 1;
           overflow-y: auto;
-          padding: 1rem;
+          padding: 0.85rem;
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
+          gap: 0.8rem;
           min-height: 0;
+        }
+
+        .manual-edit-section,
+        .ai-assistant-wrapper {
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 0.85rem;
+          background: rgba(255, 255, 255, 0.035);
+        }
+
+        .manual-edit-section {
+          padding: 0.8rem;
+        }
+
+        .section-heading {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .section-heading span {
+          color: white;
+          font-size: 0.9rem;
+          font-weight: 750;
+        }
+
+        .section-heading small {
+          color: rgba(255, 255, 255, 0.45);
+          font-size: 0.72rem;
+          text-align: right;
         }
         
         .form-field {
@@ -560,7 +548,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         .form-actions {
           display: flex;
           justify-content: space-between;
-          padding: 0.8rem 1rem;
+          padding: 0.7rem 0.85rem;
           border-top: 1px solid rgba(255, 255, 255, 0.08);
           background-color: rgba(8, 10, 18, 0.72);
           flex-shrink: 0;
@@ -618,23 +606,27 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         .ai-assistant-wrapper {
           display: flex;
           flex-direction: column;
-          height: 100%;
+          min-height: 12rem;
+          max-height: min(32dvh, 18rem);
+          overflow: hidden;
+          padding-top: 0.8rem;
         }
         
         .ai-chat-messages {
           flex: 1;
           overflow-y: auto;
-          padding: 1rem;
+          padding: 0 0.8rem 0.75rem;
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.55rem;
+          min-height: 0;
         }
         
         .chat-message {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          margin-bottom: 0.75rem;
+          margin-bottom: 0;
         }
         
         .chat-message.user {
@@ -643,7 +635,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         
         .chat-bubble {
           max-width: 80%;
-          padding: 0.75rem 1rem;
+          padding: 0.58rem 0.72rem;
           border-radius: 1rem;
           background-color: rgba(var(--primary-rgb), 0.1);
           color: var(--foreground);
@@ -663,8 +655,8 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         
         .chat-text {
           margin: 0;
-          font-size: 0.875rem;
-          line-height: 1.5;
+          font-size: 0.8rem;
+          line-height: 1.35;
         }
         
         .typing-indicator {
@@ -700,7 +692,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         }
         
         .ai-chat-input-container {
-          padding: 0.75rem;
+          padding: 0.65rem 0.8rem;
           border-top: 1px solid rgba(255, 255, 255, 0.08);
           background-color: rgba(8, 10, 18, 0.72);
         }
@@ -713,7 +705,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
         
         .ai-chat-input {
           flex: 1;
-          padding: 0.625rem 0.75rem;
+          padding: 0.55rem 0.7rem;
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 1.5rem;
           background-color: rgba(8, 10, 18, 0.72);
@@ -731,7 +723,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0.5rem 1rem;
+          padding: 0.5rem 0.8rem;
           border-radius: 1.5rem;
           background-color: var(--primary);
           color: white;

@@ -119,7 +119,7 @@ export default function Header() {
                       <span className="menu-item-icon"><LayoutDashboard size={15} strokeWidth={2} /></span>
                       <span className="menu-item-label">My Events</span>
                     </Link>
-                    <Link href="/settings" className="menu-item" onClick={() => setUserMenuOpen(false)}>
+                    <Link href="/settings" className="menu-item menu-item--spaced" onClick={() => setUserMenuOpen(false)}>
                       <span className="menu-item-icon"><Settings size={15} strokeWidth={2} /></span>
                       <span className="menu-item-label">Settings</span>
                     </Link>
@@ -357,6 +357,7 @@ export default function Header() {
         :global(.dark) .user-email { color: rgba(255, 255, 255, 0.45); }
         .menu-item { display: flex; align-items: center; gap: 0.85rem; min-height: 2.7rem; padding: 0.62rem 1.1rem; color: rgba(0, 0, 0, 0.75); font-size: 0.96rem; line-height: 1.2; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 650; font-family: var(--font-body); }
         .menu-item + .menu-item { margin-top: 0.1rem; }
+        .menu-item--spaced { margin-top: 0.45rem !important; }
         .menu-item-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; flex: 0 0 1.15rem; }
         .menu-item-icon :global(svg) { width: 1.05rem !important; height: 1.05rem !important; display: block !important; }
         .menu-item-label { display: block; min-width: 0; }

@@ -401,7 +401,7 @@ export default function LiveCalendarView() {
 
   // Show calendar with events
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto">
       <div className="liquid-glass rounded-2xl overflow-hidden text-white">
         <div className="px-6 py-4 border-b border-white/10">
           <h2 className="text-lg font-semibold text-white">
@@ -412,7 +412,7 @@ export default function LiveCalendarView() {
           </p>
         </div>
 
-        <div className="p-4" style={{ height: '600px' }}>
+        <div className="p-3 md:p-4" style={{ height: 'clamp(420px, calc(100dvh - 21rem), 720px)' }}>
           <style jsx global>{`
             /* Calendar container */
             .rbc-calendar {

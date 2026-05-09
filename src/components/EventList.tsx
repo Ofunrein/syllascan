@@ -255,8 +255,8 @@ export default function EventList({ events, onClearEvents, onEventsChange }: Eve
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
 
-    const width = Math.min(windowWidth - 32, 560);
-    const height = Math.min(windowHeight - 48, 620);
+    const width = Math.min(windowWidth - 32, 680);
+    const height = Math.min(windowHeight - 48, 720);
     const left = (windowWidth - width) / 2;
     const top = Math.max(24, (windowHeight - height) / 2);
 
@@ -285,8 +285,8 @@ export default function EventList({ events, onClearEvents, onEventsChange }: Eve
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
 
-    const width = Math.min(windowWidth - 32, 560);
-    const height = Math.min(windowHeight - 48, 620);
+    const width = Math.min(windowWidth - 32, 680);
+    const height = Math.min(windowHeight - 48, 720);
     const left = (windowWidth - width) / 2;
     const top = Math.max(24, (windowHeight - height) / 2);
 
