@@ -11,8 +11,8 @@ export async function GET(request: Request) {
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!;
-  const redirectUri = `${origin}/api/google-calendar/callback`;
-  const next = searchParams.get('next') || '/scan#live-calendar';
+  // Use /oauth2callback which is the registered redirect URI in Google Cloud Console
+  const redirectUri = `${origin}/oauth2callback`;
   const scopes = [
     'https://www.googleapis.com/auth/calendar.events',
     'https://www.googleapis.com/auth/calendar.readonly',
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   authUrl.searchParams.set('scope', scopes);
   authUrl.searchParams.set('access_type', 'offline');
   authUrl.searchParams.set('prompt', 'consent');
-  authUrl.searchParams.set('state', next);
+  authUrl.searchParams.set('state', 'calendar');
 
   return NextResponse.json({ url: authUrl.toString() });
 }
