@@ -335,7 +335,7 @@ export default function Header() {
           -webkit-backdrop-filter: blur(20px);
           border-radius: 0.95rem;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-          padding: 0.45rem 0;
+          padding: 0.5rem 0.5rem;
           z-index: 100;
           border: 1px solid rgba(0, 0, 0, 0.08);
           overflow: hidden;
@@ -349,27 +349,28 @@ export default function Header() {
         .user-info {
           padding: 0.9rem 1.1rem 0.95rem;
           border-bottom: 1px solid var(--border);
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.35rem;
         }
 
         .user-name { font-weight: 700; color: #111827; font-size: 0.98rem; font-family: var(--font-heading); line-height: 1.2; }
         :global(.dark) .user-name { color: #fff; }
         .user-email { color: rgba(0, 0, 0, 0.45); font-size: 0.82rem; margin-top: 0.3rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         :global(.dark) .user-email { color: rgba(255, 255, 255, 0.45); }
-        .menu-item { display: flex; align-items: center; gap: 1rem; min-height: 3rem; padding: 0.85rem 1.6rem; color: rgba(0, 0, 0, 0.75); font-size: 0.96rem; line-height: 1.2; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-weight: 650; font-family: var(--font-body); }
-        .menu-item + .menu-item { margin-top: 0; }
-        .menu-item--spaced { margin-top: 0; }
-        .menu-item-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; flex: 0 0 1.15rem; }
-        .menu-item-icon :global(svg) { width: 1.05rem !important; height: 1.05rem !important; display: block !important; }
+        .menu-item { display: flex; align-items: center; gap: 0.75rem; min-height: 2.75rem; padding: 0.65rem 1rem; margin: 0.1rem 0; color: rgba(0, 0, 0, 0.75); font-size: 0.925rem; line-height: 1.2; transition: background-color 0.15s; text-decoration: none; width: 100%; text-align: left; background: rgba(0,0,0,0.03); border: none; cursor: pointer; font-weight: 600; font-family: var(--font-body); border-radius: 0.6rem; box-sizing: border-box; }
+        .menu-item + .menu-item { margin-top: 0.25rem; }
+        .menu-item--spaced { margin-top: 0.25rem; }
+        .menu-item-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; flex: 0 0 1.25rem; background: rgba(0,0,0,0.06); border-radius: 0.35rem; }
+        .menu-item-icon :global(svg) { width: 0.875rem !important; height: 0.875rem !important; display: block !important; }
+        :global(.dark) .menu-item-icon { background: rgba(255,255,255,0.1); }
         .menu-item-label { display: block; min-width: 0; }
-        .menu-item:hover { background-color: rgba(0, 0, 0, 0.04); }
-        :global(.dark) .menu-item { color: rgba(255, 255, 255, 0.85); }
-        :global(.dark) .menu-item:hover { background-color: rgba(255, 255, 255, 0.08); }
+        .menu-item:hover { background-color: rgba(0, 0, 0, 0.07); }
+        :global(.dark) .menu-item { color: rgba(255, 255, 255, 0.85); background: rgba(255,255,255,0.05); }
+        :global(.dark) .menu-item:hover { background-color: rgba(255, 255, 255, 0.12); }
 
         .menu-divider {
           height: 1px;
           background: var(--border);
-          margin: 0.25rem 0;
+          margin: 0.35rem 0;
         }
 
         .menu-item--danger {
