@@ -158,7 +158,11 @@ export async function POST(request: NextRequest) {
           if (userId) {
             const serviceClient = await createServiceRoleClient();
             await serviceClient.from('users').update({
-              google_tokens: { access_token: newAccessToken, refresh_token: refreshToken }
+              google_tokens: {
+                access_token: newAccessToken,
+                refresh_token: refreshToken,
+                expires_at: credentials.expiry_date ?? Date.now() + 3600000,
+              }
             }).eq('id', userId);
           }
 

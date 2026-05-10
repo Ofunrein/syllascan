@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
     let accessToken = profile?.google_tokens?.access_token || null;
     let refreshToken = profile?.google_tokens?.refresh_token || null;
+    const expiresAt: number | null = profile?.google_tokens?.expires_at || null;
 
     // Cookie fallback for existing sessions
     if (!accessToken) {
@@ -37,6 +38,34 @@ export async function GET(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // Proactively refresh if token expires within 5 minutes
+    const tokenExpiresSoon = expiresAt && expiresAt - Date.now() < 5 * 60 * 1000;
+    if (tokenExpiresSoon && refreshToken) {
+      try {
+        const { google: googleLib } = await import('googleapis');
+        const refreshClient = new googleLib.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET
+        );
+        refreshClient.setCredentials({ refresh_token: refreshToken });
+        const { credentials } = await refreshClient.refreshAccessToken();
+        if (credentials.access_token) {
+          accessToken = credentials.access_token;
+          const serviceClient = await createServiceRoleClient();
+          await serviceClient.from('users').update({
+            google_tokens: {
+              access_token: accessToken,
+              refresh_token: refreshToken,
+              expires_at: Date.now() + ((credentials.expiry_date ? credentials.expiry_date - Date.now() : 3600000)),
+            }
+          }).eq('id', user.id);
+          console.log('Proactively refreshed access token');
+        }
+      } catch (proactiveRefreshError) {
+        console.warn('Proactive refresh failed, proceeding with existing token:', proactiveRefreshError);
+      }
     }
 
     // Get calendar ID from query params (default to primary)
@@ -111,7 +140,11 @@ export async function GET(request: NextRequest) {
           // Persist refreshed token back to Supabase
           const serviceClient = await createServiceRoleClient();
           await serviceClient.from('users').update({
-            google_tokens: { access_token: newAccessToken, refresh_token: refreshToken }
+            google_tokens: {
+              access_token: newAccessToken,
+              refresh_token: refreshToken,
+              expires_at: credentials.expiry_date ?? Date.now() + 3600000,
+            }
           }).eq('id', user.id);
 
           // Set up Google Calendar API with new token

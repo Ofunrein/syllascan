@@ -67,6 +67,7 @@ export async function GET(request: Request) {
       google_tokens: {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token ?? existingProfile?.google_tokens?.refresh_token ?? null,
+        expires_at: Date.now() + (tokens.expires_in ?? 3600) * 1000,
       },
     }, { onConflict: 'id' });
 
