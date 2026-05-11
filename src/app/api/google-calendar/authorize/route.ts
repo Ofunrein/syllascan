@@ -11,8 +11,8 @@ export async function GET(request: Request) {
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!;
-  // Use /oauth2callback which is the registered redirect URI in Google Cloud Console
-  const redirectUri = `${origin}/oauth2callback`;
+  // Prefer env var for stable redirect URI across deployments; fall back to request origin
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${origin}/oauth2callback`;
   const scopes = [
     'https://www.googleapis.com/auth/calendar.events',
     'https://www.googleapis.com/auth/calendar.readonly',
