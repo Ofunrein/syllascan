@@ -11,8 +11,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Read tokens from Supabase first, fall back to cookies
-    const { data: profile } = await supabase
+    // Use service role client to read tokens — bypasses RLS, prevents silent null returns
+    const serviceClient = await createServiceRoleClient();
+    const { data: profile } = await serviceClient
       .from('users')
       .select('google_tokens')
       .eq('id', user.id)
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     let refreshToken = profile?.google_tokens?.refresh_token || null;
     const expiresAt: number | null = profile?.google_tokens?.expires_at || null;
 
-    // Cookie fallback for existing sessions
+    // Cookie fallback only if Supabase has nothing (legacy sessions)
     if (!accessToken) {
       accessToken = request.cookies.get('access_token')?.value || null;
     }
