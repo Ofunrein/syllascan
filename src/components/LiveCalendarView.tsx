@@ -63,6 +63,7 @@ export default function LiveCalendarView() {
         const nextError = new Error(errorData.error || 'Failed to fetch calendar events');
         if (errorData.reconnectRequired) {
           nextError.name = 'ReconnectRequired';
+          fetch('/api/google-calendar/disconnect', { method: 'POST' }).catch(() => {});
         }
         throw nextError;
         }

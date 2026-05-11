@@ -108,7 +108,7 @@ export default function Home() {
         autoPlay
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover translate-y-[17%] pointer-events-none"
+        className="fixed inset-0 w-full h-full object-cover pointer-events-none"
         style={{ opacity: 0 }}
       />
 
