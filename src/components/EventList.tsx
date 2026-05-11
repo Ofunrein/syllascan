@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Event } from '@/lib/openai';
 import {
   addDays,
@@ -48,6 +48,7 @@ export default function EventList({ events, onClearEvents, onEventsChange }: Eve
   const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ event: Event; index: number } | null>(null);
   const [localEvents, setLocalEvents] = useState<Event[]>([]);
+  const initializedRef = React.useRef(false);
   const [editorPosition, setEditorPosition] = useState<{
     top: number;
     left: number;
@@ -71,10 +72,18 @@ export default function EventList({ events, onClearEvents, onEventsChange }: Eve
   });
   const editorRef = useRef<HTMLDivElement>(null);
 
-  // Initialize state after component mounts to avoid hydration errors
+  // Sync localEvents with prop. Only select-all on first load, not on every update
+  // (prevents nuking user's selection when a new event is added in real-time).
   useEffect(() => {
     setLocalEvents(events);
-    setSelectedEvents(new Set(events.map((_, i) => i)));
+    if (!initializedRef.current && events.length > 0) {
+      setSelectedEvents(new Set(events.map((_, i) => i)));
+      initializedRef.current = true;
+    }
+    // Reset so next fresh extraction auto-selects again
+    if (events.length === 0) {
+      initializedRef.current = false;
+    }
     const firstDate = events
       .map(event => event.date || event.startDate)
       .find(Boolean);
@@ -317,7 +326,7 @@ export default function EventList({ events, onClearEvents, onEventsChange }: Eve
 
       // Add the new event to the list
       newEvents.push(eventToStore);
-      setSelectedEvents(new Set([...selectedEvents, newEvents.length - 1]));
+      setSelectedEvents(prev => new Set([...prev, newEvents.length - 1]));
       toast.success('Event added successfully');
     } else {
       if (user) {

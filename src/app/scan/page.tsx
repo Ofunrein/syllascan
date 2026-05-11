@@ -31,11 +31,11 @@ export default function ScanPage() {
     }
   }, [authenticated, user, fetchEvents]);
 
-  // Sync local events with store
+  // Sync local events with store — always, not just when length > 0
   useEffect(() => {
     const reviewEvents = storedEvents.filter(event => !event.google_event_id);
+    setEvents(reviewEvents);
     if (reviewEvents.length > 0) {
-      setEvents(reviewEvents);
       const hash = window.location.hash.replace('#', '');
       if (!hash || hash === 'upload' || hash === 'events') {
         setActiveTab('events');
@@ -86,7 +86,9 @@ export default function ScanPage() {
   };
 
   const handleClearEvents = async (deleteFromDatabase = true) => {
-    if (deleteFromDatabase && user) {
+    // Always delete from DB — onClearEvents(false) was skipping this after GCal sync,
+    // leaving unsynced events in DB which would reappear on next load.
+    if (user) {
       await Promise.all(
         events
           .filter(event => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(event.id))
@@ -134,7 +136,7 @@ export default function ScanPage() {
           muted
           loop
           playsInline
-          className="h-full w-full object-cover translate-y-[17%]"
+          className="h-full w-full object-cover pointer-events-none"
         />
       </div>
       <div className="pointer-events-none absolute inset-0 bg-black/70" />
