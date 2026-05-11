@@ -19,19 +19,22 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .single();
 
-      const accessToken = data.session?.provider_token ?? existingProfile?.google_tokens?.access_token ?? null;
-      const refreshToken = data.session?.provider_refresh_token ?? existingProfile?.google_tokens?.refresh_token ?? null;
       const metadata = user.user_metadata ?? {};
+
+      // Preserve existing calendar tokens — they have calendar.events scope.
+      // Supabase provider_token only has email/profile scope and must not overwrite them.
+      const hasCalendarTokens = !!existingProfile?.google_tokens?.refresh_token;
+      const calendarTokens = hasCalendarTokens
+        ? existingProfile!.google_tokens
+        : null;
 
       await serviceClient.from('users').upsert({
         id: user.id,
         email: user.email ?? '',
         display_name: metadata.full_name ?? metadata.name ?? user.email?.split('@')[0] ?? null,
         avatar_url: metadata.avatar_url ?? metadata.picture ?? null,
-        google_calendar_connected: Boolean(accessToken) || Boolean(existingProfile?.google_tokens?.access_token),
-        google_tokens: accessToken
-          ? { access_token: accessToken, refresh_token: refreshToken }
-          : existingProfile?.google_tokens ?? null,
+        google_calendar_connected: hasCalendarTokens,
+        google_tokens: calendarTokens,
       }, { onConflict: 'id' });
 
       return NextResponse.redirect(`${origin}${next}`);
