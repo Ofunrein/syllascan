@@ -518,3 +518,379 @@ Run through spec's 10-step Playwright flow on deployed preview. Document pass/fa
 - Responsive QA pass (step 23) done on 5 viewport sizes.
 - Old LiveCalendarView + EmbeddedCalendarView files removed.
 - PR description links spec + plan + preview URL + screenshots per viewport.
+
+---
+
+# Hardening Addendum
+
+Integration rules: items tagged `[before N]` run before existing Step N; `[in N]` modify that step; `[after N]` appended. Net effect: 25 original steps → 31 steps with pre-flight gates and post-launch monitoring.
+
+## A. Pre-flight gates `[before 1]`
+
+### A.1 Supabase RLS audit (new Step 0.1)
+
+Run in Supabase SQL editor, paste output into plan PR description:
+```sql
+SELECT policyname, cmd, qual, with_check
+FROM pg_policies
+WHERE tablename = 'users';
+```
+
+Required policies:
+- `SELECT` for `authenticated`: `auth.uid() = id` (own row only).
+- `UPDATE/INSERT/DELETE`: `service_role` only, OR blocked for `authenticated`.
+
+If SELECT allows cross-row reads, document as known risk and ship anyway; service_role reads in events route are unaffected. If UPDATE is open to `authenticated`, fail-stop: fix RLS before proceeding.
+
+### A.2 schedule-x Schedule view verification (new Step 0.2)
+
+```ts
+// scratch/verify-sx.tsx
+import { createScheduleView } from '@schedule-x/calendar';
+```
+Import succeeds → keep Schedule in view list. Fails → build custom agenda: flat `events.filter(e => inRange(e, timeMin, timeMax)).sort(byStart)` rendered as list grouped by day. Document choice in step 13.
+
+### A.3 Bundle baseline (new Step 0.3)
+
+`bun run build` on current `main` branch → capture `.next/analyze` or Route Segment sizes. Compare post-impl. Hard cap: `+250KB` gzipped for `/calendar`. If exceeded, revisit schedule-x (swap for `react-big-calendar` ~60KB smaller) before merge.
+
+### A.4 Vitest setup (new Step 0.4)
+
+```sh
+bun add -d vitest @vitest/ui jsdom @testing-library/react @testing-library/jest-dom
+```
+`vitest.config.ts` with jsdom env. `package.json`: `"test": "vitest"`, `"test:ci": "vitest run"`. CI runs on PR.
+
+## B. Security `[in 3-8, 22]`
+
+### B.1 CSRF middleware `[before 3]`
+
+`src/middleware.ts` (new or extend existing):
+```ts
+export function middleware(req: NextRequest) {
+  if (!req.nextUrl.pathname.startsWith('/api/calendar')) return NextResponse.next();
+  if (!['POST','PATCH','DELETE','PUT'].includes(req.method)) return NextResponse.next();
+  const site = req.headers.get('sec-fetch-site');
+  if (site && site !== 'same-origin' && site !== 'same-site') {
+    return NextResponse.json({ error: 'cross-site' }, { status: 403 });
+  }
+  return NextResponse.next();
+}
+export const config = { matcher: '/api/calendar/:path*' };
+```
+Old browsers lacking `Sec-Fetch-Site` pass (site === null); acceptable — modern UA coverage ~98%.
+
+### B.2 Service-role-key build guard `[after 1]`
+
+`scripts/check-no-service-key.mjs`:
+```js
+import {readdirSync, readFileSync, statSync} from 'node:fs';
+import {join} from 'node:path';
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!key) { console.log('no key to check'); process.exit(0); }
+const walk = d => readdirSync(d).flatMap(f => {
+  const p = join(d,f); return statSync(p).isDirectory() ? walk(p) : [p];
+});
+const bad = walk('.next/static').filter(p => /\.(js|map)$/.test(p) && readFileSync(p,'utf8').includes(key));
+if (bad.length) { console.error('SERVICE ROLE KEY LEAKED:', bad); process.exit(1); }
+console.log('service role key not in client bundle');
+```
+`package.json`: `"postbuild": "node scripts/check-no-service-key.mjs"`.
+
+### B.3 Content sanitization `[in 15, 16]`
+
+Rendering rules added to `EventPopover` + `EventEditorModal`:
+- `summary`, `description`, `location`: JSX text (React escapes). No `dangerouslySetInnerHTML`. No `marked`/`remark` v1.
+- `hangoutLink`: before rendering as `<a href>`, validate:
+  ```ts
+  const isMeetUrl = (s?: string) =>
+    !!s && /^https:\/\/meet\.google\.com\/[a-z0-9-]{8,}$/i.test(s);
+  ```
+  Fail → render as plain text, no anchor.
+- Attendee emails: display only if `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`. Invalid → skip chip.
+
+## C. Auth + concurrency `[in 3-7]`
+
+### C.1 Token refresh advisory lock `[in 3, 4, 5, 6, 7]`
+
+Shared helper `src/lib/google/token-manager.ts`:
+```ts
+export async function getFreshAccessToken(userId: string): Promise<string> {
+  const sb = await createServiceRoleClient();
+  const lockKey = hashToBigInt(`gcal_refresh_${userId}`);
+  await sb.rpc('pg_advisory_xact_lock', { key: lockKey }); // inside a transaction OR use pg_try_advisory_lock with retry
+  // re-read tokens inside lock (another request may have refreshed)
+  const { data } = await sb.from('users').select('google_tokens').eq('id', userId).single();
+  const { access_token, refresh_token, expires_at } = data.google_tokens;
+  if (expires_at - Date.now() > 5*60*1000) return access_token;
+  // refresh
+  const refreshed = await refreshGoogleToken(refresh_token);
+  await sb.from('users').update({ google_tokens: { access_token: refreshed.access_token, refresh_token, expires_at: Date.now()+refreshed.expires_in*1000 }}).eq('id', userId);
+  return refreshed.access_token;
+}
+```
+If Supabase `rpc('pg_advisory_xact_lock')` unavailable in serverless context, degrade to `pg_try_advisory_lock` + 200ms spinwait × 5; fallback to unlocked refresh on timeout (Google tolerates double-refresh; older refresh_token may invalidate — accept and force reconnect if next call fails).
+
+All 5 API routes call `getFreshAccessToken(user.id)` instead of inline refresh.
+
+### C.2 Pagination loop `[in 4]`
+
+```ts
+async function listAllEvents(calendarId, params) {
+  const out: CalendarEvent[] = [];
+  let pageToken: string | undefined;
+  for (let i = 0; i < 5; i++) {
+    const res = await googleFetch(`/calendars/${calendarId}/events`, {
+      ...params, maxResults: 2500, pageToken, singleEvents: true,
+      orderBy: 'startTime', showDeleted: false,
+    });
+    out.push(...res.items);
+    pageToken = res.nextPageToken;
+    if (!pageToken) break;
+  }
+  return { events: out, truncated: !!pageToken };
+}
+```
+Merge route: if any calendar returns `truncated: true`, include `{ warnings: ['partial_results'] }` in response. Client shows banner "Showing first 12,500 events — narrow date range for more."
+
+### C.3 Explicit events.list params `[in 4]`
+
+Always send: `singleEvents=true`, `orderBy=startTime`, `showDeleted=false`, `maxResults=2500`. No implicit defaults.
+
+## D. Data model `[in 5-7, 16, 17]`
+
+### D.1 RRULE split helper + unit tests `[in 6, 7]`
+
+New file `src/lib/rrule/split.ts`:
+```ts
+import { RRule } from 'rrule';
+export function splitSeries(masterRRule: string, instanceDate: Date):
+  { oldRRule: string; newRRule: string; newDtStart: Date } {
+  const rule = RRule.fromString(masterRRule);
+  const opts = { ...rule.origOptions };
+  // If COUNT, convert to UNTIL first (count occurrences up to but excluding instanceDate)
+  if (opts.count != null) {
+    const all = rule.all();
+    const before = all.filter(d => d < instanceDate);
+    opts.count = before.length;  // old series: stop at COUNT
+  }
+  // Set UNTIL = instanceDate - 1ms for old series (exclusive)
+  const untilForOld = new Date(instanceDate.getTime() - 1000);
+  const oldOpts = { ...opts, until: untilForOld, count: undefined };
+  const oldRRule = new RRule(oldOpts).toString();
+  // New series starts at instanceDate; preserve original freq/byday etc.
+  const newOpts = { ...rule.origOptions, dtstart: instanceDate, count: undefined, until: undefined };
+  // Trim remaining COUNT if original had one
+  if (rule.origOptions.count != null) {
+    const remaining = rule.all().filter(d => d >= instanceDate).length;
+    newOpts.count = remaining;
+  }
+  const newRRule = new RRule(newOpts).toString();
+  return { oldRRule, newRRule, newDtStart: instanceDate };
+}
+```
+
+Unit tests (new Step 23.5 below) cover:
+- Weekly with COUNT=10, split at occurrence 4 → old COUNT=3, new COUNT=7
+- Weekly with UNTIL=X, split at occurrence Y < X → old UNTIL=Y-1ms, new UNTIL=X
+- Monthly BYDAY=2TU, split at occurrence 3 → preserves BYDAY in new
+- Daily no-end, split midway → old UNTIL=Y-1ms, new no-end
+- DTSTART drift: first occurrence must match new DTSTART
+
+### D.2 Timezone preservation `[in 5, 6]`
+
+On PATCH:
+```ts
+// Never strip existing timeZone; always round-trip the incoming value
+body.start.timeZone = patch.start?.timeZone ?? existing.start.timeZone;
+body.end.timeZone   = patch.end?.timeZone   ?? existing.end.timeZone;
+```
+Display: all datetime fields rendered via `Intl.DateTimeFormat(undefined, { timeZone: event.start.timeZone ?? browserTz, ... })`. User-tz-vs-event-tz mismatch shown as secondary caption in popover: "`{timeString}` in your time — event set for `{eventTz}`".
+
+All-day events: `start.date` / `end.date` only; do not add `timeZone`.
+
+### D.3 Attendee self-strip `[in 5, 6]`
+
+Before POST/PATCH:
+```ts
+body.attendees = (body.attendees ?? []).filter(a => a.email.toLowerCase() !== user.email.toLowerCase());
+```
+Google auto-adds organizer; duplicate causes 400.
+
+### D.4 Reminders tri-state `[in 16]`
+
+UI radio: `Use default` | `Custom` | `None`.
+```ts
+type ReminderMode = 'default' | 'custom' | 'none';
+function toPayload(mode: ReminderMode, overrides: ReminderOverride[]): Reminders {
+  if (mode === 'default') return { useDefault: true };
+  if (mode === 'custom') return { useDefault: false, overrides };
+  return { useDefault: false, overrides: [] };
+}
+```
+
+### D.5 Non-owned-calendar 403 fallback `[in 5, 6]`
+
+On POST/PATCH, if response is 403 with `guestPermissionDenied` or similar reason and `attendees.length > 0`:
+```ts
+// retry without attendees
+body.attendees = undefined;
+const retry = await googleFetch(...body);
+return { ...retry, warning: 'guests_not_allowed' };
+```
+Client toast: "This calendar doesn't allow adding guests — event saved without them."
+
+## E. Mutation hardening `[in 9]`
+
+### E.1 Optimistic snapshot from variables
+
+Mutation shape:
+```ts
+type UpdateVars = { calendarId: string; eventId: string; patch: Partial<CalendarEvent>; previous: CalendarEvent };
+useUpdateEvent = useMutation({
+  mutationFn: ({calendarId, eventId, patch}) => updateEvent(calendarId, eventId, patch),
+  onMutate: async (vars) => {
+    await qc.cancelQueries({queryKey: ['events']});
+    // Roll-back source = vars.previous (caller-supplied), not cache
+    qc.setQueryData(['event', vars.calendarId, vars.eventId], {...vars.previous, ...vars.patch});
+    return { previous: vars.previous };
+  },
+  onError: (_err, vars, ctx) => {
+    if (ctx?.previous) qc.setQueryData(['event', vars.calendarId, vars.eventId], ctx.previous);
+    qc.invalidateQueries({queryKey: ['events']});
+  },
+  onSettled: (_res, _err, vars) => {
+    qc.invalidateQueries({queryKey: ['events']});
+    qc.invalidateQueries({queryKey: ['event', vars.calendarId, vars.eventId]});
+  },
+});
+```
+Caller passes `previous` from the event they clicked on — not from cache. Immune to concurrent-mutation staleness.
+
+### E.2 Undo toast stacking `[in 20]`
+
+```ts
+let activeUndoId: string | null = null;
+export function showUndoToast({ message, undo }: UndoToastPayload) {
+  if (activeUndoId) toast.dismiss(activeUndoId);
+  activeUndoId = toast.custom(<UndoToastUI message={message} onUndo={async () => {
+    toast.dismiss(activeUndoId!); activeUndoId = null; await undo();
+  }} />, { duration: 6000 });
+}
+```
+Last-wins; new undo dismisses prior (prior mutation becomes permanent).
+
+## F. Rendering `[in 14, 2]`
+
+### F.1 YearView density-only `[in 14]`
+
+Render each day as `<button>` with `backgroundColor: hsla(accent, ${intensity})` where `intensity = min(1, eventCount/5)`. No chips, no text beyond day number. Click → switch to Day view for that date. Scrolls vertically on mobile (1 col × 12 rows).
+
+### F.2 HydrationBoundary prefetch `[in 2]`
+
+`src/app/calendar/page.tsx` becomes async Server Component:
+```tsx
+export default async function CalendarPage() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/');
+  const qc = new QueryClient();
+  const timeMin = startOfWeek(new Date());
+  const timeMax = endOfWeek(new Date());
+  await Promise.all([
+    qc.prefetchQuery({ queryKey: ['calendars'], queryFn: () => fetchCalendarsServer(user.id) }),
+    qc.prefetchQuery({ queryKey: ['events', 'primary', timeMin.toISOString(), timeMax.toISOString()],
+                       queryFn: () => fetchEventsServer(user.id, ['primary'], timeMin, timeMax) }),
+  ]);
+  return <HydrationBoundary state={dehydrate(qc)}><CalendarShell /></HydrationBoundary>;
+}
+```
+Server-side `fetchCalendarsServer` / `fetchEventsServer` use `getFreshAccessToken` directly, no HTTP hop. First paint has data.
+
+## G. Rollout `[restructures 22, adds 24.5, 26, 27]`
+
+### G.1 Feature flag `[replaces 22]`
+
+- Env: `NEXT_PUBLIC_NEW_CALENDAR` (set to `1` on preview + prod after QA).
+- `scan/page.tsx`: if flag set, redirect `/scan#live-calendar` to `/calendar`; else render old `LiveCalendarView`.
+- Header `Calendar` nav link: always `/calendar` (new route always mounted; old view still works if flag unset — user reaches it only via tab or old bookmark).
+- Rollout plan: merge with flag unset → enable on staging → enable in prod → monitor → delete legacy.
+
+### G.2 Telemetry wiring (new Step 24.5)
+
+`src/lib/telemetry.ts`:
+```ts
+import { track } from '@vercel/analytics';
+export function tel(event: string, props?: Record<string, string | number | boolean>) {
+  try { track(event, props); } catch { /* swallow */ }
+}
+```
+Events emitted:
+- `calendar.view.shown` `{view}`
+- `calendar.event.create.ok|err` `{calendarId, hasMeet}`
+- `calendar.event.update.ok|err` `{scope, kind: drag|resize|modal}`
+- `calendar.event.delete.ok|err` `{scope}`
+- `calendar.reconnect.shown|clicked`
+- `calendar.refresh.ok|revoked|network_err`
+- `calendar.pagination.truncated` `{calendarCount}`
+- `calendar.guest_permission_denied` `{retried: true}`
+
+### G.3 48h monitor before legacy delete (new Step 26)
+
+Post-launch: enable flag in prod. Monitor:
+- `calendar.event.*.err` rate < 2%.
+- `calendar.reconnect.shown` rate < 5% weekly actives.
+- Vercel runtime error rate < baseline + 0.5%.
+- Zero 500s from `/api/calendar/*` for 48h.
+
+If clean → proceed to Step 27. If not → rollback: unset flag in Vercel, re-emerge on a fix branch.
+
+### G.4 Delete legacy (new Step 27, replaces old 22's delete phase)
+
+Only after G.3 green:
+- Delete `src/components/LiveCalendarView.tsx`, `src/components/EmbeddedCalendarView.tsx`, `src/app/api/calendar/embed-url/route.ts`.
+- Remove `Upload | Events | Live Calendar | Embedded` tab switcher from `scan/page.tsx`; keep Upload + Events only, or redirect fully to separate routes.
+- Remove flag check; `/calendar` is canonical.
+
+### G.5 Rollback runbook (new Step 28)
+
+Fast rollback if prod breaks:
+1. Vercel dashboard → env vars → unset `NEXT_PUBLIC_NEW_CALENDAR` → redeploy (no code revert needed).
+2. If data corruption: `UPDATE users SET google_tokens = NULL, google_calendar_connected = false WHERE <affected>` → users forced to reconnect.
+3. Post-mortem: capture `calendar.*.err` telemetry window, file follow-up.
+
+## Step renumbering
+
+| Old | New | Notes |
+|-----|-----|-------|
+| — | 0.1–0.4 | Pre-flight (A.1–A.4) |
+| 1 | 1 | + B.2 postbuild guard |
+| 2 | 2 | + F.2 HydrationBoundary |
+| 3–7 | 3–7 | + C.1 token manager, C.2 pagination, C.3 params, D.2 tz, D.3 self-strip, D.5 guest-fallback |
+| 8–13 | 8–13 | unchanged |
+| 14 | 14 | + F.1 density-only |
+| 15–20 | 15–20 | + B.3 sanitization (15,16), D.1 split helper (16), D.4 reminders (16), E.1 vars-snapshot (9 area), E.2 stacking (20) |
+| 21 | 21 | unchanged |
+| 22 | — | replaced by G.1 feature flag gate |
+| — | 22 | G.1 flag wiring |
+| 23 | 23 | unchanged |
+| — | 23.5 | Unit tests (Vitest): RRULE split + token refresh + tz conversion |
+| 24 | 24 | unchanged |
+| — | 24.5 | G.2 telemetry |
+| 25 | 25 | unchanged (PR merge with flag unset) |
+| — | 26 | G.3 48h monitor |
+| — | 27 | G.4 delete legacy |
+| — | 28 | G.5 rollback runbook documented in repo |
+
+Final step count: 0.1–0.4 + 1–28 = **32 numbered checkpoints**.
+
+## Hardening done = merged when
+
+- All 32 checkpoints verified.
+- RLS audit output attached to PR.
+- Bundle delta < 250KB gz.
+- `postbuild` service-key check passes on CI.
+- Vitest suite green (RRULE split + token refresh + tz).
+- 48h prod monitor green before G.4 delete.
+- Rollback runbook validated (at least once by manually unsetting flag on preview).
+
