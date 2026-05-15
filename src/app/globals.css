@@ -402,3 +402,42 @@ svg:not([class]) {
 .dark .opacity-40 {
   opacity: 0.7 !important;
 }
+
+/* schedule-x dark theme overrides */
+.sx__calendar-wrapper,
+.sx__calendar {
+  --sx-color-background-primary: transparent !important;
+  --sx-color-background-secondary: rgba(255, 255, 255, 0.03) !important;
+  --sx-color-on-surface: rgba(255, 255, 255, 0.85) !important;
+  --sx-color-on-surface-variant: rgba(255, 255, 255, 0.5) !important;
+  --sx-color-primary: #3b82f6 !important;
+  --sx-color-surface: transparent !important;
+  --sx-border-color: rgba(255, 255, 255, 0.1) !important;
+  --sx-color-text-primary: rgba(255, 255, 255, 0.85) !important;
+  --sx-color-text-secondary: rgba(255, 255, 255, 0.5) !important;
+  --sx-color-today-bg: rgba(59, 130, 246, 0.15) !important;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+}
+
+.sx__month-grid-day,
+.sx__week-grid__date,
+.sx__time-axis-time {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.sx__today-indicator {
+  background-color: #ef4444 !important;
+}
+
+.sx__event {
+  border-radius: 4px !important;
+  font-size: 0.8rem !important;
+}
+
+.sx__month-grid-cell--today,
+.sx__week-grid__date--today {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #93c5fd !important;
+  font-weight: bold !important;
+}
