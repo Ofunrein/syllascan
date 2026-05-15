@@ -147,9 +147,9 @@ export default function CalendarGrid({
               ? sxEvent.end
               : new Date((sxEvent.end as { epochMilliseconds: number }).epochMilliseconds).toISOString(),
           };
-          // onEventUpdate fires for both DnD and resize; route both
+          // onEventUpdate fires for both DnD and resize; call only one handler to avoid double PATCH
           if (onEventDrop) onEventDrop(updated);
-          if (onEventResize) onEventResize(updated);
+          else if (onEventResize) onEventResize(updated);
         },
       },
     },

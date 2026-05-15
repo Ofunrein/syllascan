@@ -36,7 +36,7 @@ export async function PATCH(
       ? { date: eventBody.end.split('T')[0] }
       : { dateTime: eventBody.end, timeZone: 'UTC' };
   }
-  if (eventBody.colorId !== undefined) resource.colorId = eventBody.colorId;
+  if (eventBody.color !== undefined) resource.colorId = eventBody.color || undefined;
   if (eventBody.recurrence) resource.recurrence = [eventBody.recurrence];
   if (eventBody.guests) resource.attendees = eventBody.guests.map((email: string) => ({ email }));
 
@@ -51,9 +51,13 @@ export async function PATCH(
 
     if (updateScope === 'following') {
       const instanceDate = id.split('_')[1];
+      if (!instanceDate) {
+        return NextResponse.json({ error: 'Invalid recurring event id for following scope' }, { status: 400 });
+      }
       const masterRes = await cal.events.get({ calendarId, eventId: id.split('_')[0] });
       const masterRecurrence = masterRes.data.recurrence?.[0] ?? '';
-      const untilDate = instanceDate ? instanceDate.replace(/T.*/, '') : '';
+      // Use full instanceDate as UNTIL (already in YYYYMMDDTHHMMSSZ format for timed events)
+      const untilDate = instanceDate;
       const updatedRule = masterRecurrence ? `${masterRecurrence};UNTIL=${untilDate}` : masterRecurrence;
 
       await cal.events.patch({
@@ -62,7 +66,12 @@ export async function PATCH(
         requestBody: { recurrence: [updatedRule] },
       });
 
-      const newRes = await cal.events.insert({ calendarId, requestBody: resource });
+      // New series from this instance: carry the original recurrence rule
+      const newSeriesResource = { ...resource };
+      if (masterRecurrence && !newSeriesResource.recurrence) {
+        newSeriesResource.recurrence = [masterRecurrence];
+      }
+      const newRes = await cal.events.insert({ calendarId, requestBody: newSeriesResource });
       return NextResponse.json({ event: newRes.data });
     }
 
@@ -97,9 +106,12 @@ export async function DELETE(
       await cal.events.delete({ calendarId, eventId: id.split('_')[0] });
     } else if (updateScope === 'following') {
       const instanceDate = id.split('_')[1];
+      if (!instanceDate) {
+        return NextResponse.json({ error: 'Invalid recurring event id for following scope' }, { status: 400 });
+      }
       const masterRes = await cal.events.get({ calendarId, eventId: id.split('_')[0] });
       const masterRecurrence = masterRes.data.recurrence?.[0] ?? '';
-      const untilDate = instanceDate ? instanceDate.replace(/T.*/, '') : '';
+      const untilDate = instanceDate;
       const updatedRule = masterRecurrence ? `${masterRecurrence};UNTIL=${untilDate}` : masterRecurrence;
       await cal.events.patch({
         calendarId,

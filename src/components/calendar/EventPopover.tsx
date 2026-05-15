@@ -43,7 +43,7 @@ export function EventPopover({ event, position, onClose, onEdit, onDelete, onDup
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span
             className="w-3 h-3 rounded-full shrink-0"
-            style={{ backgroundColor: event.calendarColor }}
+            style={{ backgroundColor: event.calendarColor ?? '#3b82f6' }}
           />
           <h3 className="font-semibold text-white text-sm truncate">{event.title}</h3>
         </div>

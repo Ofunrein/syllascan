@@ -58,6 +58,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ events });
   } catch (error: any) {
     console.error('Error in calendar events route:', error);
+    // Re-resolve user to call handleGoogleApiError (auth errors need google_calendar_connected cleared)
+    try {
+      const supabase2 = await createServerSupabaseClient();
+      const { data: { user: u } } = await supabase2.auth.getUser();
+      if (u) {
+        const { reconnectRequired, message } = await handleGoogleApiError(error, u.id);
+        return NextResponse.json({ error: message, reconnectRequired }, { status: reconnectRequired ? 401 : 500 });
+      }
+    } catch {}
     return NextResponse.json({ error: error.message || 'Failed to get calendar events' }, { status: 500 });
   }
 }
@@ -84,7 +93,7 @@ export async function POST(request: NextRequest) {
       end: eventBody.allDay
         ? { date: eventBody.end.split('T')[0] }
         : { dateTime: eventBody.end, timeZone: 'UTC' },
-      colorId: eventBody.colorId,
+      colorId: eventBody.color || undefined,
       recurrence: eventBody.recurrence ? [eventBody.recurrence] : undefined,
       attendees: eventBody.guests?.map((email: string) => ({ email })),
     };

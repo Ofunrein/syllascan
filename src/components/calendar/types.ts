@@ -14,7 +14,7 @@ export interface GCalCalendar {
 export interface GCalEvent {
   id: string;
   calendarId: string;
-  calendarColor: string;
+  calendarColor?: string;  // joined client-side; fallback to '#3b82f6' when absent
   title: string;
   start: string;       // ISO datetime or date (all-day)
   end: string;         // ISO datetime or date

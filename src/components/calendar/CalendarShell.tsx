@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import CalendarGrid from './CalendarGrid';
@@ -8,7 +8,7 @@ import { EventPopover } from './EventPopover';
 import { EventEditorModal } from './EventEditorModal';
 import { RecurrencePrompt } from './RecurrencePrompt';
 import { UndoToast } from './UndoToast';
-import { useCalendars } from './hooks/useCalendars';
+import { useCalendars, ReconnectError } from './hooks/useCalendars';
 import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from './hooks/useEvents';
 import type { GCalEvent, GCalCalendar, ViewMode, UndoRecord, EventEditorValues, UpdateScope } from './types';
 
@@ -82,13 +82,34 @@ export function CalendarShell() {
   const [recurrencePrompt, setRecurrencePrompt] = useState<{
     action: 'edit' | 'delete';
     event: GCalEvent;
+    pendingScope?: UpdateScope;
   } | null>(null);
   const [undoRecord, setUndoRecord] = useState<UndoRecord | null>(null);
+  const [reconnectRequired, setReconnectRequired] = useState(false);
+  const [pendingRecurrenceScope, setPendingRecurrenceScope] = useState<UpdateScope>('single');
 
-  const { data: calendars = [] } = useCalendars();
+  const { data: calendars = [], error: calendarsError } = useCalendars();
   const { timeMin, timeMax } = getViewRange(date, view);
   const visibleIds = Array.from(visibleCalendars);
-  const { data: allEvents = [] } = useEvents({ calendarIds: visibleIds, timeMin, timeMax });
+  const { data: rawEvents = [], error: eventsError } = useEvents({ calendarIds: visibleIds, timeMin, timeMax });
+
+  // Join calendarColor from calendar list
+  const calColorMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    calendars.forEach(c => { m[c.id] = c.backgroundColor; });
+    return m;
+  }, [calendars]);
+  const allEvents = useMemo(
+    () => rawEvents.map(e => ({ ...e, calendarColor: calColorMap[e.calendarId] ?? '#3b82f6' })),
+    [rawEvents, calColorMap]
+  );
+
+  // Surface reconnect requirement from query errors
+  useEffect(() => {
+    if (calendarsError instanceof ReconnectError || eventsError instanceof ReconnectError) {
+      setReconnectRequired(true);
+    }
+  }, [calendarsError, eventsError]);
 
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
@@ -113,7 +134,7 @@ export function CalendarShell() {
         e.key === 'c' &&
         !e.ctrlKey &&
         !e.metaKey &&
-        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement)
       ) {
         setEditorOpen(true);
       }
@@ -188,8 +209,12 @@ export function CalendarShell() {
     if (action === 'delete') {
       handleDeleteConfirmed(event, scope);
     } else {
+      // Store the scope so handleUpdate can pass it to the API
+      setRecurrencePrompt(null);
       setEditingEvent(event);
       setEditorOpen(true);
+      // Carry scope via a ref-like mechanism: store on the pending edit state
+      setPendingRecurrenceScope(scope);
     }
   };
 
@@ -266,6 +291,18 @@ export function CalendarShell() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Reconnect banner */}
+      {reconnectRequired && (
+        <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-2 flex items-center justify-between text-sm text-yellow-200">
+          <span>Google Calendar disconnected. Reconnect to continue syncing.</span>
+          <a
+            href={`/api/google-calendar/authorize?next=${encodeURIComponent('/calendar')}`}
+            className="ml-4 px-3 py-1 rounded-full bg-yellow-500/30 hover:bg-yellow-500/50 text-yellow-100 text-xs font-medium transition-colors"
+          >
+            Reconnect
+          </a>
+        </div>
+      )}
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 shrink-0">
         <button
@@ -400,7 +437,8 @@ export function CalendarShell() {
           defaultCalendarId={editingEvent?.calendarId ?? primaryCalId}
           onSave={(values, calId) => {
             if (editingEvent) {
-              handleUpdate(values, calId);
+              handleUpdate(values, calId, pendingRecurrenceScope);
+              setPendingRecurrenceScope('single');
             } else {
               handleCreate(values, calId);
             }

@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GCalEvent, EventEditorValues, UpdateScope } from '../types';
+import { ReconnectError } from './useCalendars';
 
 interface FetchParams {
   calendarIds: string[];
@@ -15,7 +16,11 @@ async function fetchEvents(params: FetchParams): Promise<GCalEvent[]> {
     timeMax: params.timeMax,
   });
   const res = await fetch(`/api/calendar/events?${q}`);
-  if (!res.ok) throw new Error('Failed to fetch events');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    if (data.reconnectRequired) throw new ReconnectError(data.error ?? 'Calendar disconnected');
+    throw new Error(data.error ?? 'Failed to fetch events');
+  }
   const data = await res.json();
   return data.events ?? [];
 }
