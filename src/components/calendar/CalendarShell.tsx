@@ -88,10 +88,10 @@ export function CalendarShell() {
   const [reconnectRequired, setReconnectRequired] = useState(false);
   const [pendingRecurrenceScope, setPendingRecurrenceScope] = useState<UpdateScope>('single');
 
-  const { data: calendars = [], error: calendarsError } = useCalendars();
+  const { data: calendars = [], error: calendarsError, refetch: refetchCalendars } = useCalendars();
   const { timeMin, timeMax } = getViewRange(date, view);
   const visibleIds = Array.from(visibleCalendars);
-  const { data: rawEvents = [], error: eventsError } = useEvents({ calendarIds: visibleIds, timeMin, timeMax });
+  const { data: rawEvents = [], error: eventsError, refetch: refetchEvents } = useEvents({ calendarIds: visibleIds, timeMin, timeMax });
 
   // Join calendarColor from calendar list
   const calColorMap = useMemo(() => {
@@ -111,9 +111,10 @@ export function CalendarShell() {
     }
   }, [calendarsError, eventsError]);
 
-  const createEvent = useCreateEvent();
-  const updateEvent = useUpdateEvent();
-  const deleteEvent = useDeleteEvent();
+  const refetch = useCallback(() => { refetchEvents(); }, [refetchEvents]);
+  const createEvent = useCreateEvent(refetch);
+  const updateEvent = useUpdateEvent(refetch);
+  const deleteEvent = useDeleteEvent(refetch);
 
   useEffect(() => {
     if (calendars.length > 0 && visibleCalendars.size === 0) {

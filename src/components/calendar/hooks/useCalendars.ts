@@ -1,5 +1,5 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import type { GCalCalendar } from '../types';
 
 export class ReconnectError extends Error {
@@ -10,17 +10,31 @@ export class ReconnectError extends Error {
   }
 }
 
-async function fetchCalendars(): Promise<GCalCalendar[]> {
-  const res = await fetch('/api/calendar/calendars');
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    if (data.reconnectRequired) throw new ReconnectError(data.error ?? 'Calendar disconnected');
-    throw new Error(data.error ?? 'Failed to fetch calendars');
-  }
-  const data = await res.json();
-  return data.calendars ?? [];
-}
-
 export function useCalendars() {
-  return useQuery({ queryKey: ['calendars'], queryFn: fetchCalendars });
+  const [data, setData] = useState<GCalCalendar[]>([]);
+  const [error, setError] = useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetch_ = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/calendar/calendars');
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        if (json.reconnectRequired) throw new ReconnectError(json.error ?? 'Calendar disconnected');
+        throw new Error(json.error ?? 'Failed to fetch calendars');
+      }
+      const json = await res.json();
+      setData(json.calendars ?? []);
+      setError(null);
+    } catch (err: any) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetch_(); }, [fetch_]);
+
+  return { data, error, isLoading, refetch: fetch_ };
 }

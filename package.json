@@ -21,7 +21,6 @@
     "@schedule-x/theme-default": "^4.6.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",
-    "@tanstack/react-query": "^5.100.10",
     "@types/moment": "^2.11.29",
     "@types/react-big-calendar": "^1.16.1",
     "axios": "^1.8.1",
