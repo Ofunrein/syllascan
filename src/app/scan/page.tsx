@@ -1,15 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Header from '@/components/Header';
 import FileUploader from '@/components/FileUploader';
 import EventList from '@/components/EventList';
 import { Event } from '@/lib/openai';
-import LiveCalendarView from '@/components/LiveCalendarView';
-import GoogleAuthWrapper from '@/components/GoogleAuthWrapper';
-import EmbeddedCalendarView from '@/components/EmbeddedCalendarView';
 import CalendarAuthBanner from '@/components/CalendarAuthBanner';
-import { Upload, Calendar, CalendarCheck, LayoutGrid } from 'lucide-react';
+import { Upload, Calendar } from 'lucide-react';
 import { useEventStore } from '@/lib/stores/eventStore';
 import { useAuth } from '@/components/AuthProvider';
 import AuthForm from '@/components/AuthForm';
@@ -18,7 +16,7 @@ export default function ScanPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'upload' | 'events' | 'live-calendar' | 'embedded-calendar'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'events'>('upload');
   const [isCalendarExpired, setIsCalendarExpired] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents, fetchEvents, saveEvents, removeEvent } = useEventStore();
@@ -103,9 +101,7 @@ export default function ScanPage() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash === 'live-calendar') setActiveTab('live-calendar');
-      else if (hash === 'embedded-calendar') setActiveTab('embedded-calendar');
-      else if (hash === 'events') setActiveTab('events');
+      if (hash === 'events') setActiveTab('events');
       else if (hash === 'upload') setActiveTab('upload');
     };
     handleHashChange();
@@ -113,18 +109,16 @@ export default function ScanPage() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [events]);
 
-  const handleTabClick = (tab: 'upload' | 'events' | 'live-calendar' | 'embedded-calendar') => {
+  const handleTabClick = (tab: 'upload' | 'events') => {
     setActiveTab(tab);
     window.history.pushState(null, '', `#${tab}`);
   };
 
-  type TabId = 'upload' | 'events' | 'live-calendar' | 'embedded-calendar';
+  type TabId = 'upload' | 'events';
 
   const tabs: Array<{ id: TabId; label: string; Icon: React.ElementType; badge?: number }> = [
     { id: 'upload', label: 'Upload', Icon: Upload },
     { id: 'events', label: 'Events', Icon: Calendar, badge: Math.max(events.length, storedEvents.length) || undefined },
-    { id: 'live-calendar', label: 'Live Calendar', Icon: CalendarCheck },
-    { id: 'embedded-calendar', label: 'Embedded', Icon: LayoutGrid },
   ];
 
   return (
@@ -167,7 +161,7 @@ export default function ScanPage() {
             </p>
           </div>
 
-          <div className="mb-4 flex justify-center md:mb-5">
+          <div className="mb-4 flex justify-center items-center gap-3 md:mb-5">
             <div className="max-w-full overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="liquid-glass inline-flex min-w-max flex-nowrap justify-center gap-1 rounded-full p-1">
             {tabs.map(({ id, label, Icon, badge }) => (
@@ -191,6 +185,13 @@ export default function ScanPage() {
             ))}
             </div>
             </div>
+            <Link
+              href="/calendar"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-blue-500/20 text-blue-300 text-sm font-medium hover:bg-blue-500/30 transition-colors"
+            >
+              <Calendar size={14} />
+              Open Calendar
+            </Link>
           </div>
 
           <div className="liquid-glass min-h-0 flex-1 overflow-hidden rounded-[1.25rem] p-3 md:p-5">
@@ -206,16 +207,6 @@ export default function ScanPage() {
             )}
             {activeTab === 'events' && (
               <EventList events={events} onClearEvents={handleClearEvents} onEventsChange={handleEventsChange} />
-            )}
-            {activeTab === 'live-calendar' && (
-              <GoogleAuthWrapper>
-                <LiveCalendarView />
-              </GoogleAuthWrapper>
-            )}
-            {activeTab === 'embedded-calendar' && (
-              <GoogleAuthWrapper>
-                <EmbeddedCalendarView />
-              </GoogleAuthWrapper>
             )}
           </div>
         </div>
