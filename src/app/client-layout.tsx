@@ -7,6 +7,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import CalendarAuthBanner from '@/components/CalendarAuthBanner';
 import ToastDismissButton from '@/components/ToastDismissButton';
 import QuickAdd from '@/components/QuickAdd';
+import { AssistantWidget } from '@/components/assistant/AssistantWidget';
 import { useEffect, useState } from 'react';
 
 export default function ClientLayout({
@@ -82,6 +83,7 @@ export default function ClientLayout({
               {showToastButton && <ToastDismissButton />}
               {children}
               <QuickAdd />
+              <AssistantWidget />
             </div>
           </ToastProvider>
           <style jsx global>{`
