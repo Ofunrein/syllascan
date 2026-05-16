@@ -444,29 +444,39 @@ svg:not([class]) {
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* Day/date cells */
+/* Day/date cells — white text */
 .sx__month-grid-day,
 .sx__week-grid__date,
 .sx__time-axis-time,
 .sx__date,
-.sx__day-name {
-  color: rgba(255, 255, 255, 0.7) !important;
+.sx__day-name,
+.sx__week-day-name,
+[class*="sx__time"],
+[class*="sx__day-name"],
+[class*="sx__date"] {
+  color: #ffffff !important;
 }
 
-/* Today highlight */
-.sx__month-grid-cell--today,
-.sx__week-grid__date--today,
-.sx__today {
-  background-color: rgba(59, 130, 246, 0.18) !important;
-  color: #93c5fd !important;
-  font-weight: bold !important;
+/* Time axis — full white */
+.sx__time-axis,
+.sx__time-axis-time {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  font-size: 0.72rem !important;
 }
 
-/* Grid lines */
+/* Day/week column headers — white */
+.sx__week-grid__date-num,
+.sx__week-header-content,
+.sx__day-header {
+  color: #ffffff !important;
+}
+
+/* Grid lines — slightly more visible */
 .sx__time-grid-line,
 .sx__month-grid-cell,
 [class*="sx__"] {
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Events */
