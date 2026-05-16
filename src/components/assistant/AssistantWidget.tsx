@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Minimize2 } from 'lucide-react';
+import { Sparkles, Minimize2, Mic } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useAssistant } from './useAssistant';
 import { ConversationThread } from './ConversationThread';
@@ -103,7 +103,7 @@ export function AssistantWidget() {
 
   const style: React.CSSProperties = pos
     ? { position: 'fixed', left: pos.x, top: pos.y, bottom: 'auto', right: 'auto' }
-    : { position: 'fixed', bottom: '80px', right: '20px' };
+    : { position: 'fixed', bottom: '24px', right: '24px' };
 
   if (!user) return null;
 
@@ -112,11 +112,22 @@ export function AssistantWidget() {
       <div style={style} className="z-[9990]">
         <button
           onClick={() => setOpen(true)}
-          className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-105 active:scale-95"
-          style={{ background: 'rgba(15,23,42,0.80)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.15)' }}
-          title="Open assistant"
+          className="flex items-center gap-3 px-4 transition-all hover:scale-[1.02] active:scale-[0.99]"
+          style={{
+            width: 'min(420px, calc(100vw - 48px))',
+            height: '52px',
+            background: 'rgba(12, 18, 32, 0.72)',
+            backdropFilter: 'blur(24px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: '999px',
+            boxShadow: '0 0 0 1px rgba(59,130,246,0.12), 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(59,130,246,0.15)',
+          }}
+          title="Open AI Assistant"
         >
-          <Sparkles size={19} className="text-blue-400" />
+          <Sparkles size={18} className="text-blue-400 shrink-0" />
+          <span className="flex-1 text-left text-sm text-white/35 truncate">Ask anything...</span>
+          <Mic size={16} className="text-white/30 shrink-0" />
         </button>
       </div>
     );
