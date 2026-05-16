@@ -9,7 +9,7 @@
   
   <br/>
   
-  [![SyllaScan Demo](https://img.youtube.com/vi/rgZdCt-NPOg/maxresdefault.jpg)](https://www.youtube.com/watch?v=rgZdCt-NPOg)
+  [![SyllaScan Demo](docs/assets/demo-screenshot.png)](https://www.youtube.com/watch?v=rgZdCt-NPOg)
   
 </div>
 
