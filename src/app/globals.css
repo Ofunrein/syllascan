@@ -182,6 +182,26 @@ h1, h2, h3, h4, h5, h6 {
   animation: fadeIn 0.6s ease-out;
 }
 
+/* Voice waveform bars */
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(0.3); opacity: 0.4; }
+  50%       { transform: scaleY(1);   opacity: 1;   }
+}
+
+.wave-bar {
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.75);
+  transform-origin: center;
+  animation: wave-bar 0.9s ease-in-out infinite;
+}
+.wave-bar:nth-child(1) { animation-delay: 0ms;   height: 18px; }
+.wave-bar:nth-child(2) { animation-delay: 120ms; height: 26px; }
+.wave-bar:nth-child(3) { animation-delay: 240ms; height: 32px; }
+.wave-bar:nth-child(4) { animation-delay: 360ms; height: 28px; }
+.wave-bar:nth-child(5) { animation-delay: 120ms; height: 22px; }
+.wave-bar:nth-child(6) { animation-delay: 60ms;  height: 16px; }
+
 @keyframes slideUp {
   from { transform: translateY(24px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
