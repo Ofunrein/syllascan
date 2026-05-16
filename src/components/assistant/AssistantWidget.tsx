@@ -1,16 +1,66 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from 'react';
-import { Calendar, Minimize2, Mic, Plus, ArrowUp } from 'lucide-react';
+import { X, Mic, Plus, ArrowUp, Minimize2, Square } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useAssistant } from './useAssistant';
 import { ConversationThread } from './ConversationThread';
-import { InputBar } from './InputBar';
 import type { AssistantAction } from './types';
 
 const POS_KEY = 'assistant.position';
+const NUM_BARS = 6;
 
+// ── Real-time waveform hook ──────────────────────────────────────────
+function useWaveform(active: boolean) {
+  const [bars, setBars] = useState<number[]>(Array(NUM_BARS).fill(4));
+  const animRef = useRef<number | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  const start = useCallback(async (stream: MediaStream) => {
+    const ctx = new AudioContext();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 64;
+    analyser.smoothingTimeConstant = 0.7;
+    const src = ctx.createMediaStreamSource(stream);
+    src.connect(analyser);
+    ctxRef.current = ctx;
+    analyserRef.current = analyser;
+    streamRef.current = stream;
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const tick = () => {
+      analyser.getByteFrequencyData(data);
+      // Pick NUM_BARS evenly-spaced frequency bins, map 0-255 → 4-32px height
+      const step = Math.floor(data.length / NUM_BARS);
+      const heights = Array.from({ length: NUM_BARS }, (_, i) => {
+        const v = data[i * step] / 255;
+        return Math.max(4, Math.round(v * 28));
+      });
+      setBars(heights);
+      animRef.current = requestAnimationFrame(tick);
+    };
+    animRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  const stop = useCallback(() => {
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    analyserRef.current?.disconnect();
+    ctxRef.current?.close();
+    analyserRef.current = null;
+    ctxRef.current = null;
+    setBars(Array(NUM_BARS).fill(4));
+  }, []);
+
+  useEffect(() => { if (!active) stop(); }, [active, stop]);
+  useEffect(() => () => { stop(); }, [stop]);
+
+  return { bars, startWaveform: start, stopWaveform: stop };
+}
+
+// ── Drag hook ────────────────────────────────────────────────────────
 function useDrag() {
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [pos, setPos] = useState<{ right: number; bottom: number } | null>(null);
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -20,8 +70,8 @@ function useDrag() {
   }, []);
 
   const onMouseDown = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON') return;
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
     dragging.current = true;
     const r = widgetRef.current!.getBoundingClientRect();
     offset.current = { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -31,9 +81,11 @@ function useDrag() {
   useEffect(() => {
     const move = (e: MouseEvent) => {
       if (!dragging.current) return;
-      const x = Math.max(0, Math.min(window.innerWidth - 440, e.clientX - offset.current.x));
-      const y = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - offset.current.y));
-      setPos({ x, y });
+      const w = widgetRef.current?.offsetWidth ?? 440;
+      const h = widgetRef.current?.offsetHeight ?? 80;
+      const left = Math.max(0, Math.min(window.innerWidth - w,  e.clientX - offset.current.x));
+      const top  = Math.max(0, Math.min(window.innerHeight - h, e.clientY - offset.current.y));
+      setPos({ right: Math.max(0, window.innerWidth - left - w), bottom: Math.max(0, window.innerHeight - top - h) });
     };
     const up = () => {
       if (!dragging.current) return;
@@ -48,14 +100,61 @@ function useDrag() {
   return { widgetRef, pos, onMouseDown };
 }
 
+// ── Main widget ──────────────────────────────────────────────────────
 export function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [collapsedText, setCollapsedText] = useState('');
   const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const { user, googleCalendarConnected } = useAuth();
   const { widgetRef, pos, onMouseDown } = useDrag();
   const fileRef = useRef<HTMLInputElement>(null);
+  const mediaRecRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const assistant = useAssistant({ userId: user?.id ?? null, calendarEvents: [] });
+  const { bars, startWaveform, stopWaveform } = useWaveform(recording);
+
+  // ── Collapsed mic handling ─────────────────────────────────────────
+  const startMic = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunksRef.current = [];
+      const rec = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      rec.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mediaRecRef.current = rec;
+      rec.start();
+      setRecording(true);
+      await startWaveform(stream);
+    } catch { /* mic denied */ }
+  }, [startWaveform]);
+
+  const stopMic = useCallback((): Promise<string | null> => {
+    return new Promise(resolve => {
+      const rec = mediaRecRef.current;
+      if (!rec) { resolve(null); return; }
+      rec.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        rec.stream.getTracks().forEach(t => t.stop());
+        stopWaveform();
+        setRecording(false);
+        setTranscribing(true);
+        const form = new FormData();
+        form.append('audio', blob, 'rec.webm');
+        try {
+          const res = await fetch('/api/voice/transcribe', { method: 'POST', body: form });
+          const { transcript } = await res.json();
+          resolve(transcript ?? null);
+        } catch { resolve(null); }
+        finally { setTranscribing(false); }
+      };
+      rec.stop();
+    });
+  }, [stopWaveform]);
+
+  const handleStopAndPreview = useCallback(async () => {
+    const text = await stopMic();
+    if (text) setCollapsedText(text);
+  }, [stopMic]);
 
   const handleCollapsedSend = useCallback(async () => {
     const text = collapsedText.trim();
@@ -69,17 +168,6 @@ export function AssistantWidget() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCollapsedSend(); }
   };
 
-  const handleCollapsedMic = useCallback(async () => {
-    if (recording) {
-      const transcript = await assistant.stopRecording();
-      setRecording(false);
-      if (transcript) setCollapsedText(transcript);
-    } else {
-      await assistant.startRecording();
-      setRecording(true);
-    }
-  }, [recording, assistant]);
-
   const handleFileSelect = useCallback(async (file: File) => {
     const form = new FormData();
     form.append('file', file);
@@ -89,32 +177,24 @@ export function AssistantWidget() {
       if (!res.ok) return;
       const data = await res.json();
       const events = data.events ?? [];
-      if (events.length > 0) {
+      if (events.length > 0)
         setTimeout(() => assistant.sendMessage(`I uploaded "${file.name}" and found ${events.length} event(s). Please show them for confirmation.`), 100);
-      }
     } catch {}
   }, [assistant]);
 
   const handleConfirmActions = useCallback(async (msgIndex: number, actions: AssistantAction[]) => {
     for (const action of actions) {
       if (action.type === 'CREATE') {
-        await fetch('/api/calendar/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ calendarId: action.event.calendarId ?? 'primary', event: action.event, addMeet: false }),
-        });
+        await fetch('/api/calendar/events', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ calendarId: action.event.calendarId ?? 'primary', event: action.event, addMeet: false }) });
       } else if (action.type === 'EDIT') {
         const q = new URLSearchParams({ calendarId: action.calendarId, updateScope: 'single' });
-        await fetch(`/api/calendar/events/${action.eventId}?${q}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: action.changes }),
-        });
+        await fetch(`/api/calendar/events/${action.eventId}?${q}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: action.changes }) });
       } else if (action.type === 'MOVE') {
         const q = new URLSearchParams({ calendarId: action.calendarId, updateScope: 'single' });
-        await fetch(`/api/calendar/events/${action.eventId}?${q}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: { start: action.newStart, end: action.newEnd } }),
-        });
+        await fetch(`/api/calendar/events/${action.eventId}?${q}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: { start: action.newStart, end: action.newEnd } }) });
       } else if (action.type === 'DELETE') {
         const q = new URLSearchParams({ calendarId: action.calendarId, updateScope: 'single' });
         await fetch(`/api/calendar/events/${action.eventId}?${q}`, { method: 'DELETE' });
@@ -128,63 +208,13 @@ export function AssistantWidget() {
   }, [assistant]);
 
   const baseStyle: React.CSSProperties = pos
-    ? { position: 'fixed', left: pos.x, top: pos.y, bottom: 'auto', right: 'auto' }
-    : { position: 'fixed', bottom: '24px', right: '24px' };
+    ? { position: 'fixed', right: pos.right, bottom: pos.bottom }
+    : { position: 'fixed', right: '24px', bottom: '24px' };
 
   if (!user) return null;
 
-  // ── Collapsed: ChatGPT-style two-row input bar ──────────────────────
+  // ── Collapsed bar ────────────────────────────────────────────────────
   if (!open) {
-    // Recording / listening mode — full-width waveform bar
-    if (recording) {
-      return (
-        <div
-          ref={widgetRef}
-          onMouseDown={onMouseDown}
-          style={{
-            ...baseStyle,
-            width: 'min(440px, calc(100vw - 32px))',
-            background: 'linear-gradient(135deg, rgba(20,22,32,0.90) 0%, rgba(20,30,60,0.90) 100%)',
-            backdropFilter: 'blur(28px) saturate(1.8)',
-            WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '999px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.55)',
-            zIndex: 9990,
-            height: '56px',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 12px',
-            gap: '12px',
-          }}
-        >
-          {/* Cancel */}
-          <button
-            onClick={async () => { await assistant.stopRecording(); setRecording(false); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center border border-white/20 text-white/70 hover:text-white hover:bg-white/10 transition-colors shrink-0"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          </button>
-
-          {/* Waveform + label */}
-          <div className="flex-1 flex items-center gap-3">
-            <div className="flex items-end gap-[3px]" style={{ height: '32px' }}>
-              {[0,1,2,3,4,5].map(i => <div key={i} className="wave-bar" />)}
-            </div>
-            <span className="text-white/70 text-sm font-medium">Listening</span>
-          </div>
-
-          {/* Send */}
-          <button
-            onClick={async () => { const t = await assistant.stopRecording(); setRecording(false); if (t) { setOpen(true); setTimeout(() => assistant.sendMessage(t), 50); } }}
-            className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0 hover:bg-white/90 transition-colors"
-          >
-            <ArrowUp size={16} className="text-black" />
-          </button>
-        </div>
-      );
-    }
-
     return (
       <div
         ref={widgetRef}
@@ -192,69 +222,96 @@ export function AssistantWidget() {
         style={{
           ...baseStyle,
           width: 'min(440px, calc(100vw - 32px))',
-          background: 'rgba(28, 28, 33, 0.80)',
+          background: 'rgba(28, 28, 33, 0.82)',
           backdropFilter: 'blur(28px) saturate(1.8)',
           WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: '18px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset',
+          boxShadow: recording
+            ? '0 4px 24px rgba(0,0,0,0.55), 0 0 0 2px rgba(239,68,68,0.25)'
+            : '0 4px 24px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset',
           zIndex: 9990,
           cursor: 'move',
           padding: '12px 14px 10px',
         }}
       >
-        {/* Row 1: text input */}
-        <input
-          type="text"
-          value={collapsedText}
-          onChange={e => setCollapsedText(e.target.value)}
-          onKeyDown={handleCollapsedKey}
-          placeholder="Ask anything"
-          className="w-full bg-transparent outline-none text-white/90 text-[15px] placeholder-white/35 mb-3 cursor-text"
-          style={{ fontFamily: 'inherit' }}
-        />
+        {/* Row 1: text OR waveform */}
+        {recording ? (
+          <div className="flex items-center gap-3 mb-3" style={{ height: '24px' }}>
+            {/* Real-time waveform bars */}
+            <div className="flex items-end gap-[3px]" style={{ height: '24px' }}>
+              {bars.map((h, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '3px',
+                    height: `${h}px`,
+                    maxHeight: '24px',
+                    borderRadius: '999px',
+                    background: 'rgba(239,68,68,0.85)',
+                    transition: 'height 0.05s ease',
+                  }}
+                />
+              ))}
+            </div>
+            <span className="text-white/60 text-sm">
+              {transcribing ? 'Transcribing...' : 'Listening...'}
+            </span>
+          </div>
+        ) : (
+          <input
+            type="text"
+            value={collapsedText}
+            onChange={e => setCollapsedText(e.target.value)}
+            onKeyDown={handleCollapsedKey}
+            placeholder="Ask anything"
+            className="w-full bg-transparent outline-none text-white/90 text-[15px] placeholder-white/35 mb-3 cursor-text"
+            style={{ fontFamily: 'inherit' }}
+          />
+        )}
 
-        {/* Row 2: action row */}
+        {/* Row 2: actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-0.5">
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/75 hover:bg-white/8 transition-colors"
-              title="Upload file"
-            >
-              <Plus size={16} />
-            </button>
-            <input ref={fileRef} type="file" className="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); e.target.value = ''; }} />
-
-            <button
-              onClick={() => setOpen(true)}
-              className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-white/35 hover:text-white/65 hover:bg-white/8 transition-colors text-xs font-medium"
-              title="Open full chat"
-            >
-              <Calendar size={13} className="text-white/35" />
-              <span>SyllaScan AI</span>
-            </button>
+            {!recording && (
+              <>
+                <button onClick={() => fileRef.current?.click()}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/75 hover:bg-white/8 transition-colors">
+                  <Plus size={16} />
+                </button>
+                <input ref={fileRef} type="file" className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); e.target.value = ''; }} />
+                <button onClick={() => setOpen(true)}
+                  className="flex items-center h-8 px-2.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/8 transition-colors text-xs font-medium">
+                  SyllaScan AI
+                </button>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleCollapsedMic}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/75 hover:bg-white/8 transition-colors"
-              title="Voice input"
-            >
-              <Mic size={15} />
-            </button>
-
+          <div className="flex items-center gap-1.5">
+            {recording ? (
+              // Stop recording → show transcription for review
+              <button
+                onClick={handleStopAndPreview}
+                disabled={transcribing}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 text-xs font-semibold transition-colors disabled:opacity-50"
+              >
+                <Square size={11} className="fill-current" />
+                Stop
+              </button>
+            ) : (
+              <button onClick={startMic}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white/75 hover:bg-white/8 transition-colors">
+                <Mic size={15} />
+              </button>
+            )}
             <button
               onClick={handleCollapsedSend}
-              disabled={!collapsedText.trim()}
+              disabled={!collapsedText.trim() || recording}
               className={['w-8 h-8 flex items-center justify-center rounded-full transition-all',
-                collapsedText.trim() ? 'bg-white text-black hover:bg-white/90' : 'bg-white/12 text-white/30',
-              ].join(' ')}
-              title="Send"
-            >
+                collapsedText.trim() && !recording ? 'bg-white text-black hover:bg-white/90' : 'bg-white/12 text-white/25'].join(' ')}>
               <ArrowUp size={15} />
             </button>
           </div>
@@ -263,40 +320,43 @@ export function AssistantWidget() {
     );
   }
 
-  // ── Expanded panel ──────────────────────────────────────────────────
+  // ── Expanded panel ───────────────────────────────────────────────────
   return (
     <div
       ref={widgetRef}
       style={{
         ...baseStyle,
-        width: 'min(380px, calc(100vw - 24px))',
-        height: 'min(520px, calc(100vh - 120px))',
-        background: 'rgba(10,16,30,0.84)',
-        backdropFilter: 'blur(20px) saturate(1.6)',
-        WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: '1rem',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+        width: 'min(420px, calc(100vw - 24px))',
+        height: 'min(580px, calc(100vh - 40px))',
+        background: 'rgba(13, 13, 15, 0.94)',
+        backdropFilter: 'blur(24px) saturate(1.5)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        borderRadius: '20px',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
         zIndex: 9990,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
       }}
     >
+      {/* Header / drag handle */}
       <div
         onMouseDown={onMouseDown}
-        className="flex items-center justify-between px-3 py-2.5 border-b border-white/10 cursor-grab active:cursor-grabbing select-none shrink-0"
-        style={{ background: 'rgba(255,255,255,0.04)' }}
+        className="flex items-center justify-between px-4 pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing select-none"
       >
-        <div className="flex items-center gap-2">
-          <Calendar size={13} className="text-white/60" />
-          <span className="text-sm font-semibold text-white/90">SyllaScan Assistant</span>
-        </div>
-        <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-white/10 text-white/35 hover:text-white transition-colors">
-          <Minimize2 size={13} />
+        <button onClick={() => setOpen(false)}
+          className="w-7 h-7 rounded-full flex items-center justify-center bg-white/8 hover:bg-white/15 text-white/50 hover:text-white transition-colors">
+          <Minimize2 size={12} />
+        </button>
+        <span className="text-xs text-white/25 font-medium tracking-wide">SyllaScan AI</span>
+        <button onClick={() => setOpen(false)}
+          className="w-7 h-7 rounded-full flex items-center justify-center bg-white/8 hover:bg-white/15 text-white/50 hover:text-white transition-colors">
+          <X size={12} />
         </button>
       </div>
 
+      {/* Messages */}
       <ConversationThread
         messages={assistant.messages}
         loading={assistant.loading}
@@ -304,18 +364,56 @@ export function AssistantWidget() {
         onDismissActions={handleDismissActions}
       />
 
-      <InputBar
-        onSend={assistant.sendMessage}
-        onFileSelect={handleFileSelect}
-        onRecordStart={assistant.startRecording}
-        onRecordStop={assistant.stopRecording}
-        recording={assistant.recording}
-        loading={assistant.loading}
-        disabled={!googleCalendarConnected}
-      />
+      {/* Input area */}
+      <div className="shrink-0 mx-3 mb-3 rounded-2xl border border-white/10 overflow-hidden" style={{ background: 'rgba(30,30,36,0.85)' }}>
+        <textarea
+          id="sx-expanded-input"
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              const t = e.currentTarget.value.trim();
+              if (t && !assistant.loading) { assistant.sendMessage(t); e.currentTarget.value = ''; }
+            }
+          }}
+          placeholder={!googleCalendarConnected ? 'Connect Google Calendar first...' : 'Ask anything...'}
+          disabled={!googleCalendarConnected || assistant.loading}
+          rows={1}
+          className="w-full bg-transparent px-4 pt-3 pb-1 text-sm text-white/90 placeholder-white/30 outline-none resize-none leading-relaxed"
+          style={{ maxHeight: '96px', fontFamily: 'inherit' }}
+        />
+        <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => fileRef.current?.click()}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-white/35 hover:text-white/70 hover:bg-white/8 transition-colors">
+              <Plus size={16} />
+            </button>
+            <input ref={fileRef} type="file" className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); e.target.value = ''; }} />
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={assistant.recording ? async () => { const t = await assistant.stopRecording(); if (t) assistant.sendMessage(t); } : assistant.startRecording}
+              className={['w-8 h-8 flex items-center justify-center rounded-full transition-colors',
+                assistant.recording ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'text-white/35 hover:text-white/70 hover:bg-white/8'].join(' ')}>
+              {assistant.recording ? <Square size={13} className="fill-current" /> : <Mic size={15} />}
+            </button>
+            <button
+              onClick={() => {
+                const el = document.getElementById('sx-expanded-input') as HTMLTextAreaElement | null;
+                if (el && el.value.trim() && !assistant.loading) { assistant.sendMessage(el.value.trim()); el.value = ''; }
+              }}
+              disabled={assistant.loading}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:bg-white/90 disabled:opacity-30 transition-all"
+            >
+              <ArrowUp size={15} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {!googleCalendarConnected && (
-        <div className="px-3 pb-2 text-xs text-yellow-400/60 text-center">
+        <div className="px-3 pb-2.5 text-xs text-yellow-400/60 text-center">
           Connect Google Calendar to create events
         </div>
       )}
