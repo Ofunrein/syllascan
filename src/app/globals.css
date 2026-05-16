@@ -451,7 +451,8 @@ svg:not([class]) {
 .sx__week-grid__date,
 .sx__month-grid-day,
 .sx__day-name,
-.sx__week-day-name {
+.sx__week-day-name,
+.sx__week-grid__day-name {
   color: #ffffff !important;
 }
 
@@ -461,9 +462,14 @@ svg:not([class]) {
   font-size: 0.71rem !important;
 }
 
-/* Column headers in week/day view */
+/* Column headers in week/day view — date numbers and day names */
 .sx__week-grid__date-num,
-.sx__week-header-content {
+.sx__week-grid__date-number,
+.sx__week-header-content,
+.sx__week-grid__day-name,
+.sx__week-grid__date,
+.sx__week-header,
+.sx__date-grid-day {
   color: #ffffff !important;
 }
 
