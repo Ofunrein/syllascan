@@ -2,6 +2,7 @@
 
 import '@schedule-x/theme-default/dist/index.css';
 
+import { Temporal } from 'temporal-polyfill';
 import { useCalendarApp, ScheduleXCalendar } from '@schedule-x/react';
 import {
   viewDay,
@@ -113,7 +114,7 @@ export default function CalendarGrid({
   const calendarApp = useCalendarApp(
     {
       defaultView: toSXViewName(view),
-      selectedDate: toSXDate(date),
+      selectedDate: Temporal.PlainDate.from(toSXDate(date)),
       views: [viewDay, viewWeek, viewMonthGrid, viewMonthAgenda],
       events: sxEvents,
       calendars: sxCalendars,
@@ -175,7 +176,7 @@ export default function CalendarGrid({
         | undefined;
       if ($app?.calendarState?.setView) {
         // Temporal.PlainDate.from(string) — use the Temporal API available globally in v4
-        const plainDate = (globalThis as unknown as { Temporal: { PlainDate: { from: (s: string) => unknown } } }).Temporal?.PlainDate?.from(toSXDate(date));
+        const plainDate = Temporal.PlainDate.from(toSXDate(date));
         $app.calendarState.setView(toSXViewName(view), plainDate);
       }
     } catch {
