@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, AlignLeft, Users, Video, Repeat, Calendar } from 'lucide-react';
 import type { GCalEvent, GCalCalendar, EventEditorValues } from './types';
 import { GuestsInput } from './GuestsInput';
@@ -80,8 +81,11 @@ export function EventEditorModal({ event, defaultStart, defaultEnd, calendars, d
     );
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const modal = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-[#1e293b] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-white/10">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-lg font-semibold text-white">{event ? 'Edit event' : 'New event'}</h2>
@@ -208,4 +212,7 @@ export function EventEditorModal({ event, defaultStart, defaultEnd, calendars, d
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modal, document.body);
 }

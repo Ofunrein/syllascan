@@ -129,6 +129,7 @@ export default function CalendarGrid({
 
   const calendarApp = useCalendarApp(
     {
+      isDark: true,
       defaultView: toSXViewName(view),
       ...(getNativeTemporalDate(toSXDate(date)) ? { selectedDate: getNativeTemporalDate(toSXDate(date)) } : {}),
       views: [viewDay, viewWeek, viewMonthGrid, viewMonthAgenda],
@@ -173,10 +174,14 @@ export default function CalendarGrid({
     [createDragAndDropPlugin(), createResizePlugin()]
   );
 
-  // Sync events when props change
+  // Sync events reactively — set immediately and retry after a tick
+  // to handle the case where calendarApp isn't fully initialized yet
   useEffect(() => {
     if (!calendarApp) return;
     calendarApp.events.set(sxEvents);
+    // Retry after a short delay in case schedule-x needs a tick to process
+    const t = setTimeout(() => calendarApp.events.set(sxEvents), 50);
+    return () => clearTimeout(t);
   }, [calendarApp, sxEvents]);
 
   // Sync view and date when props change

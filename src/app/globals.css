@@ -403,41 +403,89 @@ svg:not([class]) {
   opacity: 0.7 !important;
 }
 
-/* schedule-x dark theme overrides */
+/* schedule-x dark theme overrides — force dark on all views */
 .sx__calendar-wrapper,
-.sx__calendar {
-  --sx-color-background-primary: transparent !important;
-  --sx-color-background-secondary: rgba(255, 255, 255, 0.03) !important;
-  --sx-color-on-surface: rgba(255, 255, 255, 0.85) !important;
-  --sx-color-on-surface-variant: rgba(255, 255, 255, 0.5) !important;
+.sx__calendar,
+.sx__calendar *,
+.sx__view-container {
+  --sx-color-background-primary: #0f172a !important;
+  --sx-color-background-secondary: #1e293b !important;
+  --sx-color-on-surface: rgba(255, 255, 255, 0.9) !important;
+  --sx-color-on-surface-variant: rgba(255, 255, 255, 0.55) !important;
   --sx-color-primary: #3b82f6 !important;
-  --sx-color-surface: transparent !important;
+  --sx-color-surface: #0f172a !important;
   --sx-border-color: rgba(255, 255, 255, 0.1) !important;
-  --sx-color-text-primary: rgba(255, 255, 255, 0.85) !important;
-  --sx-color-text-secondary: rgba(255, 255, 255, 0.5) !important;
-  --sx-color-today-bg: rgba(59, 130, 246, 0.15) !important;
-  color: rgba(255, 255, 255, 0.85);
-  background: transparent;
+  --sx-color-text-primary: rgba(255, 255, 255, 0.9) !important;
+  --sx-color-text-secondary: rgba(255, 255, 255, 0.55) !important;
+  --sx-color-today-bg: rgba(59, 130, 246, 0.18) !important;
 }
 
+/* Background wipe — override schedule-x light backgrounds */
+.sx__calendar-wrapper,
+.sx__calendar,
+.sx__time-grid,
+.sx__month-grid,
+.sx__month-agenda,
+.sx__week-wrapper,
+.sx__day-wrapper,
+.sx__time-grid-wrapper,
+.sx__month-grid-wrapper {
+  background-color: #0f172a !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Headers */
+.sx__calendar-header,
+.sx__week-grid-header,
+.sx__time-grid-header,
+.sx__calendar-header-content {
+  background-color: #1e293b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Day/date cells */
 .sx__month-grid-day,
 .sx__week-grid__date,
-.sx__time-axis-time {
+.sx__time-axis-time,
+.sx__date,
+.sx__day-name {
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
-.sx__today-indicator {
-  background-color: #ef4444 !important;
-}
-
-.sx__event {
-  border-radius: 4px !important;
-  font-size: 0.8rem !important;
-}
-
+/* Today highlight */
 .sx__month-grid-cell--today,
-.sx__week-grid__date--today {
-  background-color: rgba(59, 130, 246, 0.15) !important;
+.sx__week-grid__date--today,
+.sx__today {
+  background-color: rgba(59, 130, 246, 0.18) !important;
   color: #93c5fd !important;
   font-weight: bold !important;
 }
+
+/* Grid lines */
+.sx__time-grid-line,
+.sx__month-grid-cell,
+[class*="sx__"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Events */
+.sx__event {
+  border-radius: 4px !important;
+  font-size: 0.8rem !important;
+  color: #ffffff !important;
+}
+
+/* Current time indicator */
+.sx__today-indicator,
+.sx__current-time-indicator {
+  background-color: #ef4444 !important;
+}
+
+/* Time axis */
+.sx__time-axis,
+.sx__time-axis-time {
+  background-color: #0f172a !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+

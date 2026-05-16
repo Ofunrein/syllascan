@@ -1,5 +1,6 @@
 'use client';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Edit2, Trash2, Copy, MapPin, Clock, Video } from 'lucide-react';
 import type { GCalEvent } from './types';
 
@@ -20,6 +21,8 @@ function formatTime(iso: string, allDay: boolean) {
 
 export function EventPopover({ event, position, onClose, onEdit, onDelete, onDuplicate }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handle = (e: MouseEvent) => {
@@ -33,10 +36,10 @@ export function EventPopover({ event, position, onClose, onEdit, onDelete, onDup
   const endFmt = formatTime(event.end, event.allDay);
   const timeLabel = event.allDay ? 'All day' : `${startFmt} – ${endFmt}`;
 
-  return (
+  const popover = (
     <div
       ref={ref}
-      className="fixed z-50 w-72 bg-[#1e293b] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+      className="fixed z-[9999] w-72 bg-[#1e293b] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
       style={{ top: position.y, left: position.x }}
     >
       <div className="flex items-start justify-between px-4 pt-4 pb-2">
@@ -101,4 +104,7 @@ export function EventPopover({ event, position, onClose, onEdit, onDelete, onDup
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(popover, document.body);
 }

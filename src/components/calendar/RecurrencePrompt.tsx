@@ -1,4 +1,6 @@
 'use client';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { UpdateScope } from './types';
 
 interface Props {
@@ -8,8 +10,11 @@ interface Props {
 }
 
 export function RecurrencePrompt({ action, onSelect, onCancel }: Props) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const modal = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-[#1e293b] rounded-2xl shadow-2xl p-6 w-80 border border-white/10">
         <h2 className="text-lg font-semibold text-white mb-1">
           {action === 'edit' ? 'Edit recurring event' : 'Delete recurring event'}
@@ -37,4 +42,7 @@ export function RecurrencePrompt({ action, onSelect, onCancel }: Props) {
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modal, document.body);
 }
