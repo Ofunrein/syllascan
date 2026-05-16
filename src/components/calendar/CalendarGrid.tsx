@@ -16,20 +16,30 @@ import { useEffect, useMemo } from 'react';
 
 import type { GCalEvent, GCalCalendar, ViewMode } from './types';
 
-// schedule-x uses 'YYYY-MM-DD HH:mm' for timed events and 'YYYY-MM-DD' for all-day
-function toSXDateTime(iso: string, allDay: boolean): string {
-  if (allDay) {
-    // Return just the date portion
-    return iso.slice(0, 10);
+// schedule-x v4 requires Temporal.ZonedDateTime for timed events, Temporal.PlainDate for all-day.
+// We use globalThis.Temporal (native browser API) to match the same class schedule-x validates against.
+function toSXDateTime(iso: string, allDay: boolean): unknown {
+  const T = (globalThis as unknown as {
+    Temporal?: {
+      PlainDate: { from: (s: string) => unknown };
+      Instant: { fromEpochMilliseconds: (ms: number) => { toZonedDateTimeISO: (tz: string) => unknown } };
+      Now: { timeZoneId: () => string };
+    };
+  }).Temporal;
+
+  if (!T) {
+    // No Temporal available — return string as last resort (will error in sx)
+    return allDay ? iso.slice(0, 10) : iso.slice(0, 16).replace('T', ' ');
   }
-  // Convert ISO 8601 like '2025-05-15T10:30:00Z' → '2025-05-15 10:30'
-  const d = new Date(iso);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+
+  if (allDay) {
+    return T.PlainDate.from(iso.slice(0, 10));
+  }
+
+  // Timed event → ZonedDateTime in local timezone
+  const ms = new Date(iso).getTime();
+  const tz = T.Now.timeZoneId();
+  return T.Instant.fromEpochMilliseconds(ms).toZonedDateTimeISO(tz);
 }
 
 function toSXViewName(view: ViewMode): string {
