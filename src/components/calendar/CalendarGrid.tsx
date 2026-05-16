@@ -37,8 +37,10 @@ function toSXDateTime(iso: string, allDay: boolean): unknown {
   }
 
   // Timed event → ZonedDateTime in local timezone
+  // Use Intl.DateTimeFormat for timezone detection — more reliable than Temporal.Now.timeZoneId()
+  // which can return UTC on some environments even when the user is in a different timezone.
   const ms = new Date(iso).getTime();
-  const tz = T.Now.timeZoneId();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || T.Now.timeZoneId();
   return T.Instant.fromEpochMilliseconds(ms).toZonedDateTimeISO(tz);
 }
 
