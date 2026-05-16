@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from 'react';
+import { usePathname } from 'next/navigation';
 import { X, Mic, Plus, ArrowUp, Minimize2, Square } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useAssistant } from './useAssistant';
@@ -58,9 +59,10 @@ function useWaveform(active: boolean) {
   return { bars, startWaveform: start, stopWaveform: stop };
 }
 
-// ── Drag hook ────────────────────────────────────────────────────────
+// ── Drag hook (stores offset from bottom-center/right) ───────────────
 function useDrag() {
-  const [pos, setPos] = useState<{ right: number; bottom: number } | null>(null);
+  // null = use CSS default position; {x,y} = user-dragged absolute top-left
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -70,17 +72,22 @@ function useDrag() {
       const s = localStorage.getItem(POS_KEY);
       if (s) {
         const p = JSON.parse(s);
-        // Validate it's the right/bottom format (not legacy x/y) and within viewport
-        if (typeof p.right === 'number' && typeof p.bottom === 'number'
-          && p.right >= 0 && p.right < window.innerWidth
-          && p.bottom >= 0 && p.bottom < window.innerHeight) {
-          setPos(p);
+        if (typeof p.x === 'number' && typeof p.y === 'number') {
+          // Clamp to viewport on load
+          const w = 440; const h = 80;
+          const cx = Math.max(0, Math.min(window.innerWidth - w, p.x));
+          const cy = Math.max(0, Math.min(window.innerHeight - h, p.y));
+          setDragPos({ x: cx, y: cy });
         } else {
-          // Stale/invalid position — clear it and use default bottom-right
           localStorage.removeItem(POS_KEY);
         }
       }
     } catch { localStorage.removeItem(POS_KEY); }
+  }, []);
+
+  const clearDragPos = useCallback(() => {
+    setDragPos(null);
+    localStorage.removeItem(POS_KEY);
   }, []);
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -95,23 +102,46 @@ function useDrag() {
   useEffect(() => {
     const move = (e: MouseEvent) => {
       if (!dragging.current) return;
-      const w = widgetRef.current?.offsetWidth ?? 440;
-      const h = widgetRef.current?.offsetHeight ?? 80;
-      const left = Math.max(0, Math.min(window.innerWidth - w,  e.clientX - offset.current.x));
-      const top  = Math.max(0, Math.min(window.innerHeight - h, e.clientY - offset.current.y));
-      setPos({ right: Math.max(0, window.innerWidth - left - w), bottom: Math.max(0, window.innerHeight - top - h) });
+      const el = widgetRef.current;
+      const w = el?.offsetWidth ?? 440;
+      const h = el?.offsetHeight ?? 80;
+      // Hard-clamp so widget can never leave the viewport
+      const x = Math.max(8, Math.min(window.innerWidth  - w  - 8, e.clientX - offset.current.x));
+      const y = Math.max(8, Math.min(window.innerHeight - h  - 8, e.clientY - offset.current.y));
+      setDragPos({ x, y });
     };
     const up = () => {
       if (!dragging.current) return;
       dragging.current = false;
-      setPos(p => { if (p) localStorage.setItem(POS_KEY, JSON.stringify(p)); return p; });
+      setDragPos(p => { if (p) localStorage.setItem(POS_KEY, JSON.stringify(p)); return p; });
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
     return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
   }, []);
 
-  return { widgetRef, pos, onMouseDown };
+  return { widgetRef, dragPos, onMouseDown, clearDragPos };
+}
+
+// ── Calendar events fetcher ──────────────────────────────────────────
+interface CalEvent { id: string; calendarId: string; title: string; start: string; end: string; allDay: boolean }
+
+async function fetchAllCalendarEvents(): Promise<CalEvent[]> {
+  // Fetch all user calendars first
+  const calRes = await fetch('/api/calendar/calendars');
+  if (!calRes.ok) return [];
+  const { calendars } = await calRes.json() as { calendars: Array<{ id: string }> };
+  if (!calendars?.length) return [];
+
+  const calendarIds = calendars.map((c: { id: string }) => c.id).join(',');
+  const timeMin = new Date(Date.now() - 14 * 86400000).toISOString();   // past 14 days
+  const timeMax = new Date(Date.now() + 60 * 86400000).toISOString();   // next 60 days
+
+  const q = new URLSearchParams({ calendarIds, timeMin, timeMax });
+  const evRes = await fetch(`/api/calendar/events?${q}`);
+  if (!evRes.ok) return [];
+  const { events } = await evRes.json();
+  return events ?? [];
 }
 
 // ── Main widget ──────────────────────────────────────────────────────
@@ -120,12 +150,20 @@ export function AssistantWidget() {
   const [collapsedText, setCollapsedText] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState<CalEvent[]>([]);
+  const pathname = usePathname();
   const { user, googleCalendarConnected } = useAuth();
-  const { widgetRef, pos, onMouseDown } = useDrag();
+  const { widgetRef, dragPos, onMouseDown } = useDrag();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fetch calendar events whenever the widget opens (or Google Calendar connects)
+  useEffect(() => {
+    if (!googleCalendarConnected) return;
+    fetchAllCalendarEvents().then(setCalendarEvents).catch(() => {});
+  }, [open, googleCalendarConnected]);
   const mediaRecRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const assistant = useAssistant({ userId: user?.id ?? null, calendarEvents: [] });
+  const assistant = useAssistant({ userId: user?.id ?? null, calendarEvents });
   const { bars, startWaveform, stopWaveform } = useWaveform(recording);
 
   // ── Collapsed mic handling ─────────────────────────────────────────
@@ -215,15 +253,24 @@ export function AssistantWidget() {
       }
     }
     await assistant.markConfirmed(msgIndex);
-  }, [assistant]);
+    // Refresh calendar context so AI knows about the change
+    if (googleCalendarConnected) {
+      fetchAllCalendarEvents().then(setCalendarEvents).catch(() => {});
+    }
+  }, [assistant, googleCalendarConnected]);
 
   const handleDismissActions = useCallback((msgIndex: number) => {
     assistant.markConfirmed(msgIndex);
   }, [assistant]);
 
-  const baseStyle: React.CSSProperties = pos
-    ? { position: 'fixed', right: pos.right, bottom: pos.bottom }
-    : { position: 'fixed', right: '24px', bottom: '24px' };
+  // Bottom-right on landing page, bottom-center everywhere else
+  // Dragged position overrides default
+  const isLanding = pathname === '/';
+  const baseStyle: React.CSSProperties = dragPos
+    ? { position: 'fixed', left: dragPos.x, top: dragPos.y }
+    : isLanding
+      ? { position: 'fixed', right: '24px', bottom: '24px' }
+      : { position: 'fixed', left: '50%', bottom: '24px', transform: 'translateX(-50%)' };
 
   if (!user) return null;
 
@@ -235,8 +282,8 @@ export function AssistantWidget() {
         onMouseDown={onMouseDown}
         style={{
           ...baseStyle,
-          width: 'min(440px, calc(100vw - 32px))',
-          background: 'rgba(28, 28, 33, 0.82)',
+          width: 'min(440px, 92vw)',
+          background: 'rgba(18, 18, 22, 0.62)',
           backdropFilter: 'blur(28px) saturate(1.8)',
           WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
           border: '1px solid rgba(255,255,255,0.12)',
@@ -340,9 +387,9 @@ export function AssistantWidget() {
       ref={widgetRef}
       style={{
         ...baseStyle,
-        width: 'min(420px, calc(100vw - 24px))',
-        height: 'min(580px, calc(100vh - 40px))',
-        background: 'rgba(13, 13, 15, 0.94)',
+        width: 'min(420px, 90vw)',
+        height: 'min(580px, 80vh)',
+        background: 'rgba(10, 10, 14, 0.76)',
         backdropFilter: 'blur(24px) saturate(1.5)',
         WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
         border: '1px solid rgba(255,255,255,0.09)',

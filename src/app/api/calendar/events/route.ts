@@ -34,25 +34,38 @@ export async function GET(request: NextRequest) {
     );
 
     const events = results.flatMap(({ calId, items }) =>
-      items.map(e => ({
-        id: e.id,
-        calendarId: calId,
-        title: e.summary,
-        description: e.description,
-        start: e.start?.dateTime ?? e.start?.date,
-        end: e.end?.dateTime ?? e.end?.date,
-        allDay: Boolean(e.start?.date && !e.start?.dateTime),
-        location: e.location,
-        recurrence: e.recurrence?.[0],
-        recurringEventId: e.recurringEventId,
-        htmlLink: e.htmlLink,
-        hangoutLink: e.hangoutLink,
-        attendees: e.attendees?.map(a => ({
-          email: a.email,
-          displayName: a.displayName,
-          responseStatus: a.responseStatus,
-        })),
-      }))
+      items.map(e => {
+        const isAllDay = Boolean(e.start?.date && !e.start?.dateTime);
+
+        // Google Calendar all-day event `end` is exclusive (day after last day).
+        // Subtract 1 day so schedule-x renders it correctly as a single-day event.
+        let end = e.end?.dateTime ?? e.end?.date ?? '';
+        if (isAllDay && e.end?.date) {
+          const d = new Date(e.end.date + 'T00:00:00Z');
+          d.setUTCDate(d.getUTCDate() - 1);
+          end = d.toISOString().split('T')[0];
+        }
+
+        return {
+          id: e.id,
+          calendarId: calId,
+          title: e.summary,
+          description: e.description,
+          start: e.start?.dateTime ?? e.start?.date,
+          end,
+          allDay: isAllDay,
+          location: e.location,
+          recurrence: e.recurrence?.[0],
+          recurringEventId: e.recurringEventId,
+          htmlLink: e.htmlLink,
+          hangoutLink: e.hangoutLink,
+          attendees: e.attendees?.map(a => ({
+            email: a.email,
+            displayName: a.displayName,
+            responseStatus: a.responseStatus,
+          })),
+        };
+      })
     );
 
     return NextResponse.json({ events });
