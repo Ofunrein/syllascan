@@ -2,22 +2,30 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Custom enum types
-CREATE TYPE event_type AS ENUM (
-  'exam', 'assignment', 'discussion', 'reading',
-  'class', 'meeting', 'personal', 'other'
-);
+DO $$ BEGIN
+  CREATE TYPE event_type AS ENUM (
+    'exam', 'assignment', 'discussion', 'reading',
+    'class', 'meeting', 'personal', 'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE event_category AS ENUM (
-  'academic', 'personal', 'work', 'other'
-);
+DO $$ BEGIN
+  CREATE TYPE event_category AS ENUM (
+    'academic', 'personal', 'work', 'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE event_source AS ENUM (
-  'extraction', 'manual', 'google_calendar'
-);
+DO $$ BEGIN
+  CREATE TYPE event_source AS ENUM (
+    'extraction', 'manual', 'google_calendar'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE extraction_status AS ENUM (
-  'pending', 'processing', 'completed', 'failed'
-);
+DO $$ BEGIN
+  CREATE TYPE extraction_status AS ENUM (
+    'pending', 'processing', 'completed', 'failed'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TYPE sync_direction AS ENUM (
   'to_google', 'from_google'

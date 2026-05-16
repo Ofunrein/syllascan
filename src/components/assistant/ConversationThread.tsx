@@ -3,6 +3,21 @@ import { useEffect, useRef } from 'react';
 import { BatchConfirmCard } from './BatchConfirmCard';
 import type { ConversationMessage, AssistantAction } from './types';
 
+function confirmedLabel(actions: AssistantAction[]): string {
+  const types = [...new Set(actions.map(a => a.type))];
+  if (types.length === 1) {
+    switch (types[0]) {
+      case 'CREATE': return 'Added to calendar';
+      case 'DELETE': return 'Removed from calendar';
+      case 'EDIT':   return 'Updated';
+      case 'MOVE':   return 'Moved';
+    }
+  }
+  // Mixed actions
+  const labels = types.map(t => t === 'CREATE' ? 'added' : t === 'DELETE' ? 'removed' : t === 'EDIT' ? 'updated' : 'moved');
+  return labels.join(', ').replace(/,([^,]*)$/, ' &$1');
+}
+
 interface Props {
   messages: ConversationMessage[];
   loading: boolean;
@@ -39,7 +54,11 @@ export function ConversationThread({ messages, loading, onConfirmActions, onDism
                 onDismiss={() => onDismissActions(i)}
               />
             )}
-            {msg.confirmed && <p className="text-xs text-white/35 mt-1.5">✓ Added to calendar</p>}
+            {msg.confirmed && msg.actions && (
+              <p className="text-xs text-white/35 mt-1.5">
+                ✓ {confirmedLabel(msg.actions)}
+              </p>
+            )}
           </div>
         </div>
       ))}
