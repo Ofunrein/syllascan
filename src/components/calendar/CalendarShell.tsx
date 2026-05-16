@@ -90,7 +90,7 @@ export function CalendarShell() {
 
   const { data: calendars = [], error: calendarsError, refetch: refetchCalendars } = useCalendars();
   const { timeMin, timeMax } = getViewRange(date, view);
-  const visibleIds = Array.from(visibleCalendars);
+  const visibleIds = useMemo(() => Array.from(visibleCalendars), [visibleCalendars]);
   const { data: rawEvents = [], error: eventsError, refetch: refetchEvents } = useEvents({ calendarIds: visibleIds, timeMin, timeMax });
 
   // Join calendarColor from calendar list

@@ -403,94 +403,145 @@ svg:not([class]) {
   opacity: 0.7 !important;
 }
 
-/* schedule-x dark theme overrides — force dark on all views */
+/* ─── schedule-x dark theme ─────────────────────────────────────────────── */
+
+/* CSS variables — only on wrapper, NOT on * (wildcards kill event colors) */
 .sx__calendar-wrapper,
-.sx__calendar,
-.sx__calendar *,
-.sx__view-container {
-  --sx-color-background-primary: #0f172a !important;
-  --sx-color-background-secondary: #1e293b !important;
-  --sx-color-on-surface: rgba(255, 255, 255, 0.9) !important;
-  --sx-color-on-surface-variant: rgba(255, 255, 255, 0.55) !important;
-  --sx-color-primary: #3b82f6 !important;
-  --sx-color-surface: #0f172a !important;
-  --sx-border-color: rgba(255, 255, 255, 0.1) !important;
-  --sx-color-text-primary: rgba(255, 255, 255, 0.9) !important;
-  --sx-color-text-secondary: rgba(255, 255, 255, 0.55) !important;
-  --sx-color-today-bg: rgba(59, 130, 246, 0.18) !important;
+.sx__calendar {
+  --sx-color-background-primary: #0f172a;
+  --sx-color-background-secondary: #1e293b;
+  --sx-color-on-surface: rgba(255, 255, 255, 0.92);
+  --sx-color-on-surface-variant: rgba(255, 255, 255, 0.6);
+  --sx-color-primary: #3b82f6;
+  --sx-color-surface: #0f172a;
+  --sx-border-color: rgba(255, 255, 255, 0.1);
+  --sx-color-text-primary: rgba(255, 255, 255, 0.92);
+  --sx-color-text-secondary: rgba(255, 255, 255, 0.6);
+  --sx-color-today-bg: rgba(59, 130, 246, 0.18);
+  background-color: #0f172a;
+  color: rgba(255, 255, 255, 0.92);
 }
 
-/* Background wipe — override schedule-x light backgrounds */
-.sx__calendar-wrapper,
-.sx__calendar,
+/* Grid backgrounds — specific containers only */
 .sx__time-grid,
 .sx__month-grid,
 .sx__month-agenda,
 .sx__week-wrapper,
 .sx__day-wrapper,
 .sx__time-grid-wrapper,
-.sx__month-grid-wrapper {
+.sx__month-grid-wrapper,
+.sx__week-grid,
+.sx__day-grid {
   background-color: #0f172a !important;
-  color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* Headers */
+/* Internal header (schedule-x's own toolbar inside the grid) */
 .sx__calendar-header,
 .sx__week-grid-header,
 .sx__time-grid-header,
-.sx__calendar-header-content {
+.sx__calendar-header-content,
+.sx__date-picker-wrapper {
   background-color: #1e293b !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-/* Day/date cells — white text */
-.sx__month-grid-day,
-.sx__week-grid__date,
-.sx__time-axis-time,
-.sx__date,
-.sx__day-name,
-.sx__week-day-name,
-[class*="sx__time"],
-[class*="sx__day-name"],
-[class*="sx__date"] {
   color: #ffffff !important;
 }
 
-/* Time axis — full white */
-.sx__time-axis,
-.sx__time-axis-time {
+/* Day/date/time labels — white */
+.sx__time-axis-time,
+.sx__week-grid__date,
+.sx__month-grid-day,
+.sx__day-name,
+.sx__week-day-name {
+  color: #ffffff !important;
+}
+
+.sx__time-axis {
   background-color: #0f172a !important;
   color: #ffffff !important;
-  font-size: 0.72rem !important;
+  font-size: 0.71rem !important;
 }
 
-/* Day/week column headers — white */
+/* Column headers in week/day view */
 .sx__week-grid__date-num,
-.sx__week-header-content,
-.sx__day-header {
+.sx__week-header-content {
   color: #ffffff !important;
 }
 
-/* Grid lines — slightly more visible */
+/* Today highlight */
+.sx__month-grid-cell--today,
+.sx__week-grid__date--today {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  color: #93c5fd !important;
+  font-weight: 700 !important;
+}
+
+/* Grid lines — targeted, not wildcard */
 .sx__time-grid-line,
-.sx__month-grid-cell,
-[class*="sx__"] {
-  border-color: rgba(255, 255, 255, 0.12) !important;
+.sx__month-grid-cell {
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Events */
+/* ─── Event styling — sexy ───────────────────────────────────────────────── */
+
+/* Base event */
 .sx__event {
-  border-radius: 4px !important;
-  font-size: 0.8rem !important;
+  border-radius: 6px !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
   color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+/* Timed events in day/week grid — ensure background + left accent */
+.sx__time-grid-event,
+.sx__event-time-grid {
+  border-radius: 6px !important;
+  border-left: 3px solid rgba(255, 255, 255, 0.4) !important;
+  padding: 3px 6px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: none !important;
+}
+
+/* All-day / month grid event chips */
+.sx__month-grid-event,
+.sx__event-chip,
+[class*="sx__event"] {
+  border-radius: 5px !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  padding: 2px 6px !important;
+}
+
+/* Event title */
+.sx__event-title,
+.sx__event__title {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Event time inside chip */
+.sx__event-time,
+.sx__time-grid-event-time {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.7rem !important;
 }
 
 /* Current time indicator */
 .sx__today-indicator,
 .sx__current-time-indicator {
   background-color: #ef4444 !important;
+  height: 2px !important;
 }
+.sx__today-indicator::before,
+.sx__current-time-indicator::before {
+  background-color: #ef4444 !important;
+}
+
 
 /* Time axis */
 .sx__time-axis,
