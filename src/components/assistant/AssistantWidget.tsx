@@ -66,7 +66,21 @@ function useDrag() {
   const widgetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    try { const s = localStorage.getItem(POS_KEY); if (s) setPos(JSON.parse(s)); } catch {}
+    try {
+      const s = localStorage.getItem(POS_KEY);
+      if (s) {
+        const p = JSON.parse(s);
+        // Validate it's the right/bottom format (not legacy x/y) and within viewport
+        if (typeof p.right === 'number' && typeof p.bottom === 'number'
+          && p.right >= 0 && p.right < window.innerWidth
+          && p.bottom >= 0 && p.bottom < window.innerHeight) {
+          setPos(p);
+        } else {
+          // Stale/invalid position — clear it and use default bottom-right
+          localStorage.removeItem(POS_KEY);
+        }
+      }
+    } catch { localStorage.removeItem(POS_KEY); }
   }, []);
 
   const onMouseDown = (e: React.MouseEvent) => {
