@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
@@ -19,6 +19,10 @@ export function MiniMonth({ selectedDate, onSelect }: Props) {
   const [viewMonth, setViewMonth] = useState(
     () => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
   );
+
+  useEffect(() => {
+    setViewMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+  }, [selectedDate]);
 
   const prev = () => setViewMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const next = () => setViewMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));

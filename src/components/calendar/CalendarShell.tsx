@@ -69,6 +69,14 @@ function navigate(date: Date, view: ViewMode, dir: 1 | -1): Date {
   return d;
 }
 
+function isSameCalendarDate(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 export function CalendarShell() {
   const [view, setView] = useState<ViewMode>('month');
   const [date, setDate] = useState(new Date());
@@ -115,6 +123,10 @@ export function CalendarShell() {
   const createEvent = useCreateEvent(refetch);
   const updateEvent = useUpdateEvent(refetch);
   const deleteEvent = useDeleteEvent(refetch);
+
+  const syncDate = useCallback((nextDate: Date) => {
+    setDate(prevDate => isSameCalendarDate(prevDate, nextDate) ? prevDate : nextDate);
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -316,12 +328,13 @@ export function CalendarShell() {
       <div className="flex items-center gap-3 px-4 py-3 border-b border-black/10 dark:border-white/10 shrink-0">
         <button
           onClick={() => setSidebarOpen(o => !o)}
+          aria-label={sidebarOpen ? 'Close calendar sidebar' : 'Open calendar sidebar'}
           className="p-1.5 rounded hover:bg-black/[0.08] dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
         >
           {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
         <button
-          onClick={() => setDate(new Date())}
+          onClick={() => syncDate(new Date())}
           className="px-3 py-1.5 rounded-lg bg-black/[0.08] dark:bg-white/10 hover:bg-black/[0.12] dark:hover:bg-white/15 text-black dark:text-white text-sm font-medium transition-colors"
         >
           Today
@@ -329,12 +342,14 @@ export function CalendarShell() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setDate(d => navigate(d, view, -1))}
+            aria-label="Previous calendar period"
             className="p-1.5 rounded hover:bg-black/[0.08] dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={() => setDate(d => navigate(d, view, 1))}
+            aria-label="Next calendar period"
             className="p-1.5 rounded hover:bg-black/[0.08] dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
           >
             <ChevronRight size={18} />
@@ -385,7 +400,7 @@ export function CalendarShell() {
             <Sidebar
               date={date}
               onDateChange={d => {
-                setDate(d);
+                syncDate(d);
                 if (view === 'year') setView('month');
               }}
               calendars={calendars}
@@ -417,6 +432,7 @@ export function CalendarShell() {
               calendars={calendars}
               view={view}
               date={date}
+              onDateChange={syncDate}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
               onEventDrop={handleEventDrop}

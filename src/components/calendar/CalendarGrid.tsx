@@ -80,6 +80,7 @@ export interface CalendarGridProps {
   calendars: GCalCalendar[];
   view: ViewMode;
   date: Date;
+  onDateChange?: (date: Date) => void;
   onEventClick?: (event: GCalEvent) => void;
   onSlotClick?: (date: Date) => void;
   onEventDrop?: (event: GCalEvent) => void;
@@ -91,6 +92,7 @@ export default function CalendarGrid({
   calendars,
   view,
   date,
+  onDateChange,
   onEventClick,
   onSlotClick,
   onEventDrop,
@@ -154,6 +156,9 @@ export default function CalendarGrid({
           const original = (sxEvent as Record<string, unknown>)['_gcalEvent'] as GCalEvent | undefined;
           if (original) onEventClick(original);
         },
+        onSelectedDateUpdate(plainDate) {
+          onDateChange?.(parsePlainDateToLocalDate(plainDate.toString()));
+        },
         onClickDate(plainDate) {
           if (!onSlotClick) return;
           const jsDate = parsePlainDateToLocalDate(plainDate.toString());
@@ -205,11 +210,22 @@ export default function CalendarGrid({
     try {
       // Try the internal $app path used by schedule-x v4
       const $app = (calendarApp as unknown as Record<string, unknown>)['$app'] as
-        | { calendarState: { setView: (v: string, d: unknown) => void }; datePickerConfig: { selectedDate: { value: unknown } } }
+        | {
+            calendarState: { setView: (v: string, d: Temporal.PlainDate | undefined) => void };
+            datePickerState?: {
+              selectedDate?: { value: Temporal.PlainDate };
+              datePickerDate?: { value: Temporal.PlainDate };
+            };
+          }
         | undefined;
       if ($app?.calendarState?.setView) {
-        // Temporal.PlainDate.from(string) — use the Temporal API available globally in v4
         const plainDate = getNativeTemporalDate(toSXDate(date));
+        if (plainDate && $app.datePickerState?.selectedDate) {
+          $app.datePickerState.selectedDate.value = plainDate;
+        }
+        if (plainDate && $app.datePickerState?.datePickerDate) {
+          $app.datePickerState.datePickerDate.value = plainDate;
+        }
         $app.calendarState.setView(toSXViewName(view), plainDate);
       }
     } catch {
