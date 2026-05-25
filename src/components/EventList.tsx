@@ -764,12 +764,19 @@ export default function EventList({ events, onClearEvents, onEventsChange }: Eve
       {editingEvent && editorPosition && (
         <div
           ref={editorRef}
-          className="event-editor-container liquid-glass"
+          className="event-editor-container"
           style={{
             top: `${editorPosition.top}px`,
             left: `${editorPosition.left}px`,
             width: `${editorPosition.width}px`,
             height: `${editorPosition.height}px`,
+            background: 'rgba(10, 10, 14, 0.92)',
+            backdropFilter: 'blur(28px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '20px',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
+            color: '#fff',
           }}
         >
           {/* Top resize handle */}

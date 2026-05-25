@@ -20,7 +20,7 @@ export function Sidebar({ date, onDateChange, calendars, visibleCalendars, onTog
     <aside className="w-full flex flex-col gap-4 py-4">
       <button
         onClick={onCreateEvent}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm shadow-lg border border-white/10 transition-colors w-fit"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-black/[0.08] dark:bg-white/10 hover:bg-black/[0.12] dark:hover:bg-white/15 text-black dark:text-white font-semibold text-sm shadow-lg border border-black/10 dark:border-white/10 transition-colors w-fit"
       >
         <Plus size={16} />
         Create
@@ -30,7 +30,7 @@ export function Sidebar({ date, onDateChange, calendars, visibleCalendars, onTog
 
       {myCalendars.length > 0 && (
         <div>
-          <div className="text-[11px] text-white/40 uppercase tracking-widest mb-2 px-1">My calendars</div>
+          <div className="text-[11px] text-black/[0.45] dark:text-white/40 uppercase tracking-widest mb-2 px-1">My calendars</div>
           <ul className="space-y-0.5">
             {myCalendars.map(cal => (
               <CalendarToggleRow
@@ -46,7 +46,7 @@ export function Sidebar({ date, onDateChange, calendars, visibleCalendars, onTog
 
       {otherCalendars.length > 0 && (
         <div>
-          <div className="text-[11px] text-white/40 uppercase tracking-widest mb-2 px-1">Other calendars</div>
+          <div className="text-[11px] text-black/[0.45] dark:text-white/40 uppercase tracking-widest mb-2 px-1">Other calendars</div>
           <ul className="space-y-0.5">
             {otherCalendars.map(cal => (
               <CalendarToggleRow
@@ -74,7 +74,7 @@ function CalendarToggleRow({
 }) {
   return (
     <li>
-      <label className="flex items-center gap-2 px-1 py-1 rounded hover:bg-white/5 cursor-pointer">
+      <label className="flex items-center gap-2 px-1 py-1 rounded hover:bg-black/[0.05] dark:hover:bg-white/5 cursor-pointer">
         <span
           className="w-3.5 h-3.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
           style={{
@@ -85,7 +85,7 @@ function CalendarToggleRow({
         >
           {checked && <span className="text-white text-[8px] leading-none">✓</span>}
         </span>
-        <span className="text-sm text-white/70 truncate">{cal.summary}</span>
+        <span className="text-sm text-black/[0.75] dark:text-white/70 truncate">{cal.summary}</span>
       </label>
     </li>
   );

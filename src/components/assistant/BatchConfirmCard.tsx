@@ -26,7 +26,7 @@ function actionIcon(a: AssistantAction) {
 
 function formatDT(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 export function BatchConfirmCard({ actions, onConfirm, onDismiss, loading }: Props) {
@@ -38,9 +38,9 @@ export function BatchConfirmCard({ actions, onConfirm, onDismiss, loading }: Pro
   };
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden mt-2">
+    <div className="rounded-2xl border border-white/10 bg-[#1e293b] shadow-xl overflow-hidden mt-2">
       <div className="px-3 py-2 border-b border-white/10">
-        <span className="text-[11px] font-semibold text-white/50 uppercase tracking-wide">
+        <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wide">
           {actions.length} {actions.length === 1 ? 'action' : 'actions'} — confirm?
         </span>
       </div>

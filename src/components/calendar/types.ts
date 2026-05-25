@@ -50,4 +50,5 @@ export interface EventEditorValues {
   recurrence: string;  // RRULE string or ''
   guests: string[];    // email list
   addMeet: boolean;
+  timezone?: string;   // IANA timezone (e.g., "America/Chicago")
 }

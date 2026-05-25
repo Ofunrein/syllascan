@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { calendarId = 'primary', event: eventBody, addMeet } = body;
+    const tz = eventBody.timezone || eventBody.timeZone || 'UTC';
 
     const resource: any = {
       summary: eventBody.title,
@@ -102,10 +103,10 @@ export async function POST(request: NextRequest) {
       location: eventBody.location,
       start: eventBody.allDay
         ? { date: eventBody.start.split('T')[0] }
-        : { dateTime: eventBody.start, timeZone: 'UTC' },
+        : { dateTime: eventBody.start, timeZone: tz },
       end: eventBody.allDay
         ? { date: eventBody.end.split('T')[0] }
-        : { dateTime: eventBody.end, timeZone: 'UTC' },
+        : { dateTime: eventBody.end, timeZone: tz },
       colorId: eventBody.color || undefined,
       recurrence: eventBody.recurrence ? [eventBody.recurrence] : undefined,
       attendees: eventBody.guests?.map((email: string) => ({ email })),

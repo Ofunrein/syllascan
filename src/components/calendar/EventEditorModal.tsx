@@ -63,6 +63,7 @@ export function EventEditorModal({ event, defaultStart, defaultEnd, calendars, d
 
   const submit = () => {
     if (!title.trim()) return;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     onSave(
       {
         title,
@@ -76,6 +77,7 @@ export function EventEditorModal({ event, defaultStart, defaultEnd, calendars, d
         recurrence,
         guests,
         addMeet,
+        timezone: tz,
       },
       calId
     );

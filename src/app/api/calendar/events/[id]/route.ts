@@ -21,6 +21,7 @@ export async function PATCH(
 
   const body = await request.json();
   const { event: eventBody } = body;
+  const tz = eventBody.timezone || eventBody.timeZone || 'UTC';
 
   const resource: any = {};
   if (eventBody.title !== undefined) resource.summary = eventBody.title;
@@ -29,12 +30,12 @@ export async function PATCH(
   if (eventBody.start !== undefined) {
     resource.start = eventBody.allDay
       ? { date: eventBody.start.split('T')[0] }
-      : { dateTime: eventBody.start, timeZone: 'UTC' };
+      : { dateTime: eventBody.start, timeZone: tz };
   }
   if (eventBody.end !== undefined) {
     resource.end = eventBody.allDay
       ? { date: eventBody.end.split('T')[0] }
-      : { dateTime: eventBody.end, timeZone: 'UTC' };
+      : { dateTime: eventBody.end, timeZone: tz };
   }
   if (eventBody.color !== undefined) resource.colorId = eventBody.color || undefined;
   if (eventBody.recurrence) resource.recurrence = [eventBody.recurrence];

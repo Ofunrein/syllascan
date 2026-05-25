@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { Check, Calendar, Trash2, Edit2, MoveRight, Clock, MapPin } from 'lucide-react';
 import { BatchConfirmCard } from './BatchConfirmCard';
 import type { ConversationMessage, AssistantAction } from './types';
 
@@ -13,9 +14,70 @@ function confirmedLabel(actions: AssistantAction[]): string {
       case 'MOVE':   return 'Moved';
     }
   }
-  // Mixed actions
   const labels = types.map(t => t === 'CREATE' ? 'added' : t === 'DELETE' ? 'removed' : t === 'EDIT' ? 'updated' : 'moved');
   return labels.join(', ').replace(/,([^,]*)$/, ' &$1');
+}
+
+function formatDT(iso: string, allDay?: boolean): string {
+  const d = new Date(iso);
+  if (allDay) return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+function actionTitle(a: AssistantAction): string {
+  if (a.type === 'CREATE') return a.event.title;
+  if (a.type === 'EDIT') return a.changes.title ?? 'Edited event';
+  if (a.type === 'MOVE') return 'Moved event';
+  return a.title;
+}
+
+function actionIcon(a: AssistantAction) {
+  if (a.type === 'CREATE') return <Calendar size={12} className="text-blue-400" />;
+  if (a.type === 'EDIT') return <Edit2 size={12} className="text-blue-400" />;
+  if (a.type === 'MOVE') return <MoveRight size={12} className="text-blue-400" />;
+  return <Trash2 size={12} className="text-red-400" />;
+}
+
+function ConfirmedCards({ actions }: { actions: AssistantAction[] }) {
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex items-center gap-1.5 text-xs text-emerald-400/90 font-medium">
+        <Check size={12} />
+        <span>{confirmedLabel(actions)}</span>
+      </div>
+      {actions.map((a, i) => {
+        const title = actionTitle(a);
+        let when: string | null = null;
+        let location: string | undefined;
+        if (a.type === 'CREATE') {
+          when = formatDT(a.event.start, a.event.allDay);
+          location = a.event.location;
+        } else if (a.type === 'MOVE') {
+          when = formatDT(a.newStart);
+        }
+        return (
+          <div key={i} className="rounded-xl border border-white/10 bg-[#1e293b] px-3 py-2 shadow-sm">
+            <div className="flex items-center gap-2">
+              {actionIcon(a)}
+              <span className="text-sm font-semibold text-white truncate">{title}</span>
+            </div>
+            {when && (
+              <div className="flex items-center gap-1.5 text-[11px] text-white/55 mt-1">
+                <Clock size={10} />
+                <span>{when}</span>
+              </div>
+            )}
+            {location && (
+              <div className="flex items-center gap-1.5 text-[11px] text-white/55 mt-0.5">
+                <MapPin size={10} />
+                <span className="truncate">{location}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 interface Props {
@@ -55,9 +117,7 @@ export function ConversationThread({ messages, loading, onConfirmActions, onDism
               />
             )}
             {msg.confirmed && msg.actions && (
-              <p className="text-xs text-white/35 mt-1.5">
-                ✓ {confirmedLabel(msg.actions)}
-              </p>
+              <ConfirmedCards actions={msg.actions} />
             )}
           </div>
         </div>

@@ -331,15 +331,15 @@ svg:not([class]) {
 /* ── Liquid Glass ────────────────────────────────────────── */
 /* Light mode liquid glass */
 .liquid-glass {
-  background: rgba(255, 255, 255, 0.82);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(248, 251, 255, 0.66) 100%);
   background-blend-mode: luminosity;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
   border: none;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(255,255,255,0.42), 0 10px 28px rgba(15, 23, 42, 0.12);
   position: relative;
   overflow: hidden;
-  color: #111827;
+  color: #111111;
 }
 
 .liquid-glass::before {
@@ -348,7 +348,7 @@ svg:not([class]) {
   inset: 0;
   border-radius: inherit;
   padding: 1.4px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.4) 80%, rgba(255,255,255,0.8) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 18%, rgba(255,255,255,0.08) 42%, rgba(255,255,255,0.08) 58%, rgba(255,255,255,0.5) 82%, rgba(255,255,255,0.92) 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -399,6 +399,23 @@ svg:not([class]) {
   color: inherit;
 }
 
+/* Force dark readable text for light glass UI surfaces */
+html:not(.dark) .liquid-glass .text-white,
+html:not(.dark) .liquid-glass .text-white\/90,
+html:not(.dark) .liquid-glass .text-white\/80,
+html:not(.dark) .liquid-glass .text-white\/70,
+html:not(.dark) .liquid-glass .text-white\/60,
+html:not(.dark) .liquid-glass .text-white\/50,
+html:not(.dark) .liquid-glass .text-white\/40 {
+  color: rgba(17, 17, 17, 0.96) !important;
+}
+
+html:not(.dark) .liquid-glass input,
+html:not(.dark) .liquid-glass select,
+html:not(.dark) .liquid-glass textarea {
+  color: #111111 !important;
+}
+
 /* Nav link contrast */
 .dark .nav-link {
   color: rgba(255, 255, 255, 0.9) !important;
@@ -423,11 +440,93 @@ svg:not([class]) {
   opacity: 0.7 !important;
 }
 
-/* ─── schedule-x dark theme ─────────────────────────────────────────────── */
+/* ─── schedule-x light theme ─────────────────────────────────────────────── */
 
 /* CSS variables — only on wrapper, NOT on * (wildcards kill event colors) */
 .sx__calendar-wrapper,
 .sx__calendar {
+  --sx-color-background-primary: rgba(255, 255, 255, 0.6);
+  --sx-color-background-secondary: rgba(255, 255, 255, 0.74);
+  --sx-color-on-surface: rgba(17, 17, 17, 0.95);
+  --sx-color-on-surface-variant: rgba(17, 17, 17, 0.58);
+  --sx-color-primary: #3b82f6;
+  --sx-color-surface: rgba(255, 255, 255, 0.74);
+  --sx-border-color: rgba(17, 17, 17, 0.12);
+  --sx-color-text-primary: rgba(17, 17, 17, 0.95);
+  --sx-color-text-secondary: rgba(17, 17, 17, 0.58);
+  --sx-color-today-bg: rgba(59, 130, 246, 0.14);
+  background-color: transparent;
+  color: rgba(17, 17, 17, 0.95);
+}
+
+/* Grid backgrounds — specific containers only */
+.sx__time-grid,
+.sx__month-grid,
+.sx__month-agenda,
+.sx__week-wrapper,
+.sx__day-wrapper,
+.sx__time-grid-wrapper,
+.sx__month-grid-wrapper,
+.sx__week-grid,
+.sx__day-grid {
+  background-color: transparent !important;
+}
+
+/* Internal header (schedule-x's own toolbar inside the grid) */
+.sx__calendar-header,
+.sx__week-grid-header,
+.sx__time-grid-header,
+.sx__calendar-header-content,
+.sx__date-picker-wrapper {
+  background-color: rgba(255, 255, 255, 0.52) !important;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.12) !important;
+  color: #111111 !important;
+}
+
+/* Day/date/time labels — white */
+.sx__time-axis-time,
+.sx__week-grid__date,
+.sx__month-grid-day,
+.sx__day-name,
+.sx__week-day-name,
+.sx__week-grid__day-name {
+  color: #111111 !important;
+}
+
+.sx__time-axis {
+  background-color: transparent !important;
+  color: #111111 !important;
+  font-size: 0.71rem !important;
+}
+
+/* Column headers in week/day view — date numbers and day names */
+.sx__week-grid__date-num,
+.sx__week-grid__date-number,
+.sx__week-header-content,
+.sx__week-grid__day-name,
+.sx__week-grid__date,
+.sx__week-header,
+.sx__date-grid-day {
+  color: #111111 !important;
+}
+
+/* Today highlight */
+.sx__month-grid-cell--today,
+.sx__week-grid__date--today {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  color: #93c5fd !important;
+  font-weight: 700 !important;
+}
+
+/* Grid lines — targeted, not wildcard */
+.sx__time-grid-line,
+.sx__month-grid-cell {
+  border-color: rgba(17, 17, 17, 0.1) !important;
+}
+
+/* ─── schedule-x dark theme ─────────────────────────────────────────────── */
+.dark .sx__calendar-wrapper,
+.dark .sx__calendar {
   --sx-color-background-primary: #0f172a;
   --sx-color-background-secondary: #1e293b;
   --sx-color-on-surface: rgba(255, 255, 255, 0.92);
@@ -442,68 +541,54 @@ svg:not([class]) {
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* Grid backgrounds — specific containers only */
-.sx__time-grid,
-.sx__month-grid,
-.sx__month-agenda,
-.sx__week-wrapper,
-.sx__day-wrapper,
-.sx__time-grid-wrapper,
-.sx__month-grid-wrapper,
-.sx__week-grid,
-.sx__day-grid {
+.dark .sx__time-grid,
+.dark .sx__month-grid,
+.dark .sx__month-agenda,
+.dark .sx__week-wrapper,
+.dark .sx__day-wrapper,
+.dark .sx__time-grid-wrapper,
+.dark .sx__month-grid-wrapper,
+.dark .sx__week-grid,
+.dark .sx__day-grid {
   background-color: #0f172a !important;
 }
 
-/* Internal header (schedule-x's own toolbar inside the grid) */
-.sx__calendar-header,
-.sx__week-grid-header,
-.sx__time-grid-header,
-.sx__calendar-header-content,
-.sx__date-picker-wrapper {
+.dark .sx__calendar-header,
+.dark .sx__week-grid-header,
+.dark .sx__time-grid-header,
+.dark .sx__calendar-header-content,
+.dark .sx__date-picker-wrapper {
   background-color: #1e293b !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
 }
 
-/* Day/date/time labels — white */
-.sx__time-axis-time,
-.sx__week-grid__date,
-.sx__month-grid-day,
-.sx__day-name,
-.sx__week-day-name,
-.sx__week-grid__day-name {
+.dark .sx__time-axis-time,
+.dark .sx__week-grid__date,
+.dark .sx__month-grid-day,
+.dark .sx__day-name,
+.dark .sx__week-day-name,
+.dark .sx__week-grid__day-name {
   color: #ffffff !important;
 }
 
-.sx__time-axis {
+.dark .sx__time-axis {
   background-color: #0f172a !important;
   color: #ffffff !important;
-  font-size: 0.71rem !important;
 }
 
-/* Column headers in week/day view — date numbers and day names */
-.sx__week-grid__date-num,
-.sx__week-grid__date-number,
-.sx__week-header-content,
-.sx__week-grid__day-name,
-.sx__week-grid__date,
-.sx__week-header,
-.sx__date-grid-day {
+.dark .sx__week-grid__date-num,
+.dark .sx__week-grid__date-number,
+.dark .sx__week-header-content,
+.dark .sx__week-grid__day-name,
+.dark .sx__week-grid__date,
+.dark .sx__week-header,
+.dark .sx__date-grid-day {
   color: #ffffff !important;
 }
 
-/* Today highlight */
-.sx__month-grid-cell--today,
-.sx__week-grid__date--today {
-  background-color: rgba(59, 130, 246, 0.18) !important;
-  color: #93c5fd !important;
-  font-weight: 700 !important;
-}
-
-/* Grid lines — targeted, not wildcard */
-.sx__time-grid-line,
-.sx__month-grid-cell {
+.dark .sx__time-grid-line,
+.dark .sx__month-grid-cell {
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
@@ -575,4 +660,3 @@ svg:not([class]) {
   background-color: #0f172a !important;
   color: rgba(255, 255, 255, 0.45) !important;
 }
-

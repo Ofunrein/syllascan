@@ -96,16 +96,17 @@ export async function addEventsToCalendar(accessToken: string, events: Event[], 
           endObj = { date: endDateStr };
         } else {
           // Event with specific time
-          startObj = { dateTime: eventDate, timeZone: 'America/Chicago' };
-          
+          const tz = event.timezone || 'America/Chicago';
+          startObj = { dateTime: eventDate, timeZone: tz };
+
           // End time - either use specified end or add 1 hour to start
           if (event.endDate) {
-            endObj = { dateTime: event.endDate, timeZone: 'America/Chicago' };
+            endObj = { dateTime: event.endDate, timeZone: tz };
           } else {
             // If no end date, add one hour to start
             const endDateTime = new Date(eventDate);
             endDateTime.setHours(endDateTime.getHours() + 1);
-            endObj = { dateTime: endDateTime.toISOString(), timeZone: 'America/Chicago' };
+            endObj = { dateTime: endDateTime.toISOString(), timeZone: tz };
           }
         }
         

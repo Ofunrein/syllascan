@@ -13,6 +13,7 @@ import {
 import { createDragAndDropPlugin } from '@schedule-x/drag-and-drop';
 import { createResizePlugin } from '@schedule-x/resize';
 import { useEffect, useMemo } from 'react';
+import { useTheme } from '@/lib/ThemeContext';
 
 import type { GCalEvent, GCalCalendar, ViewMode } from './types';
 
@@ -91,6 +92,8 @@ export default function CalendarGrid({
   onEventDrop,
   onEventResize,
 }: CalendarGridProps) {
+  const { isDark } = useTheme();
+
   // Map GCalCalendar[] → schedule-x calendars record
   const sxCalendars = useMemo(() => {
     const record: Record<string, { colorName: string; lightColors: { main: string; container: string; onContainer: string }; darkColors: { main: string; container: string; onContainer: string } }> = {};
@@ -115,23 +118,40 @@ export default function CalendarGrid({
   // Map GCalEvent[] → schedule-x CalendarEventExternal[]
   const sxEvents = useMemo(
     () =>
-      events.map((ev) => ({
-        id: ev.id,
-        title: ev.title,
-        start: toSXDateTime(ev.start, ev.allDay),
-        end: toSXDateTime(ev.end, ev.allDay),
-        calendarId: ev.calendarId,
-        description: ev.description,
-        location: ev.location,
-        // Store the original event for retrieval in callbacks
-        _gcalEvent: ev,
-      })),
+      events.map((ev) => {
+        // Defensive clamp: if a timed event ends at exactly 00:00 of the next day,
+        // pull end back to 23:59 of the start day so it doesn't bleed into the next day's grid.
+        let endIso = ev.end;
+        if (!ev.allDay) {
+          const s = new Date(ev.start);
+          const e = new Date(ev.end);
+          if (
+            e.getTime() > s.getTime() &&
+            e.getDate() !== s.getDate() &&
+            e.getHours() === 0 && e.getMinutes() === 0 && e.getSeconds() === 0
+          ) {
+            const clamped = new Date(s);
+            clamped.setHours(23, 59, 0, 0);
+            endIso = clamped.toISOString();
+          }
+        }
+        return {
+          id: ev.id,
+          title: ev.title,
+          start: toSXDateTime(ev.start, ev.allDay),
+          end: toSXDateTime(endIso, ev.allDay),
+          calendarId: ev.calendarId,
+          description: ev.description,
+          location: ev.location,
+          _gcalEvent: ev,
+        };
+      }),
     [events]
   );
 
   const calendarApp = useCalendarApp(
     {
-      isDark: true,
+      isDark,
       defaultView: toSXViewName(view),
       ...(getNativeTemporalDate(toSXDate(date)) ? { selectedDate: getNativeTemporalDate(toSXDate(date)) } : {}),
       views: [viewDay, viewWeek, viewMonthGrid, viewMonthAgenda],

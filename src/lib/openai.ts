@@ -155,4 +155,5 @@ export interface Event {
   google_event_id?: string;
   sourceFile?: string;
   sourceFileType?: string;
+  timezone?: string;
 }

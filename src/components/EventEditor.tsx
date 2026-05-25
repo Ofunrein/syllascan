@@ -59,16 +59,29 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
     // Combine date and time into ISO strings
     let formattedStartDate = startDate;
     let formattedEndDate = endDate || startDate;
-    
+
     if (!isAllDay) {
       formattedStartDate = `${startDate}T${startTime}:00`;
-      formattedEndDate = `${endDate || startDate}T${endTime || startTime}:00`;
+      // Clamp end date to start date so events never bleed into the next day in Day/Week/Month views
+      formattedEndDate = `${startDate}T${endTime || startTime}:00`;
+      // Ensure end > start; if user only set start, give a 1h default
+      if (new Date(formattedEndDate).getTime() <= new Date(formattedStartDate).getTime()) {
+        const bumped = new Date(formattedStartDate);
+        bumped.setHours(bumped.getHours() + 1);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        formattedEndDate = `${startDate}T${pad(bumped.getHours())}:${pad(bumped.getMinutes())}:00`;
+        // If +1h crosses midnight, clamp to 23:59 same day
+        if (new Date(formattedEndDate).getDate() !== new Date(formattedStartDate).getDate()) {
+          formattedEndDate = `${startDate}T23:59:00`;
+        }
+      }
     } else {
       // For all-day events, we don't include time
       formattedStartDate = `${startDate}T00:00:00`;
       formattedEndDate = `${endDate || startDate}T23:59:59`;
     }
 
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const updatedEvent: Event = {
       ...event,
       title: eventTitle,
@@ -77,6 +90,7 @@ export default function EventEditor({ event, onSave, onCancel, mode }: EventEdit
       endDate: formattedEndDate !== formattedStartDate ? formattedEndDate : undefined,
       location: location || undefined,
       isAllDay,
+      timezone: tz,
     };
 
     onSave(updatedEvent);

@@ -234,19 +234,58 @@ export function AssistantWidget() {
     } catch {}
   }, [assistant]);
 
+  // Paste / drag-drop into the assistant — bails on /upload so the upload page wins
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (pathname?.startsWith('/upload')) return;
+      const focused = document.activeElement as HTMLElement | null;
+      const widgetHasFocus = !!widgetRef.current?.contains(focused);
+      if (!open && !widgetHasFocus) return;
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const files: File[] = [];
+      for (const it of items) {
+        if (it.kind === 'file') {
+          const f = it.getAsFile();
+          if (f) files.push(f);
+        }
+      }
+      if (files.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      files.forEach(handleFileSelect);
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [open, pathname, handleFileSelect, widgetRef]);
+
+  const onDragOverWidget = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+  const onDropWidget = (e: React.DragEvent) => {
+    if (!e.dataTransfer.files?.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen(true);
+    Array.from(e.dataTransfer.files).forEach(handleFileSelect);
+  };
+
   const handleConfirmActions = useCallback(async (msgIndex: number, actions: AssistantAction[]) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     for (const action of actions) {
       if (action.type === 'CREATE') {
         await fetch('/api/calendar/events', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ calendarId: action.event.calendarId ?? 'primary', event: action.event, addMeet: false }) });
+          body: JSON.stringify({ calendarId: action.event.calendarId ?? 'primary', event: { ...action.event, timezone: tz }, addMeet: false }) });
       } else if (action.type === 'EDIT') {
         const q = new URLSearchParams({ calendarId: action.calendarId, updateScope: 'single' });
         await fetch(`/api/calendar/events/${action.eventId}?${q}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: action.changes }) });
+          body: JSON.stringify({ event: { ...action.changes, timezone: tz } }) });
       } else if (action.type === 'MOVE') {
         const q = new URLSearchParams({ calendarId: action.calendarId, updateScope: 'single' });
         await fetch(`/api/calendar/events/${action.eventId}?${q}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: { start: action.newStart, end: action.newEnd } }) });
+          body: JSON.stringify({ event: { start: action.newStart, end: action.newEnd, timezone: tz } }) });
       } else if (action.type === 'DELETE') {
         const q = new URLSearchParams({ calendarId: action.calendarId, updateScope: 'single' });
         await fetch(`/api/calendar/events/${action.eventId}?${q}`, { method: 'DELETE' });
@@ -279,7 +318,10 @@ export function AssistantWidget() {
     return (
       <div
         ref={widgetRef}
+        data-syllascan-assistant
         onMouseDown={onMouseDown}
+        onDragOver={onDragOverWidget}
+        onDrop={onDropWidget}
         style={{
           ...baseStyle,
           width: 'min(440px, 92vw)',
@@ -385,6 +427,9 @@ export function AssistantWidget() {
   return (
     <div
       ref={widgetRef}
+      data-syllascan-assistant
+      onDragOver={onDragOverWidget}
+      onDrop={onDropWidget}
       style={{
         ...baseStyle,
         width: 'min(420px, 90vw)',

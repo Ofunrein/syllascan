@@ -140,6 +140,11 @@ export default function FileUploader({
   useEffect(() => {
     if (!mounted) return;
     const handlePaste = async (e: ClipboardEvent) => {
+      // Bail if SyllaScan AI assistant owns focus — let it handle the paste
+      const focused = document.activeElement as HTMLElement | null;
+      if (focused?.closest('[data-syllascan-assistant]')) return;
+      const tgt = e.target as HTMLElement | null;
+      if (tgt?.closest?.('[data-syllascan-assistant]')) return;
       if (!e.clipboardData) return;
       const items = Array.from(e.clipboardData.items);
       const pastedFiles: File[] = [];

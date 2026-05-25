@@ -16,7 +16,7 @@ interface Props {
 function formatTime(iso: string, allDay: boolean) {
   if (allDay) return 'All day';
   const d = new Date(iso);
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 export function EventPopover({ event, position, onClose, onEdit, onDelete, onDuplicate }: Props) {

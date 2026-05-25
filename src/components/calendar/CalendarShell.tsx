@@ -294,56 +294,58 @@ export function CalendarShell() {
     <div className="flex flex-col h-full">
       {/* Reconnect banner */}
       {reconnectRequired && (
-        <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-2 flex items-center justify-between text-sm text-yellow-200">
+        <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-2 flex items-center justify-between text-sm text-yellow-900 dark:text-yellow-200">
           <span>Google Calendar disconnected. Reconnect to continue syncing.</span>
           <a
             href={`/api/google-calendar/authorize?next=${encodeURIComponent('/calendar')}`}
-            className="ml-4 px-3 py-1 rounded-full bg-yellow-500/30 hover:bg-yellow-500/50 text-yellow-100 text-xs font-medium transition-colors"
+            className="ml-4 px-3 py-1 rounded-full bg-yellow-500/30 hover:bg-yellow-500/50 text-yellow-950 dark:text-yellow-100 text-xs font-medium transition-colors"
           >
             Reconnect
           </a>
         </div>
       )}
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 shrink-0">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-black/10 dark:border-white/10 shrink-0">
         <button
           onClick={() => setSidebarOpen(o => !o)}
-          className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+          className="p-1.5 rounded hover:bg-black/[0.08] dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
         >
           {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
         <button
           onClick={() => setDate(new Date())}
-          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-black/[0.08] dark:bg-white/10 hover:bg-black/[0.12] dark:hover:bg-white/15 text-black dark:text-white text-sm font-medium transition-colors"
         >
           Today
         </button>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setDate(d => navigate(d, view, -1))}
-            className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            className="p-1.5 rounded hover:bg-black/[0.08] dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={() => setDate(d => navigate(d, view, 1))}
-            className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            className="p-1.5 rounded hover:bg-black/[0.08] dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
           >
             <ChevronRight size={18} />
           </button>
         </div>
-        <span className="text-base font-semibold text-white/90 flex-1">
+        <span className="text-base font-semibold text-black/90 dark:text-white/90 flex-1">
           {formatViewTitle(date, view)}
         </span>
         {/* Desktop view switcher */}
-        <div className="hidden sm:flex items-center gap-1 bg-white/5 rounded-lg p-1">
+        <div className="hidden sm:flex items-center gap-1 bg-black/5 dark:bg-white/5 rounded-lg p-1">
           {(['day', 'week', 'month', 'year', 'schedule'] as ViewMode[]).map(v => (
             <button
               key={v}
               onClick={() => setView(v)}
               className={[
                 'px-3 py-1 rounded text-sm font-medium transition-colors',
-                view === v ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80',
+                view === v
+                  ? 'bg-black/[0.12] dark:bg-white/15 text-black dark:text-white'
+                  : 'text-black/50 dark:text-white/50 hover:text-black/80 dark:hover:text-white/80',
               ].join(' ')}
             >
               {VIEW_LABELS[v]}
@@ -352,7 +354,7 @@ export function CalendarShell() {
         </div>
         {/* Mobile view switcher */}
         <select
-          className="sm:hidden bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white"
+          className="sm:hidden bg-white/65 dark:bg-white/10 border border-black/20 dark:border-white/20 rounded px-2 py-1 text-sm text-black dark:text-white"
           value={view}
           onChange={e => setView(e.target.value as ViewMode)}
         >
@@ -367,7 +369,7 @@ export function CalendarShell() {
         {/* Sidebar */}
         <div
           className={[
-            'transition-all duration-200 overflow-hidden border-r border-white/10 shrink-0',
+            'transition-all duration-200 overflow-hidden border-r border-black/10 dark:border-white/10 shrink-0',
             sidebarOpen ? 'w-56 opacity-100' : 'w-0 opacity-0',
           ].join(' ')}
         >
