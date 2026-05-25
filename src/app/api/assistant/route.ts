@@ -22,7 +22,7 @@ Respond with valid JSON:
 {
   "reply": "your response — for reads: a clear summary of the events. For mutations: confirm what you're doing.",
   "actions": [
-    { "type": "CREATE", "event": { "title": "string", "start": "ISO datetime", "end": "ISO datetime", "allDay": false, "description": null, "location": null, "calendarId": "primary", "color": null } },
+    { "type": "CREATE", "event": { "title": "string", "start": "ISO datetime", "end": "ISO datetime", "allDay": false, "description": null, "location": null, "calendarId": "primary", "color": null, "recurrence": null } },
     { "type": "EDIT", "eventId": "string", "calendarId": "string", "changes": { "title"?: "string", "start"?: "ISO", "end"?: "ISO", "description"?: "string", "location"?: "string" } },
     { "type": "MOVE", "eventId": "string", "calendarId": "string", "newStart": "ISO", "newEnd": "ISO" },
     { "type": "DELETE", "eventId": "string", "calendarId": "string", "title": "string" }
@@ -34,8 +34,31 @@ Rules:
 - Resolve relative dates against today (${today}).
 - Default calendarId is "primary" for CREATE.
 - All-day events: allDay true, start/end YYYY-MM-DDT00:00:00.000Z.
+- Timed events: start/end must NEVER cross midnight. Each event is one continuous block on a single day.
 - If ambiguous, ask for clarification.
 - Format event times in the user's local timezone when displaying in reply.
+
+RECURRING EVENTS (RRULE — RFC 5545):
+- recurrence is a single RRULE string (no "RRULE:" prefix needed; pass the rule body).
+- Use BYDAY codes: MO, TU, WE, TH, FR, SA, SU.
+- Weekly recurring: "FREQ=WEEKLY;BYDAY=MO,WE,FR"
+- Daily recurring: "FREQ=DAILY"
+- End the series with UNTIL in UTC basic format YYYYMMDDTHHMMSSZ. Example: a series ending Friday July 31, 2026 inclusive → UNTIL=20260801T045959Z (one second before midnight of the day AFTER the last occurrence, in UTC). For America/Chicago (CDT, UTC-5) on 2026-07-31, end-of-day local 23:59:59 → 2026-08-01T04:59:59Z.
+- For multi-day-of-week schedules with DIFFERENT times per day (e.g., Sat/Sun 3-7pm but Tue 1-5pm), emit ONE separate CREATE per weekday with its own RRULE BYDAY=<single day>. Do NOT collapse into one rule with mixed times.
+- start/end on the FIRST occurrence (the first matching weekday on or after the schedule start). The RRULE handles all repeats.
+- COUNT or UNTIL — use UNTIL when user gives a calendar end date.
+- Schedule start = first occurrence date. If user says "schedule start: Saturday May 30, 2026" and only Tuesday is requested, the first Tuesday on/after May 30, 2026 is the start.
+
+DUPLICATE PREVENTION:
+- Before emitting CREATE actions, scan the events list above. If an event with the SAME title, SAME local start time-of-day, and matching weekday in the requested range already exists, SKIP that CREATE and mention it in the reply.
+- Recurring instances appear as individual occurrences in the list — match by title + weekday + time-of-day.
+
+EXAMPLE (recurring weekly schedule with different times per weekday):
+User: "Create weekly Work shifts: Sat 3-7pm, Tue 1-5pm, from May 30 2026 to July 31 2026, timezone America/Chicago"
+Output: TWO CREATE actions —
+  1) { type: "CREATE", event: { title: "Work", start: "2026-05-30T15:00:00-05:00", end: "2026-05-30T19:00:00-05:00", allDay: false, calendarId: "primary", recurrence: "FREQ=WEEKLY;BYDAY=SA;UNTIL=20260801T045959Z" } }
+  2) { type: "CREATE", event: { title: "Work", start: "2026-06-02T13:00:00-05:00", end: "2026-06-02T17:00:00-05:00", allDay: false, calendarId: "primary", recurrence: "FREQ=WEEKLY;BYDAY=TU;UNTIL=20260801T045959Z" } }
+Reply lists each series: "Created 2 recurring Work series — Saturdays 3-7pm and Tuesdays 1-5pm — through Jul 31, 2026."
 `.trim();
 
 export async function POST(request: NextRequest) {

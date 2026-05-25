@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Check, X, Calendar, Trash2, Edit2, MoveRight } from 'lucide-react';
+import { Check, X, Calendar, Trash2, Edit2, MoveRight, Repeat } from 'lucide-react';
 import type { AssistantAction } from './types';
 
 interface Props {
@@ -29,6 +29,29 @@ function formatDT(iso: string): string {
   return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+const DAY_NAMES: Record<string, string> = { MO: 'Mon', TU: 'Tue', WE: 'Wed', TH: 'Thu', FR: 'Fri', SA: 'Sat', SU: 'Sun' };
+
+function describeRecurrence(rrule: string): string {
+  const parts = Object.fromEntries(
+    rrule.replace(/^RRULE:/, '').split(';').map(p => p.split('=') as [string, string])
+  );
+  const freq = parts['FREQ']?.toLowerCase();
+  const days = parts['BYDAY']?.split(',').map(d => DAY_NAMES[d] ?? d).join(',');
+  const until = parts['UNTIL'];
+  let untilStr = '';
+  if (until) {
+    const m = until.match(/^(\d{4})(\d{2})(\d{2})/);
+    if (m) {
+      const d = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
+      untilStr = ` until ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`;
+    }
+  }
+  if (freq === 'weekly') return `Repeats ${days ? days + ' ' : ''}weekly${untilStr}`;
+  if (freq === 'daily') return `Repeats daily${untilStr}`;
+  if (freq === 'monthly') return `Repeats monthly${untilStr}`;
+  return `Repeats${untilStr}`;
+}
+
 export function BatchConfirmCard({ actions, onConfirm, onDismiss, loading }: Props) {
   const [confirming, setConfirming] = useState(false);
 
@@ -51,12 +74,20 @@ export function BatchConfirmCard({ actions, onConfirm, onDismiss, loading }: Pro
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-white truncate">{actionLabel(action)}</div>
               {action.type === 'CREATE' && (
-                <div className="text-xs text-white/45 mt-0.5">
-                  {action.event.allDay
-                    ? new Date(action.event.start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                    : `${formatDT(action.event.start)}`}
-                  {action.event.location ? ` · ${action.event.location}` : ''}
-                </div>
+                <>
+                  <div className="text-xs text-white/45 mt-0.5">
+                    {action.event.allDay
+                      ? new Date(action.event.start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                      : `${formatDT(action.event.start)}`}
+                    {action.event.location ? ` · ${action.event.location}` : ''}
+                  </div>
+                  {action.event.recurrence && (
+                    <div className="flex items-center gap-1 text-[11px] text-blue-300/80 mt-0.5">
+                      <Repeat size={10} />
+                      <span>{describeRecurrence(action.event.recurrence)}</span>
+                    </div>
+                  )}
+                </>
               )}
               {action.type === 'MOVE' && (
                 <div className="text-xs text-white/45 mt-0.5">→ {formatDT(action.newStart)}</div>
