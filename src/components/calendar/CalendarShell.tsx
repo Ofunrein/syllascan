@@ -72,7 +72,7 @@ function navigate(date: Date, view: ViewMode, dir: 1 | -1): Date {
 export function CalendarShell() {
   const [view, setView] = useState<ViewMode>('month');
   const [date, setDate] = useState(new Date());
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [visibleCalendars, setVisibleCalendars] = useState<Set<string>>(new Set());
 
   const [popover, setPopover] = useState<{ event: GCalEvent; x: number; y: number } | null>(null);
@@ -115,6 +115,14 @@ export function CalendarShell() {
   const createEvent = useCreateEvent(refetch);
   const updateEvent = useUpdateEvent(refetch);
   const deleteEvent = useDeleteEvent(refetch);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 768px)');
+    const syncSidebar = () => setSidebarOpen(media.matches);
+    syncSidebar();
+    media.addEventListener('change', syncSidebar);
+    return () => media.removeEventListener('change', syncSidebar);
+  }, []);
 
   useEffect(() => {
     if (calendars.length > 0 && visibleCalendars.size === 0) {

@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/temporal-polyfill';
 import '@schedule-x/theme-default/dist/index.css';
 
 import { useCalendarApp, ScheduleXCalendar } from '@schedule-x/react';
@@ -8,41 +9,44 @@ import {
   viewWeek,
   viewMonthGrid,
   viewMonthAgenda,
-  CalendarApp,
 } from '@schedule-x/calendar';
+import type { CalendarEventExternal } from '@schedule-x/calendar';
 import { createDragAndDropPlugin } from '@schedule-x/drag-and-drop';
 import { createResizePlugin } from '@schedule-x/resize';
 import { useEffect, useMemo } from 'react';
 import { useTheme } from '@/lib/ThemeContext';
 
 import type { GCalEvent, GCalCalendar, ViewMode } from './types';
+import {
+  clampMidnightEndToLocalDay,
+  getLocalTimeZone,
+  parsePlainDateToLocalDate,
+} from './dateUtils';
+
+type ScheduleXDate = CalendarEventExternal['start'];
+type ScheduleXEventWithSource = CalendarEventExternal & { _gcalEvent: GCalEvent };
 
 // schedule-x v4 requires Temporal.ZonedDateTime for timed events, Temporal.PlainDate for all-day.
 // We use globalThis.Temporal (native browser API) to match the same class schedule-x validates against.
-function toSXDateTime(iso: string, allDay: boolean): unknown {
+function toSXDateTime(iso: string, allDay: boolean, timeZone: string): ScheduleXDate {
   const T = (globalThis as unknown as {
     Temporal?: {
-      PlainDate: { from: (s: string) => unknown };
-      Instant: { fromEpochMilliseconds: (ms: number) => { toZonedDateTimeISO: (tz: string) => unknown } };
+      PlainDate: { from: (s: string) => ScheduleXDate };
+      Instant: { fromEpochMilliseconds: (ms: number) => { toZonedDateTimeISO: (tz: string) => ScheduleXDate } };
       Now: { timeZoneId: () => string };
     };
   }).Temporal;
 
   if (!T) {
-    // No Temporal available — return string as last resort (will error in sx)
-    return allDay ? iso.slice(0, 10) : iso.slice(0, 16).replace('T', ' ');
+    throw new Error('Temporal is required for Schedule-X calendar rendering.');
   }
 
   if (allDay) {
     return T.PlainDate.from(iso.slice(0, 10));
   }
 
-  // Timed event → ZonedDateTime in local timezone
-  // Use Intl.DateTimeFormat for timezone detection — more reliable than Temporal.Now.timeZoneId()
-  // which can return UTC on some environments even when the user is in a different timezone.
   const ms = new Date(iso).getTime();
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || T.Now.timeZoneId();
-  return T.Instant.fromEpochMilliseconds(ms).toZonedDateTimeISO(tz);
+  return T.Instant.fromEpochMilliseconds(ms).toZonedDateTimeISO(timeZone);
 }
 
 function toSXViewName(view: ViewMode): string {
@@ -59,8 +63,8 @@ function toSXViewName(view: ViewMode): string {
 
 // Use the native/global Temporal that schedule-x itself uses.
 // Importing a polyfill creates a different class, breaking instanceof checks.
-function getNativeTemporalDate(dateStr: string): unknown | undefined {
-  const T = (globalThis as unknown as { Temporal?: { PlainDate: { from: (s: string) => unknown } } }).Temporal;
+function getNativeTemporalDate(dateStr: string): Temporal.PlainDate | undefined {
+  const T = (globalThis as unknown as { Temporal?: { PlainDate: { from: (s: string) => Temporal.PlainDate } } }).Temporal;
   return T?.PlainDate?.from(dateStr);
 }
 
@@ -93,6 +97,7 @@ export default function CalendarGrid({
   onEventResize,
 }: CalendarGridProps) {
   const { isDark } = useTheme();
+  const timeZone = useMemo(() => getLocalTimeZone(), []);
 
   // Map GCalCalendar[] → schedule-x calendars record
   const sxCalendars = useMemo(() => {
@@ -116,42 +121,28 @@ export default function CalendarGrid({
   }, [calendars]);
 
   // Map GCalEvent[] → schedule-x CalendarEventExternal[]
-  const sxEvents = useMemo(
+  const sxEvents = useMemo<ScheduleXEventWithSource[]>(
     () =>
       events.map((ev) => {
-        // Defensive clamp: if a timed event ends at exactly 00:00 of the next day,
-        // pull end back to 23:59 of the start day so it doesn't bleed into the next day's grid.
-        let endIso = ev.end;
-        if (!ev.allDay) {
-          const s = new Date(ev.start);
-          const e = new Date(ev.end);
-          if (
-            e.getTime() > s.getTime() &&
-            e.getDate() !== s.getDate() &&
-            e.getHours() === 0 && e.getMinutes() === 0 && e.getSeconds() === 0
-          ) {
-            const clamped = new Date(s);
-            clamped.setHours(23, 59, 0, 0);
-            endIso = clamped.toISOString();
-          }
-        }
+        const endIso = ev.allDay ? ev.end : clampMidnightEndToLocalDay(ev.start, ev.end);
         return {
           id: ev.id,
           title: ev.title,
-          start: toSXDateTime(ev.start, ev.allDay),
-          end: toSXDateTime(endIso, ev.allDay),
+          start: toSXDateTime(ev.start, ev.allDay, timeZone),
+          end: toSXDateTime(endIso, ev.allDay, timeZone),
           calendarId: ev.calendarId,
           description: ev.description,
           location: ev.location,
           _gcalEvent: ev,
         };
       }),
-    [events]
+    [events, timeZone]
   );
 
   const calendarApp = useCalendarApp(
     {
       isDark,
+      timezone: timeZone,
       defaultView: toSXViewName(view),
       ...(getNativeTemporalDate(toSXDate(date)) ? { selectedDate: getNativeTemporalDate(toSXDate(date)) } : {}),
       views: [viewDay, viewWeek, viewMonthGrid, viewMonthAgenda],
@@ -165,8 +156,7 @@ export default function CalendarGrid({
         },
         onClickDate(plainDate) {
           if (!onSlotClick) return;
-          // Convert Temporal.PlainDate to JS Date
-          const jsDate = new Date(plainDate.toString());
+          const jsDate = parsePlainDateToLocalDate(plainDate.toString());
           onSlotClick(jsDate);
         },
         onClickDateTime(zonedDT) {

@@ -19,12 +19,7 @@ export default function ScanPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<TabId>(() => {
-    if (typeof window === 'undefined') return 'upload';
-    const hash = window.location.hash.replace('#', '') as TabId;
-    if (['upload', 'events', 'calendar'].includes(hash)) return hash;
-    return 'upload';
-  });
+  const [activeTab, setActiveTab] = useState<TabId>('upload');
   const [isCalendarExpired, setIsCalendarExpired] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const { events: storedEvents, setEvents: setStoredEvents, clearEvents: clearStoredEvents, fetchEvents, saveEvents, removeEvent } = useEventStore();

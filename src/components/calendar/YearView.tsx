@@ -1,5 +1,6 @@
 'use client';
 import type { GCalEvent } from './types';
+import { eventStartDateKey, formatLocalDateKey } from './dateUtils';
 
 interface Props {
   year: number;
@@ -10,8 +11,8 @@ interface Props {
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function hasEvent(events: GCalEvent[], date: Date): boolean {
-  const ds = date.toISOString().split('T')[0];
-  return events.some(e => e.start.startsWith(ds));
+  const ds = formatLocalDateKey(date);
+  return events.some(e => eventStartDateKey(e) === ds);
 }
 
 function renderMiniMonth(year: number, month: number, events: GCalEvent[], onMonthClick: (d: Date) => void) {
