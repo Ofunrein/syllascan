@@ -1,8 +1,12 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: (process.env.OPENAI_API_KEY ?? '').replace(/\s+/g, ''),
-});
+let _openai: OpenAI | null = null;
+function getClient(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: (process.env.OPENAI_API_KEY ?? '').replace(/\s+/g, '') });
+  }
+  return _openai;
+}
 
 export interface ExtractedEvent {
   title: string;
@@ -59,7 +63,7 @@ function extractJsonFromText(text: string): any {
 
 export async function extractEventsFromText(text: string): Promise<ExtractedEvent[]> {
   const prompt = buildExtractionPrompt();
-  const response = await openai.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: 'gpt-5.4-mini',
     response_format: { type: 'json_object' },
     messages: [
@@ -112,7 +116,7 @@ export async function extractEventsFromImages(
       type: 'image_url' as const,
       image_url: { url: `data:${img.mimeType};base64,${img.base64}`, detail: 'high' as const },
     }));
-    const fallback = await openai.chat.completions.create({
+    const fallback = await getClient().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: prompt },
