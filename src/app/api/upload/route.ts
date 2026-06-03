@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractEventsFromImage, extractEventsFromText, extractEventsFromImages } from '@/lib/openai';
-import { PDFParse } from 'pdf-parse';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +32,7 @@ export async function POST(request: NextRequest) {
       try {
         console.log('Processing PDF file...');
         const buffer = Buffer.from(await file.arrayBuffer());
+        const { PDFParse } = await import('pdf-parse');
         const parser = new PDFParse({ data: new Uint8Array(buffer) });
         const result = await parser.getText();
         const pdfText = result.text ?? '';
