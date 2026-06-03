@@ -108,7 +108,9 @@ export async function POST(request: NextRequest) {
         ? { date: eventBody.end.split('T')[0] }
         : { dateTime: eventBody.end, timeZone: tz },
       colorId: eventBody.color || undefined,
-      recurrence: eventBody.recurrence ? [eventBody.recurrence] : undefined,
+      recurrence: eventBody.recurrence
+        ? [eventBody.recurrence.startsWith('RRULE:') ? eventBody.recurrence : `RRULE:${eventBody.recurrence}`]
+        : undefined,
       attendees: eventBody.guests?.map((email: string) => ({ email })),
     };
 

@@ -35,18 +35,27 @@ export function useAssistant({ userId, calendarEvents }: UseAssistantOptions) {
 
   const persistMessages = useCallback(async (msgs: ConversationMessage[]) => {
     if (!userId) return;
+    // Strip base64 images before persisting — Supabase has a ~1 MB row limit.
+    // Fold the image count into content so the AI retains context on reload.
+    const safe = msgs.map(m => {
+      if (!m.images?.length) return m;
+      const note = m.content ? m.content : `(sent ${m.images.length} image${m.images.length > 1 ? 's' : ''})`;
+      return { ...m, images: undefined, content: note };
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('conversations')
-      .upsert({ user_id: userId, messages: msgs }, { onConflict: 'user_id' });
+      .upsert({ user_id: userId, messages: safe }, { onConflict: 'user_id' });
   }, [userId]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loading) return;
+  const sendMessage = useCallback(async (text: string, images?: string[]) => {
+    const hasContent = text.trim() || (images && images.length > 0);
+    if (!hasContent || loading) return;
 
     const userMsg: ConversationMessage = {
       role: 'user',
       content: text,
+      images: images?.length ? images : undefined,
       timestamp: new Date().toISOString(),
     };
     const next = [...messages, userMsg];
@@ -60,7 +69,14 @@ export function useAssistant({ userId, calendarEvents }: UseAssistantOptions) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          history: messages.slice(-20),
+          images: images ?? [],
+          // History: include image-note in content so AI has prior context without resending base64
+          history: messages.slice(-20).map(m => ({
+            role: m.role,
+            content: m.images?.length
+              ? (m.content ? `${m.content} (had ${m.images.length} image${m.images.length > 1 ? 's' : ''} attached)` : `(sent ${m.images.length} image${m.images.length > 1 ? 's' : ''})`)
+              : m.content,
+          })),
           calendarEvents,
           timezone: tz,
         }),

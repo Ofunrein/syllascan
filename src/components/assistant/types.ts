@@ -50,6 +50,7 @@ export type AssistantAction = CreateAction | EditAction | MoveAction | DeleteAct
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
+  images?: string[]; // base64 data URLs attached to this message (vision)
   actions?: AssistantAction[];
   confirmed?: boolean;
   timestamp: string;
