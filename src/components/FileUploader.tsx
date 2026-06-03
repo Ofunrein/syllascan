@@ -148,10 +148,13 @@ export default function FileUploader({
       if (!e.clipboardData) return;
       const items = Array.from(e.clipboardData.items);
       const pastedFiles: File[] = [];
+      let pastedText = '';
       for (const item of items) {
         if (item.kind === 'file') {
           const f = item.getAsFile();
           if (f) pastedFiles.push(f);
+        } else if (item.kind === 'string' && item.type === 'text/plain') {
+          pastedText = await new Promise<string>(res => item.getAsString(res));
         }
       }
       if (pastedFiles.length > 0) {
@@ -159,11 +162,26 @@ export default function FileUploader({
         const newPreviews = await Promise.all(pastedFiles.map(f => createPreview(f)));
         effectiveSetFiles([...effectiveFiles, ...newPreviews]);
         toast.success(`Pasted ${pastedFiles.length} file${pastedFiles.length > 1 ? 's' : ''}`);
+      } else if (pastedText.trim()) {
+        e.preventDefault();
+        // Create a virtual text file from pasted plain text — fully editable before extraction
+        const blob = new Blob([pastedText], { type: 'text/plain' });
+        const virtualFile = new File([blob], 'pasted-text.txt', { type: 'text/plain' });
+        const entry: FileWithPreview = {
+          file: virtualFile,
+          preview: pastedText,
+          fileType: 'text',
+          pdfPageCount: 0,
+          currentPdfPage: 1,
+          isLoading: false,
+        };
+        effectiveSetFiles([...effectiveFiles, entry]);
+        toast.success('Text pasted — edit before extracting');
       }
     };
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [mounted, createPreview]);
+  }, [mounted, createPreview, effectiveFiles, effectiveSetFiles]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -262,10 +280,15 @@ export default function FileUploader({
     const toastId = toast.loading('Processing files...');
 
     try {
-      // Prepare the files for upload
+      // Prepare the files for upload — for text files, use the (possibly edited) preview content
       const formData = new FormData();
       effectiveFiles.forEach((fileWithPreview, index) => {
-        formData.append(`file${index}`, fileWithPreview.file);
+        if (fileWithPreview.fileType === 'text' && fileWithPreview.preview != null) {
+          const blob = new Blob([fileWithPreview.preview], { type: 'text/plain' });
+          formData.append(`file${index}`, new File([blob], fileWithPreview.file.name, { type: 'text/plain' }));
+        } else {
+          formData.append(`file${index}`, fileWithPreview.file);
+        }
       });
 
       // Send the files to the server
@@ -384,6 +407,8 @@ export default function FileUploader({
                   <div className="file-thumb">
                     {file.isLoading ? (
                       <div className="thumb-skeleton" />
+                    ) : file.fileType === 'text' ? (
+                      <span className="thumb-ext" style={{ fontSize: '9px', letterSpacing: '0.02em' }}>{ext}</span>
                     ) : file.preview ? (
                       <img src={file.preview} alt="" className="thumb-img" />
                     ) : (
@@ -423,7 +448,16 @@ export default function FileUploader({
                   <span className="preview-no-label">No preview available</span>
                 </div>
               ) : activeFile.fileType === 'text' ? (
-                <pre className="preview-text">{activeFile.preview}</pre>
+                <textarea
+                  className="preview-text-edit"
+                  value={activeFile.preview ?? ''}
+                  onChange={e => {
+                    const updated = [...effectiveFiles];
+                    updated[activeFileIndex] = { ...updated[activeFileIndex], preview: e.target.value };
+                    effectiveSetFiles(updated);
+                  }}
+                  spellCheck={false}
+                />
               ) : (
                 <>
                   <img src={activeFile.preview!} alt={activeFile.file.name} className="preview-img" />
@@ -669,6 +703,29 @@ export default function FileUploader({
           padding: 0.75rem;
           font-family: ui-monospace, monospace;
           margin: 0;
+        }
+        .preview-text-edit {
+          width: 100%;
+          min-height: 160px;
+          max-height: 320px;
+          overflow-y: auto;
+          font-size: 0.75rem;
+          line-height: 1.5;
+          color: rgba(255,255,255,0.85);
+          white-space: pre-wrap;
+          word-break: break-word;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.18);
+          border-radius: 0.5rem;
+          padding: 0.75rem;
+          font-family: ui-monospace, monospace;
+          margin: 0;
+          resize: vertical;
+          outline: none;
+        }
+        .preview-text-edit:focus {
+          border-color: rgba(255,255,255,0.35);
+          background: rgba(255,255,255,0.06);
         }
         .preview-no-preview {
           display: flex;
