@@ -1,0 +1,395 @@
+# Instincts generated from https://github.com/Ofunrein/syllascan
+# Generated: 2026-06-03T05:36:32.217Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: syllascan-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/Ofunrein/syllascan
+---
+
+# Syllascan Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: fix
+
+## Evidence
+
+- 2 commits analyzed
+- Detected conventional commit pattern
+- Examples: fix: paste-to-upload works on widget click and upload focus for all supported file types, fix: replace pdfjs-dist server-side worker with pdf-parse for Vercel serverless compatibility
+
+---
+id: syllascan-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/Ofunrein/syllascan
+---
+
+# Syllascan Commit Length
+
+## Action
+
+Write moderate-length commit messages (~91 characters)
+
+## Evidence
+
+- Average commit message length: 91 chars
+- Based on 2 commits
+
+---
+id: syllascan-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Ofunrein/syllascan
+---
+
+# Syllascan Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: syllascan-import-alias
+trigger: "when importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Ofunrein/syllascan
+---
+
+# Syllascan Import Alias
+
+## Action
+
+Use path aliases (@/, ~/) instead of relative imports
+
+## Evidence
+
+- Import analysis shows alias pattern
+- Example: import { x } from '@/lib/x'
+
+---
+id: syllascan-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/Ofunrein/syllascan
+---
+
+# Syllascan Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: syllascan-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/Ofunrein/syllascan
+---
+
+# Syllascan Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: app, components
+
+---
+id: syllascan-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/Ofunrein/syllascan
+---
+
+# Syllascan Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: syllascan-instinct-file-naming-camelCase
+trigger: "When creating a new file in the codebase"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct File Naming CamelCase
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files: camelCase
+
+---
+id: syllascan-instinct-function-naming-camelCase
+trigger: "When defining a new function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Function Naming CamelCase
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions: camelCase
+
+---
+id: syllascan-instinct-class-naming-PascalCase
+trigger: "When creating a new class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Class Naming PascalCase
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes: PascalCase
+
+---
+id: syllascan-instinct-constant-naming-SCREAMING_SNAKE_CASE
+trigger: "When declaring a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Constant Naming SCREAMING_SNAKE_CASE
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants: SCREAMING_SNAKE_CASE
+
+---
+id: syllascan-instinct-import-alias
+trigger: "When importing modules"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Import Alias
+
+## Action
+
+Use alias import style
+
+## Evidence
+
+- Pattern in importStyle: alias
+
+---
+id: syllascan-instinct-export-named
+trigger: "When exporting modules or functions"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Export Named
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle: named
+
+---
+id: syllascan-instinct-typescript-language
+trigger: "When writing new code"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Typescript Language
+
+## Action
+
+Use TypeScript syntax and types
+
+## Evidence
+
+- Pattern in language: TypeScript
+
+---
+id: syllascan-instinct-try-catch-error-handling
+trigger: "When handling errors in code"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Try Catch Error Handling
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling.style: try-catch
+
+---
+id: syllascan-instinct-git-commit-conventional-fix
+trigger: "When writing a commit message for a bug fix"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Git Commit Conventional Fix
+
+## Action
+
+Start the commit message with 'fix:' followed by a concise description
+
+## Evidence
+
+- Seen in commit: fix: paste-to-upload works on widget click and upload focus for all supported file types
+- Seen in commit: fix: replace pdfjs-dist server-side worker with pdf-parse for Vercel serverless compatibility
+
+---
+id: syllascan-instinct-git-commit-length
+trigger: "When writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Git Commit Length
+
+## Action
+
+Keep the commit message concise, around 91 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength: 91
+
+---
+id: syllascan-instinct-test-location-separate
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Test Location Separate
+
+## Action
+
+Place test files in a separate directory from source code
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation: separate
+
+---
+id: syllascan-instinct-src-folder-common
+trigger: "When adding new source code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Src Folder Common
+
+## Action
+
+Place source files inside the 'src' folder
+
+## Evidence
+
+- Pattern in architecture.folderStructure.commonFolders: src
+
+---
+id: syllascan-instinct-module-organization-type-based
+trigger: "When organizing modules"
+confidence: 0.7
+domain: architecture
+source: repo-analysis
+source_repo: Ofunrein/syllascan
+---
+
+# Syllascan Instinct Module Organization Type Based
+
+## Action
+
+Group modules by type (e.g., components, utils, services)
+
+## Evidence
+
+- Pattern in architecture.moduleOrganization: type-based
+
