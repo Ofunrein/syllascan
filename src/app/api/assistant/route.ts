@@ -3,8 +3,6 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import type { ConversationMessage, AssistantAction } from '@/components/assistant/types';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const SYSTEM_PROMPT = (today: string, tz: string, eventsJSON: string) => `
 You are an AI calendar assistant for SyllaScan. You have FULL access to the user's calendar — you can READ events, CREATE events, EDIT events, MOVE events, and DELETE events via natural language or voice.
 
@@ -62,6 +60,7 @@ Reply lists each series: "Created 2 recurring Work series — Saturdays 3-7pm an
 `.trim();
 
 export async function POST(request: NextRequest) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

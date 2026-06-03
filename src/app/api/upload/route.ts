@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractEventsFromImage, extractEventsFromText } from '@/lib/openai';
+import { extractEventsFromImage, extractEventsFromText, extractEventsFromImages } from '@/lib/openai';
 import { PDFParse } from 'pdf-parse';
 
 export async function POST(request: NextRequest) {
@@ -35,10 +35,21 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         const parser = new PDFParse({ data: new Uint8Array(buffer) });
         const result = await parser.getText();
-        const pdfText = result.text;
+        const pdfText = result.text ?? '';
         await parser.destroy();
-        console.log('Extracted PDF text, length:', pdfText.length);
-        const events = await extractEventsFromText(pdfText);
+        const meaningfulLength = pdfText.replace(/\s+/g, '').length;
+        console.log('PDF text length (non-whitespace):', meaningfulLength);
+
+        let events;
+        if (meaningfulLength > 100) {
+          // Text-based PDF — fast text extraction path
+          events = await extractEventsFromText(pdfText);
+        } else {
+          // Scanned/image-based PDF — vision fallback
+          console.log('PDF has little/no extractable text — using vision fallback');
+          const base64 = buffer.toString('base64');
+          events = await extractEventsFromImages([{ base64, mimeType: 'application/pdf' }]);
+        }
         console.log('Extracted events:', events.length);
         return NextResponse.json({ events });
       } catch (pdfError) {
