@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
