@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let _openai: OpenAI | null = null;
+const getClient = () => _openai ?? (_openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
 const MAX_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   if (audio.size > MAX_BYTES) return NextResponse.json({ error: 'Recording too long (max 2 min)' }, { status: 400 });
 
   try {
-    const result = await openai.audio.transcriptions.create({
+    const result = await getClient().audio.transcriptions.create({
       model: 'whisper-1',
       file: audio,
       response_format: 'text',

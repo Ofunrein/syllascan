@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let _openai: OpenAI | null = null;
+const getClient = () => _openai ?? (_openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
 
 const PARSE_PROMPT_TEMPLATE = `You are a calendar event parser. Convert the user's natural language input into a structured calendar event.
 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const systemPrompt = PARSE_PROMPT_TEMPLATE.replace('__TODAY__', today);
 
-    const response = await openai.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: 'gpt-5.4-mini',
       response_format: { type: 'json_object' },
       messages: [
