@@ -3,8 +3,6 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import type { ConversationMessage, AssistantAction } from '@/components/assistant/types';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const SYSTEM_PROMPT = (today: string, tz: string, eventsJSON: string) => `
 You are an AI calendar assistant for SyllaScan. You have FULL access to the user's calendar — you can READ events, CREATE events, EDIT events, MOVE events, and DELETE events via natural language or voice.
 
@@ -33,7 +31,7 @@ Rules:
 - For READ queries: return empty actions [], answer in reply.
 - Resolve relative dates against today (${today}).
 - Default calendarId is "primary" for CREATE.
-- All-day events: allDay true, start/end YYYY-MM-DDT00:00:00.000Z.
+- All-day events: allDay true, start/end must be a plain date string "YYYY-MM-DD" (no time, no Z suffix). Never use UTC midnight timestamps for all-day events — they shift the date by one day in non-UTC timezones.
 - Timed events: start/end must NEVER cross midnight. Each event is one continuous block on a single day.
 - If ambiguous, ask for clarification.
 - Format event times in the user's local timezone when displaying in reply.
@@ -62,12 +60,14 @@ Reply lists each series: "Created 2 recurring Work series — Saturdays 3-7pm an
 `.trim();
 
 export async function POST(request: NextRequest) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json() as {
     message: string;
+    images?: string[];
     history: ConversationMessage[];
     calendarEvents: Array<{ id: string; calendarId: string; title: string; start: string; end: string; allDay: boolean }>;
     timezone?: string;
@@ -85,6 +85,15 @@ export async function POST(request: NextRequest) {
     content: m.content,
   }));
 
+  // Build user message — vision-capable when images are attached
+  type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail: 'auto' } };
+  const userContent: string | ContentPart[] = (body.images?.length)
+    ? [
+        ...(body.message ? [{ type: 'text' as const, text: body.message }] : []),
+        ...body.images.map(url => ({ type: 'image_url' as const, image_url: { url, detail: 'auto' as const } })),
+      ]
+    : body.message;
+
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -92,7 +101,7 @@ export async function POST(request: NextRequest) {
       messages: [
         { role: 'system', content: SYSTEM_PROMPT(today, tz, eventsJSON) },
         ...historyMessages,
-        { role: 'user', content: body.message },
+        { role: 'user', content: userContent },
       ],
       max_tokens: 1500,
       temperature: 0.3,

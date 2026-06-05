@@ -144,6 +144,30 @@ async function fetchAllCalendarEvents(): Promise<CalEvent[]> {
   return events ?? [];
 }
 
+// ── Image resize helper ──────────────────────────────────────────────
+// Downscales to max 1024px and re-encodes as JPEG@0.82 to stay well under
+// Vercel's 4.5 MB request body limit before sending to the vision API.
+function resizeImageForVision(file: File, maxPx = 1024, quality = 0.82): Promise<string> {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const src = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // ── Main widget ──────────────────────────────────────────────────────
 export function AssistantWidget() {
   const [open, setOpen] = useState(false);
@@ -151,10 +175,12 @@ export function AssistantWidget() {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState<CalEvent[]>([]);
+  const [pendingImages, setPendingImages] = useState<Array<{ file: File; previewUrl: string }>>([]);
   const pathname = usePathname();
   const { user, googleCalendarConnected } = useAuth();
   const { widgetRef, dragPos, onMouseDown } = useDrag();
   const fileRef = useRef<HTMLInputElement>(null);
+  const pasteReadyRef = useRef(false);
 
   // Fetch calendar events whenever the widget opens (or Google Calendar connects)
   useEffect(() => {
@@ -210,11 +236,13 @@ export function AssistantWidget() {
 
   const handleCollapsedSend = useCallback(async () => {
     const text = collapsedText.trim();
-    if (!text) return;
+    const imgs = pendingImages.map(p => p.previewUrl);
+    if (!text && imgs.length === 0) return;
     setCollapsedText('');
+    setPendingImages([]);
     setOpen(true);
-    setTimeout(() => assistant.sendMessage(text), 50);
-  }, [collapsedText, assistant]);
+    setTimeout(() => assistant.sendMessage(text || 'What do you see in this image?', imgs), 50);
+  }, [collapsedText, pendingImages, assistant]);
 
   const handleCollapsedKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCollapsedSend(); }
@@ -240,19 +268,33 @@ export function AssistantWidget() {
       if (pathname?.startsWith('/upload')) return;
       const focused = document.activeElement as HTMLElement | null;
       const widgetHasFocus = !!widgetRef.current?.contains(focused);
-      if (!open && !widgetHasFocus) return;
+      if (!open && !widgetHasFocus && !pasteReadyRef.current) return;
       const items = Array.from(e.clipboardData?.items ?? []);
-      const files: File[] = [];
+      const imageFiles: File[] = [];
+      const docFiles: File[] = [];
       for (const it of items) {
         if (it.kind === 'file') {
           const f = it.getAsFile();
-          if (f) files.push(f);
+          if (f) {
+            if (f.type.startsWith('image/')) imageFiles.push(f);
+            else docFiles.push(f);
+          }
         }
       }
-      if (files.length === 0) return;
+      if (imageFiles.length === 0 && docFiles.length === 0) return;
       e.preventDefault();
       e.stopPropagation();
-      files.forEach(handleFileSelect);
+      // Images → resize/compress then show inline preview, don't upload yet
+      if (imageFiles.length > 0) {
+        setOpen(true);
+        for (const f of imageFiles) {
+          resizeImageForVision(f).then(compressed => {
+            setPendingImages(prev => [...prev, { file: f, previewUrl: compressed }]);
+          });
+        }
+      }
+      // Non-image files → upload immediately (syllabus/doc flow)
+      docFiles.forEach(handleFileSelect);
     };
     document.addEventListener('paste', onPaste);
     return () => document.removeEventListener('paste', onPaste);
@@ -319,6 +361,9 @@ export function AssistantWidget() {
       <div
         ref={widgetRef}
         data-syllascan-assistant
+        tabIndex={-1}
+        onFocus={() => { pasteReadyRef.current = true; }}
+        onBlur={(e) => { if (!widgetRef.current?.contains(e.relatedTarget as Node)) pasteReadyRef.current = false; }}
         onMouseDown={onMouseDown}
         onDragOver={onDragOverWidget}
         onDrop={onDropWidget}
@@ -338,7 +383,22 @@ export function AssistantWidget() {
           padding: '12px 14px 10px',
         }}
       >
-        {/* Row 1: text OR waveform */}
+        {/* Row 1: pending image thumbnails (when images pasted before sending) */}
+        {pendingImages.length > 0 && !recording && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {pendingImages.map((img, idx) => (
+              <div key={idx} className="relative group">
+                <img src={img.previewUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-white/20" />
+                <button
+                  onClick={() => setPendingImages(prev => prev.filter((_, i) => i !== idx))}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-black/80 text-white/70 hover:text-white flex items-center justify-center text-[10px] leading-none opacity-0 group-hover:opacity-100 transition-opacity">
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Row 2: text OR waveform */}
         {recording ? (
           <div className="flex items-center gap-3 mb-3" style={{ height: '24px' }}>
             {/* Real-time waveform bars */}
@@ -412,9 +472,9 @@ export function AssistantWidget() {
             )}
             <button
               onClick={handleCollapsedSend}
-              disabled={!collapsedText.trim() || recording}
+              disabled={(!collapsedText.trim() && pendingImages.length === 0) || recording}
               className={['w-8 h-8 flex items-center justify-center rounded-full transition-all',
-                collapsedText.trim() && !recording ? 'bg-white text-black hover:bg-white/90' : 'bg-white/12 text-white/25'].join(' ')}>
+                (collapsedText.trim() || pendingImages.length > 0) && !recording ? 'bg-white text-black hover:bg-white/90' : 'bg-white/12 text-white/25'].join(' ')}>
               <ArrowUp size={15} />
             </button>
           </div>
@@ -428,6 +488,9 @@ export function AssistantWidget() {
     <div
       ref={widgetRef}
       data-syllascan-assistant
+      tabIndex={-1}
+      onFocus={() => { pasteReadyRef.current = true; }}
+      onBlur={(e) => { if (!widgetRef.current?.contains(e.relatedTarget as Node)) pasteReadyRef.current = false; }}
       onDragOver={onDragOverWidget}
       onDrop={onDropWidget}
       style={{
@@ -472,20 +535,45 @@ export function AssistantWidget() {
 
       {/* Input area */}
       <div className="shrink-0 mx-3 mb-3 rounded-2xl border border-white/10 overflow-hidden" style={{ background: 'rgba(30,30,36,0.85)' }}>
+        {/* Pending image previews */}
+        {pendingImages.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-3 pt-2.5">
+            {pendingImages.map((img, idx) => (
+              <div key={idx} className="relative group">
+                <img src={img.previewUrl} alt="" className="w-14 h-14 rounded-xl object-cover border border-white/15" />
+                <button
+                  onClick={() => setPendingImages(prev => prev.filter((_, i) => i !== idx))}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-black/80 text-white/70 hover:text-white flex items-center justify-center text-[10px] leading-none opacity-0 group-hover:opacity-100 transition-opacity">
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <textarea
           id="sx-expanded-input"
+          onInput={e => {
+            const el = e.currentTarget;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+          }}
           onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               const t = e.currentTarget.value.trim();
-              if (t && !assistant.loading) { assistant.sendMessage(t); e.currentTarget.value = ''; }
+              const imgs = pendingImages.map(p => p.previewUrl);
+              if ((t || imgs.length > 0) && !assistant.loading) {
+                setPendingImages([]);
+                assistant.sendMessage(t || 'What do you see in this image?', imgs);
+                e.currentTarget.value = '';
+              }
             }
           }}
           placeholder={!googleCalendarConnected ? 'Connect Google Calendar first...' : 'Ask anything...'}
           disabled={!googleCalendarConnected || assistant.loading}
           rows={1}
           className="w-full bg-transparent px-4 pt-3 pb-1 text-sm text-white/90 placeholder-white/30 outline-none resize-none leading-relaxed"
-          style={{ maxHeight: '96px', fontFamily: 'inherit' }}
+          style={{ minHeight: '40px', maxHeight: '200px', fontFamily: 'inherit', overflowY: 'auto' }}
         />
         <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
           <div className="flex items-center gap-0.5">
@@ -507,7 +595,13 @@ export function AssistantWidget() {
             <button
               onClick={() => {
                 const el = document.getElementById('sx-expanded-input') as HTMLTextAreaElement | null;
-                if (el && el.value.trim() && !assistant.loading) { assistant.sendMessage(el.value.trim()); el.value = ''; }
+                const t = el?.value.trim() ?? '';
+                const imgs = pendingImages.map(p => p.previewUrl);
+                if ((t || imgs.length > 0) && !assistant.loading) {
+                  setPendingImages([]);
+                  assistant.sendMessage(t || 'What do you see in this image?', imgs);
+                  if (el) el.value = '';
+                }
               }}
               disabled={assistant.loading}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:bg-white/90 disabled:opacity-30 transition-all"

@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractEventsFromImage } from '@/lib/openai';
-import * as pdfjs from 'pdfjs-dist';
-
-// Initialize PDF.js worker
-if (typeof window === 'undefined') {
-  // Server-side only - use a more reliable CDN
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-}
+import { extractEventsFromImage, extractEventsFromText, extractEventsFromImages } from '@/lib/openai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,31 +29,29 @@ export async function POST(request: NextRequest) {
       base64Image = Buffer.from(buffer).toString('base64');
       console.log('Processed image file, base64 length:', base64Image.length);
     } else if (file.type === 'application/pdf') {
-      // Process PDF file - convert first page to image
       try {
         console.log('Processing PDF file...');
-        const buffer = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-        const page = await pdf.getPage(1);
-        
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = new OffscreenCanvas(viewport.width, viewport.height);
-        const context = canvas.getContext('2d');
-        
-        if (!context) {
-          throw new Error('Could not create canvas context');
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const { PDFParse } = await import('pdf-parse');
+        const parser = new PDFParse({ data: new Uint8Array(buffer) });
+        const result = await parser.getText();
+        const pdfText = result.text ?? '';
+        await parser.destroy();
+        const meaningfulLength = pdfText.replace(/\s+/g, '').length;
+        console.log('PDF text length (non-whitespace):', meaningfulLength);
+
+        let events;
+        if (meaningfulLength > 100) {
+          // Text-based PDF — fast text extraction path
+          events = await extractEventsFromText(pdfText);
+        } else {
+          // Scanned/image-based PDF — vision fallback
+          console.log('PDF has little/no extractable text — using vision fallback');
+          const base64 = buffer.toString('base64');
+          events = await extractEventsFromImages([{ base64, mimeType: 'application/pdf' }]);
         }
-        
-        await page.render({
-          canvasContext: context,
-          viewport: viewport
-        }).promise;
-        
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
-        const arrayBuffer = await blob.arrayBuffer();
-        base64Image = Buffer.from(arrayBuffer).toString('base64');
-        console.log('Processed PDF file, base64 length:', base64Image.length);
+        console.log('Extracted events:', events.length);
+        return NextResponse.json({ events });
       } catch (pdfError) {
         console.error('Error processing PDF:', pdfError);
         return NextResponse.json(
@@ -87,7 +78,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error processing file:', error);
     return NextResponse.json(
-      { error: 'Failed to process file', details: error.toString() },
+      { error: 'Failed to process file', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

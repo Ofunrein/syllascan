@@ -139,7 +139,14 @@ export function ConversationThread({ messages, loading, onConfirmActions, onDism
             msg.role === 'user'
               ? 'bg-blue-500 text-white rounded-br-sm'
               : 'bg-white/8 text-white/90 rounded-bl-sm border border-white/10'].join(' ')}>
-            <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+            {msg.images && msg.images.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-1.5">
+                {msg.images.map((src, ii) => (
+                  <img key={ii} src={src} alt="" className="rounded-lg max-w-[160px] max-h-[120px] object-cover" />
+                ))}
+              </div>
+            )}
+            {msg.content && <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
             {msg.actions && msg.actions.length > 0 && !msg.confirmed && (
               <BatchConfirmCard
                 actions={msg.actions}

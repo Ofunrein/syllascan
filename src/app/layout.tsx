@@ -3,6 +3,8 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import ClientLayout from "./client-layout";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "SyllaScan — Scan Syllabi to Google Calendar",
   description: "Upload your syllabus or document and automatically add events to your Google Calendar",
